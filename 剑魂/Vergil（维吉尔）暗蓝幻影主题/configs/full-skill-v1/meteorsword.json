@@ -1,0 +1,43 @@
+{
+    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+    "schemaVersion":  1,
+    "themeId":  "weaponmaster-vergil-dark-blue",
+    "sourceNpk":  {
+                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_meteorsword.NPK",
+                      "sha256":  "238C3C06DF79E3CDBC9ACCFE0C012CF642ADC219C06F0C9EE17128C71B0F64AF",
+                      "length":  1234962
+                  },
+    "output":  {
+                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-meteorsword-v1.NPK",
+                   "buildSummaryPath":  "../../validation/full-skill-v1/components/meteorsword/build-summary.json"
+               },
+    "allowedImgPaths":  [
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_charge.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_crack.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_dash.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_drop.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_drop_dust.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_drop2.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_exp_dust.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_exp_floor.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_exp_line.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_exp_main.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_exp_particle.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_fullcharge.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_start_dust.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_stone.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_swords.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_swords_whole.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_target.img",
+                            "sprite/character/swordman/effect/meteorsword/meteorsword_up.img",
+                            "sprite/character/swordman/effect/meteorsword/talismansword01.img",
+                            "sprite/character/swordman/effect/meteorsword/talismansword02.img",
+                            "sprite/character/swordman/effect/meteorsword/vp.img"
+                        ],
+    "excludedFrameKeys":  [
+                              "sprite/character/swordman/effect/meteorsword/talismansword01.img#12",
+                              "sprite/character/swordman/effect/meteorsword/talismansword01.img#13",
+                              "sprite/character/swordman/effect/meteorsword/talismansword02.img#12",
+                              "sprite/character/swordman/effect/meteorsword/talismansword02.img#13"
+                          ]
+}

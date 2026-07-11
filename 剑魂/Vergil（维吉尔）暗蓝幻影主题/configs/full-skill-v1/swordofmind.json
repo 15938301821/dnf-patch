@@ -1,0 +1,51 @@
+{
+    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+    "schemaVersion":  1,
+    "themeId":  "weaponmaster-vergil-dark-blue",
+    "sourceNpk":  {
+                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_swordofmind.NPK",
+                      "sha256":  "E1EF80F73EF3997E1E9C2FC880CCFD2044B322230D6D30B37D39AB52138E62E6",
+                      "length":  3031660
+                  },
+    "output":  {
+                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-swordofmind-v1.NPK",
+                   "buildSummaryPath":  "../../validation/full-skill-v1/components/swordofmind/build-summary.json"
+               },
+    "allowedImgPaths":  [
+                            "sprite/character/swordman/effect/swordofmind/attackloop_finish_a.img",
+                            "sprite/character/swordman/effect/swordofmind/attackloop_finish_b.img",
+                            "sprite/character/swordman/effect/swordofmind/attackloop_finish_c.img",
+                            "sprite/character/swordman/effect/swordofmind/attackloop_light.img",
+                            "sprite/character/swordman/effect/swordofmind/attackloop_piece.img",
+                            "sprite/character/swordman/effect/swordofmind/casting.img",
+                            "sprite/character/swordman/effect/swordofmind/charge.img",
+                            "sprite/character/swordman/effect/swordofmind/charge_fin.img",
+                            "sprite/character/swordman/effect/swordofmind/charge_repeat.img",
+                            "sprite/character/swordman/effect/swordofmind/charging.img",
+                            "sprite/character/swordman/effect/swordofmind/cross_eff.img",
+                            "sprite/character/swordman/effect/swordofmind/dust.img",
+                            "sprite/character/swordman/effect/swordofmind/dusta1.img",
+                            "sprite/character/swordman/effect/swordofmind/dusta2.img",
+                            "sprite/character/swordman/effect/swordofmind/grounddusta1.img",
+                            "sprite/character/swordman/effect/swordofmind/grounddusta2.img",
+                            "sprite/character/swordman/effect/swordofmind/hit.img",
+                            "sprite/character/swordman/effect/swordofmind/hit2.img",
+                            "sprite/character/swordman/effect/swordofmind/hit3.img",
+                            "sprite/character/swordman/effect/swordofmind/last_hit.img",
+                            "sprite/character/swordman/effect/swordofmind/last_hit2.img",
+                            "sprite/character/swordman/effect/swordofmind/marking1.img",
+                            "sprite/character/swordman/effect/swordofmind/marking2.img",
+                            "sprite/character/swordman/effect/swordofmind/newhit.img",
+                            "sprite/character/swordman/effect/swordofmind/pull.img",
+                            "sprite/character/swordman/effect/swordofmind/shockwave_a.img",
+                            "sprite/character/swordman/effect/swordofmind/shockwave_b.img",
+                            "sprite/character/swordman/effect/swordofmind/shockwave_circle.img",
+                            "sprite/character/swordman/effect/swordofmind/shockwave_dust.img",
+                            "sprite/character/swordman/effect/swordofmind/shockwavea.img",
+                            "sprite/character/swordman/effect/swordofmind/smoke.img",
+                            "sprite/character/swordman/effect/swordofmind/sword.img"
+                        ],
+    "excludedFrameKeys":  [
+                              "sprite/character/swordman/effect/swordofmind/marking1.img#12"
+                          ]
+}

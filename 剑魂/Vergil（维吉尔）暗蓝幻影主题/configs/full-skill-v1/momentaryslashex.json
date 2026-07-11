@@ -1,0 +1,39 @@
+{
+    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+    "schemaVersion":  1,
+    "themeId":  "weaponmaster-vergil-dark-blue",
+    "sourceNpk":  {
+                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_momentaryslashex.NPK",
+                      "sha256":  "1377AC3B22DFAADB613D14D018B0A20D0A7F61836EE1510AB153B6EA0B51404D",
+                      "length":  1438154
+                  },
+    "output":  {
+                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-momentaryslashex-v1.NPK",
+                   "buildSummaryPath":  "../../validation/full-skill-v1/components/momentaryslashex/build-summary.json"
+               },
+    "allowedImgPaths":  [
+                            "sprite/character/swordman/effect/momentaryslashex/bigwavedodge.img",
+                            "sprite/character/swordman/effect/momentaryslashex/chargedodge1.img",
+                            "sprite/character/swordman/effect/momentaryslashex/chargedodge2.img",
+                            "sprite/character/swordman/effect/momentaryslashex/cutbackdodge.img",
+                            "sprite/character/swordman/effect/momentaryslashex/cutfrontdodge.img",
+                            "sprite/character/swordman/effect/momentaryslashex/dusta.img",
+                            "sprite/character/swordman/effect/momentaryslashex/focusa.img",
+                            "sprite/character/swordman/effect/momentaryslashex/focusb.img",
+                            "sprite/character/swordman/effect/momentaryslashex/new_bigwave.img",
+                            "sprite/character/swordman/effect/momentaryslashex/swordtraila.img",
+                            "sprite/character/swordman/effect/momentaryslashex/swordtrailb.img",
+                            "sprite/character/swordman/effect/momentaryslashex/swordtrailc.img"
+                        ],
+    "excludedFrameKeys":  [
+                              "sprite/character/swordman/effect/momentaryslashex/new_bigwave.img#1",
+                              "sprite/character/swordman/effect/momentaryslashex/swordtraila.img#10",
+                              "sprite/character/swordman/effect/momentaryslashex/swordtraila.img#11",
+                              "sprite/character/swordman/effect/momentaryslashex/swordtraila.img#12",
+                              "sprite/character/swordman/effect/momentaryslashex/swordtraila.img#13",
+                              "sprite/character/swordman/effect/momentaryslashex/swordtraila.img#14",
+                              "sprite/character/swordman/effect/momentaryslashex/swordtraila.img#15",
+                              "sprite/character/swordman/effect/momentaryslashex/swordtraila.img#8",
+                              "sprite/character/swordman/effect/momentaryslashex/swordtraila.img#9"
+                          ]
+}

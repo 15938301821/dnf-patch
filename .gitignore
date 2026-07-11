@@ -1,0 +1,24 @@
+# Generated patch artifacts
+*.NPK
+*.npk
+*.NPK.disabled
+*.npk.disabled
+
+# Build and validation outputs
+**/validation/
+**/npk/
+**/frames/preview/
+**/*预览.png
+
+# Local compiled tool outputs
+tools/bin/
+
+# Machine-local source and toolchain settings
+.dnf-patch.local.json
+
+# Editor and OS noise
+.vs/
+Thumbs.db
+Desktop.ini
+*.tmp
+*.log

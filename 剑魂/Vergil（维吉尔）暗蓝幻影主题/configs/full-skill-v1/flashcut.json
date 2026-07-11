@@ -1,0 +1,29 @@
+{
+    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+    "schemaVersion":  1,
+    "themeId":  "weaponmaster-vergil-dark-blue",
+    "sourceNpk":  {
+                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_flashcut.NPK",
+                      "sha256":  "D1C5AC7CF610BC71E8FBD08267FD57E3086C81FD55CD1B174A13984112A4E1DD",
+                      "length":  303500
+                  },
+    "output":  {
+                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-flashcut-v1.NPK",
+                   "buildSummaryPath":  "../../validation/full-skill-v1/components/flashcut/build-summary.json"
+               },
+    "allowedImgPaths":  [
+                            "sprite/character/swordman/effect/flashcut/ld_circle.img",
+                            "sprite/character/swordman/effect/flashcut/ld_finisheff_a.img",
+                            "sprite/character/swordman/effect/flashcut/ld_finisheff_b.img",
+                            "sprite/character/swordman/effect/flashcut/ld_finisheff_c.img",
+                            "sprite/character/swordman/effect/flashcut/ld_start.img",
+                            "sprite/character/swordman/effect/flashcut/ld_sworda.img",
+                            "sprite/character/swordman/effect/flashcut/ld_swordb.img",
+                            "sprite/character/swordman/effect/flashcut/vp01.img",
+                            "sprite/character/swordman/effect/flashcut/vp02.img"
+                        ],
+    "excludedFrameKeys":  [
+                              "sprite/character/swordman/effect/flashcut/ld_start.img#7",
+                              "sprite/character/swordman/effect/flashcut/vp02.img#4"
+                          ]
+}

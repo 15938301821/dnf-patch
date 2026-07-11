@@ -1,0 +1,386 @@
+{
+  "schemaVersion": 1,
+  "profession": "剑魂",
+  "factSource": {
+    "mode": "verified-source-inventory-plus-manifest-scope-release",
+    "capturedAt": "2026-07-11T17:57:57.7484808+08:00",
+    "imagePacks2": "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2",
+    "clientSource": "本机 WeGame DNF 安装目录；客户端版本号未单独记录",
+    "inventoryTool": "../tools/Export-DnfNpkValidation.ps1",
+    "inventoryToolSha256": "921EB25416E2CB7BB9F1D20555AFD751CEEF04BABD919403C5EC8826BE35C613",
+    "extractorSharpCoreVersion": "1.7.3.2",
+    "extractorSharpCoreSha256": "99DAD694D2B642134976AF62A0C3FC01792321A0FCB827D8D954D84525258875",
+    "independentIndexTool": "../tools/Test-DnfNpkIndex.ps1",
+    "independentIndexToolSha256": "B83875A3A251E165CE74F8F2A000791AED6E8BD5AF2DE9B120E2E8C3C132C9F2",
+    "warning": "本 manifest 保留 momentaryslash pilot 历史事实，并新增经当前资源计划、组件摘要、独立索引和全帧解码证明的 manifest 范围发布事实；技术资源 ID 仍不自动证明中文技能显示名或目标客户端兼容。"
+  },
+  "coverage": {
+    "scope": "current verified male Weapon Master visual-resource manifest: 28 technical roots, selected shared resources, and the Weapon Master neo Cut-in target",
+    "fullSkillCoverageProven": true,
+    "provenAt": "2026-07-13T01:50:12.3389236+08:00",
+    "reason": "31 个显式选择组件覆盖 28 个经实包核验的技术根与 417 个 IMG；唯一 Cut-in 目标使最终范围达到 418 个 IMG、3822 帧。3617 个获准帧实际变化，205 个安全保留帧与 19 个整 IMG 排除均有证据，独立索引、逐 payload 等价、全帧解码和 15 张三背景联系表全部通过。",
+    "meaning": "仅表示当前 manifest 已证明视觉资源范围的离线完整覆盖；不把零匹配 Replay 名称猜成资源别名，不证明中文 Prompt 显示名逐项映射、客户端加载优先级或目标客户端兼容。",
+    "promptCountIsEvidence": false,
+    "clientCompatibilityProven": false
+  },
+  "promptRouting": {
+    "professionIndex": "prompts/README.md",
+    "themeIndexPattern": "主题目录/prompts/README.md",
+    "compositionOrder": [
+      "verified source frame semantics and geometry",
+      "profession prompt when display-name mapping is verified",
+      "theme prompt delta when display-name mapping is verified"
+    ],
+    "currentPilotPromptMapping": "unverified",
+    "currentPilotStyleAuthority": "selected theme AGENTS common palette and material rules only",
+    "resourceMappingAuthority": "manifest and verified inventory only"
+  },
+  "sourcePacks": [
+    {
+      "name": "sprite_character_swordman_effect_momentaryslash.NPK",
+      "path": "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_momentaryslash.NPK",
+      "scope": "exactly the 8 listed IMG paths",
+      "length": 223755,
+      "lastWriteTime": "2025-07-11T07:40:29.2727505+08:00",
+      "sha256": "B1B0758EC8D958547E3184F9482E83ED4128C8513609E367B6CF3D287CE6B105",
+      "albumCount": 8,
+      "frameCount": 40,
+      "decodedNonLinkFrames": 40,
+      "linkFrames": 0,
+      "hiddenFrames": 0,
+      "independentIndex": {
+        "passed": true,
+        "npkMagic": "NeoplePack_Bill",
+        "entryCount": 8,
+        "uniquePathCount": 8,
+        "headerSha256Valid": true,
+        "imgMagicValidCount": 8,
+        "imgVersionCounts": {
+          "5": 8
+        }
+      }
+    }
+  ],
+  "resources": [
+    {
+      "resourceId": "momentaryslash",
+      "displayName": null,
+      "displayNameMappingStatus": "unverified",
+      "sourceNpk": "sprite_character_swordman_effect_momentaryslash.NPK",
+      "classification": "effect-only-offline-inventory-confirmed",
+      "classificationEvidence": "全部路径位于 swordman/effect/momentaryslash，且 40 帧黑白棋盘联系表未见人物、武器、背景、UI 或文字层。",
+      "actionStage": "unclassified",
+      "include": true,
+      "imgVersion": "Ver5",
+      "handler": "ExtractorSharp Ver5 handler",
+      "frameCountPerImg": 5,
+      "frameIndexesPerImg": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "spriteType": "DXT_5",
+      "compressMode": "DDS_ZLIB",
+      "textureType": "DXT_5",
+      "textureVersion": "Dxt1",
+      "canvasWidth": 600,
+      "canvasHeight": 400,
+      "textureRelationship": "每 IMG 的 5 个帧分别映射到 5 个独立 Texture 对象，TextureIndex 为 0..4，无共享。",
+      "ddsPayload": {
+        "count": 40,
+        "magic": "DDS ",
+        "fourCC": "DXT5",
+        "mipLevels": 1,
+        "headerBytes": 128,
+        "blockBytes": 16,
+        "exactLengthFormulaVerified": true
+      },
+      "imgPaths": [
+        "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_under.img",
+        "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_upper.img",
+        "sprite/character/swordman/effect/momentaryslash/drawingsword_none_under.img",
+        "sprite/character/swordman/effect/momentaryslash/drawingsword_none_upper.img",
+        "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_under.img",
+        "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_upper.img",
+        "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_under.img",
+        "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_upper.img"
+      ]
+    }
+  ],
+  "baseline": {
+    "kind": "read-only source package",
+    "path": "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_momentaryslash.NPK",
+    "immutable": true,
+    "knownCorrectThemeBaselineAvailable": false,
+    "length": 223755,
+    "sha256": "B1B0758EC8D958547E3184F9482E83ED4128C8513609E367B6CF3D287CE6B105"
+  },
+  "candidate": {
+    "path": "Vergil（维吉尔）暗蓝幻影主题/npk/vergil-momentaryslash-pilot-v1.NPK",
+    "generatedAt": "2026-07-11T18:00:47.1118518+08:00",
+    "status": "offline-validated-client-pending",
+    "length": 191885,
+    "sha256": "F6063C302C7DE658F93A139D49DE992B3908DF913C274BC73603D2ADE58036C2",
+    "albumCount": 8,
+    "frameCount": 40,
+    "decodedNonLinkFrames": 40,
+    "linkFrames": 0,
+    "hiddenFrames": 0,
+    "changedBc3Textures": 36,
+    "excludedByteIdenticalTextures": 4,
+    "changedBc3ColorBlocks": 54198,
+    "preservedBc3AlphaBlocks": 54205,
+    "warmVisiblePixels": 0,
+    "deployed": false
+  },
+  "allowedChanges": {
+    "targetNpk": "sprite_character_swordman_effect_momentaryslash.NPK",
+    "targetImgs": "resources[0].imgPaths only",
+    "allowedFrameGroups": [
+      {
+        "pathSuffix": "_under.img",
+        "paths": [
+          "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_under.img",
+          "sprite/character/swordman/effect/momentaryslash/drawingsword_none_under.img",
+          "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_under.img",
+          "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_under.img"
+        ],
+        "frameIndexes": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "pathSuffix": "_upper.img",
+        "paths": [
+          "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_upper.img",
+          "sprite/character/swordman/effect/momentaryslash/drawingsword_none_upper.img",
+          "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_upper.img",
+          "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_upper.img"
+        ],
+        "frameIndexes": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    ],
+    "allowedFrameCount": 36,
+    "excludedFrames": [
+      "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_upper.img#0",
+      "sprite/character/swordman/effect/momentaryslash/drawingsword_none_upper.img#0",
+      "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_upper.img#0",
+      "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_upper.img#0"
+    ],
+    "excludedFrameReason": "四帧均为源包合法的 1x1 全透明占位；其压缩载荷与解压 DDS 必须逐字节不变。",
+    "metadataAllowedChanges": [],
+    "pixelRule": "只允许 36 个目标纹理的 BC3 颜色半块变化；源 DDS 头和每个 BC3 块前 8 字节 alpha 数据必须逐字节保留。",
+    "requiredChanges": "36 个目标纹理各自至少一个 BC3 颜色块必须变化。",
+    "themePalette": [
+      "#0A1633",
+      "#1A8FFF",
+      "#00D4FF",
+      "#FFFFFF"
+    ],
+    "themeAcceptance": "可见颜色不得出现暖色偏移；源 alpha 覆盖、透明占位、动作轮廓和所有结构字段保持。",
+    "immutable": [
+      "NPK 内部路径集合、数量和顺序",
+      "IMG Ver5、帧索引、顺序和帧数",
+      "Width、Height、CanvasWidth、CanvasHeight、X、Y",
+      "Hidden、LINK、Sprite Type、CompressMode",
+      "Texture Type、TextureVersion、TextureIndex、尺寸和共享关系",
+      "图集 LeftUp、RightDown、Rotation、Unknown",
+      "DDS 头、BC3 alpha 块和四个排除帧的完整载荷"
+    ],
+    "exclusions": [
+      "任何其他 NPK、IMG 或帧",
+      "新增、删除、重命名或重排资源",
+      "人物、武器、背景、UI、文字和 Cut-in",
+      "Ver5 到其他 IMG 版本的转换",
+      "DXT5 到 ARGB 或其他纹理格式的转换",
+      "ImagePacks2 部署和 DNF 进程操作"
+    ]
+  },
+  "validationArtifacts": {
+    "sourceAlbumInventory": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/source/album-inventory.json",
+    "sourceAlbumInventorySha256": "227976199C904EA076425B45BBFD85377E77762CAC3D2E2748D63E434B066A74",
+    "sourceFrameInventory": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/source/frame-inventory.csv",
+    "sourceFrameInventorySha256": "DC08750CD55AF120FF83E0FA0171E08FAA3161C0C62EC74E9E9FEAFDA2B0AB8E",
+    "sourceContactSheet": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/source/sheets/frames-0001.png",
+    "sourceContactSheetSha256": "06340AC749AB5065B02ADEA12AF9E33B345B208F043EFAB899CB5FCDAFDB735A",
+    "outputAlbumInventory": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/output/album-inventory.json",
+    "outputAlbumInventorySha256": "78C1B890C9E90F9563529D7BCDFE7A714F77C41F050AE8864D7DE4B2CCE1380F",
+    "outputFrameInventory": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/output/frame-inventory.csv",
+    "outputFrameInventorySha256": "DC08750CD55AF120FF83E0FA0171E08FAA3161C0C62EC74E9E9FEAFDA2B0AB8E",
+    "outputContactSheet": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/output/sheets/frames-0001.png",
+    "outputContactSheetSha256": "AE2911C4DCEEE832AC4116CF297337BBBE098EAF3E34E136516BDDF40D815A2D",
+    "sourcePixelReport": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/source-pixels.json",
+    "sourcePixelReportSha256": "37E016F178689D2618637A8568176DC6EBDA80972125B18CBFC45C56677B4E0D",
+    "outputPixelReport": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/output-pixels.json",
+    "outputPixelReportSha256": "9EFD9600AAEB22410165D29624405C917378F740012016F559ED489574D6A546",
+    "textureValidationSummary": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/textures/texture-validation-summary.json",
+    "textureValidationSummarySha256": "4F130EB4D8E9FB4F7254DE40885DF976C21F40520C8CF140B3D0B0E7C2EAEA96",
+    "textureValidationCsv": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/textures/texture-validation.csv",
+    "textureValidationCsvSha256": "5ED2EC4E7DD76177CE9D0B8FBF9DC5932A7459B3644E64236634B9DEBABFD07C",
+    "builderOutput": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/builder-output.txt",
+    "builderOutputSha256": "888AE163195273EE828233DFA7FAB9398DF9D585268286EE7731A95719137B65",
+    "releaseReport": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/release.json"
+  },
+  "fullSkillRelease": {
+    "schemaVersion": 1,
+    "releaseId": "weaponmaster-vergil-dark-blue-manifest-scope-v1",
+    "generatedAt": "2026-07-13T01:50:12.3389236+08:00",
+    "status": "offline-validated-client-pending",
+    "fullSkillCoverageProven": true,
+    "coverageMeaning": "当前 manifest 已证明视觉资源范围内的完整离线产物；不表示按名称猜出的额外资源、目标客户端兼容、加载优先级或账号安全。",
+    "artifact": {
+      "path": "Vergil（维吉尔）暗蓝幻影主题/npk/full-skill-v1/weaponmaster-vergil-dark-blue-manifest-scope-v1.NPK",
+      "length": 35037857,
+      "sha256": "531DBE6E9E2261531C71293EC7223DE36B57D02948D79831190D4C68FFF247D7",
+      "imgCount": 418,
+      "frameCount": 3822,
+      "deployed": false
+    },
+    "packageSummary": {
+      "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/package-v1/package-summary-v1.json",
+      "length": 227312,
+      "sha256": "7139F847F21284EF5B25FD895BCCD3706A01C2BD4CCE8BB16441C5410AD6959C",
+      "sourceNpkCount": 32,
+      "entryCount": 418,
+      "payloadEquivalence": "passed"
+    },
+    "sourceEvidence": {
+      "officialSourceCount": 28,
+      "selectedComponentCount": 31,
+      "selectedReuseComponentCount": 1,
+      "resourcePlan": {
+        "path": "Vergil（维吉尔）暗蓝幻影主题/configs/full-skill-v1/resource-plan-v2.json",
+        "length": 383295,
+        "sha256": "FBC3CB5DB68F79ED9321E513C28A5E527AFDCF5389948CFF9C75CABEBE4BF217",
+        "validatedStartState": "components-offline-validated-final-aggregation-pending",
+        "fullSkillCoverageProvenAtValidationStart": false
+      },
+      "postBuildFrameAccounting": {
+        "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/post-build-frame-accounting.json",
+        "length": 201805,
+        "sha256": "ABCA39784214448031A70F7624C9479054944ACE09CAE7BCDB91D1ED406F5224",
+        "dynamicTextureGroupCount": 70,
+        "dynamicFrameReferenceCount": 74,
+        "hashMismatchCount": 0,
+        "partitionOverlapCount": 0
+      }
+    },
+    "changes": {
+      "componentSelectedFrameCount": 3795,
+      "componentEffectiveChangedFrameCount": 3593,
+      "cutinChangedFrameCount": 24,
+      "finalEffectiveChangedFrameCount": 3617,
+      "imgVersionCounts": {
+        "Ver2": 7,
+        "Ver5": 411
+      },
+      "frameFormatCounts": {
+        "ARGB_1555": 10,
+        "ARGB_8888": 32,
+        "DXT_1": 1850,
+        "DXT_5": 1930
+      }
+    },
+    "preservation": {
+      "explicitFrameCount": 128,
+      "dynamicFrameCount": 74,
+      "cutinTransparentPlaceholderCount": 3,
+      "finalPreservedFrameCount": 205,
+      "nearBlackFrameCount": 22,
+      "noVisibleColorChangeFrameCount": 16,
+      "warmSourceProtectionFrameCount": 36,
+      "preservedPayloadDdsAndBgraHashMismatchCount": 0
+    },
+    "exclusions": {
+      "wholeImgCount": 6,
+      "wholeImgFrameCount": 19,
+      "candidatePoolExcludedFrameCount": 221,
+      "unresolvedReplaySkillsWithNoDedicatedVisualRoot": [
+        "AshenFork",
+        "BackStepCutter",
+        "HitBack",
+        "ChargeBurst"
+      ],
+      "excludedTechnicalRoots": [
+        "atultimateblade",
+        "atillusionslash",
+        "tripleslashbs"
+      ]
+    },
+    "validation": {
+      "finalSummary": {
+        "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/final-validation-summary.json",
+        "length": 236380,
+        "sha256": "3939983F4966A79665247DDF4E8BAA126711825BA72D2CD0911B58B2582F5FAF",
+        "status": "passed"
+      },
+      "independentIndex": {
+        "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/independent-index.json",
+        "length": 722,
+        "sha256": "8338B1D74D53E6C5D61647C5C7A2B37DE85C40856AC83F33AA7A681A20C03B4D",
+        "entryCount": 418,
+        "uniquePathCount": 418,
+        "headerSha256Valid": true,
+        "imgMagicValidCount": 418
+      },
+      "fullFrame": {
+        "decodedNonLinkFrames": 3822,
+        "linkFrames": 0,
+        "hiddenFrames": 0,
+        "albumInventoryPath": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/full-frame-validation/album-inventory.json",
+        "albumInventorySha256": "205A800BB840699A909B2EE249855466A0A47747B3BBB4268C0C9FD13451C489",
+        "frameInventoryPath": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/full-frame-validation/frame-inventory.csv",
+        "frameInventorySha256": "D93289B4C1C9CEDD1A3521BE6C1C4E56C18292FE75212377924316DE0B59473B",
+        "backgrounds": [
+          "black",
+          "white",
+          "checkerboard"
+        ],
+        "contactSheetCount": 15,
+        "manualSampledSheets": [
+          "frames-0001.png",
+          "frames-0008.png",
+          "frames-0015.png"
+        ],
+        "manualSampleResult": "passed-no-blank-page-no-unexpected-full-canvas-black-frame-no-layout-anomaly"
+      },
+      "cutin": {
+        "targetImg": "sprite/character/swordman/effect/cutin/cutin_weaponmaster_neo.img",
+        "visibleChangedFrames": "3-26",
+        "preservedTransparentFrames": "0-2",
+        "manualTargetSheetResult": "passed-no-visible-watermark"
+      }
+    },
+    "toolchain": {
+      "packagerSha256": "CC86156A90B986C4D5F7202B0B60B424E1D9ACBB8AE9DBE0CB8219ED6F7CAD3F",
+      "resourcePlanValidatorSha256": "A758247AFBBE487CD2D3AF62E65F2C5AC46A82824135FAD3FB23FC805546EEA8",
+      "finalReleaseValidatorSha256": "5F85C64CBF2E1B977B5A2BB532C41802FD04AE2913411AEA8CDA2AEFB8E12B88",
+      "independentIndexValidatorSha256": "B83875A3A251E165CE74F8F2A000791AED6E8BD5AF2DE9B120E2E8C3C132C9F2",
+      "fullFrameExportSha256": "C31A652D710E18646E32D8B7DB5AE44E31C7C6914A286340760004AE8887111E"
+    },
+    "releaseReport": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/release.json",
+    "deployment": {
+      "authorized": false,
+      "performed": false,
+      "imagePacks2Write": false,
+      "processOperation": false,
+      "status": "not-authorized-not-performed"
+    },
+    "pending": [
+      "目标客户端 A/B 实机验证",
+      "客户端加载优先级验证",
+      "客户端兼容性验证"
+    ]
+  }
+}

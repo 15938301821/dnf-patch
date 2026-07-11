@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "dnfSourceRoot": null,
+  "policy": {
+    "sourceReadOnly": true,
+    "deploymentTargetConfigured": false
+  },
+  "tools": {
+    "extractorDirectory": "tools/bin",
+    "directXTexDirectory": "tools/bin/directxtex/may2026",
+    "asepriteCurrentManifest": "tools/bin/aseprite/current.json"
+  }
+}

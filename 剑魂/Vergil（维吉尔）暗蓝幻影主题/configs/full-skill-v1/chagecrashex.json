@@ -1,0 +1,39 @@
+{
+    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+    "schemaVersion":  1,
+    "themeId":  "weaponmaster-vergil-dark-blue",
+    "sourceNpk":  {
+                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_chagecrashex.NPK",
+                      "sha256":  "154E43B27C94E2FBD110B8E1A01D0EBD9C2D580D6B58698D54FBE3D4F6F8A4B1",
+                      "length":  1438757
+                  },
+    "output":  {
+                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-chagecrashex-v1.NPK",
+                   "buildSummaryPath":  "../../validation/full-skill-v1/components/chagecrashex/build-summary.json"
+               },
+    "allowedImgPaths":  [
+                            "sprite/character/swordman/effect/chagecrashex/dasha.img",
+                            "sprite/character/swordman/effect/chagecrashex/dashb.img",
+                            "sprite/character/swordman/effect/chagecrashex/dashc.img",
+                            "sprite/character/swordman/effect/chagecrashex/flarea.img",
+                            "sprite/character/swordman/effect/chagecrashex/pick.img",
+                            "sprite/character/swordman/effect/chagecrashex/picklinedodge.img",
+                            "sprite/character/swordman/effect/chagecrashex/picklinenormal.img",
+                            "sprite/character/swordman/effect/chagecrashex/shockshapea.img",
+                            "sprite/character/swordman/effect/chagecrashex/shoulder.img",
+                            "sprite/character/swordman/effect/chagecrashex/shoulderline.img",
+                            "sprite/character/swordman/effect/chagecrashex/swordtraila.img",
+                            "sprite/character/swordman/effect/chagecrashex/swordtrailb.img",
+                            "sprite/character/swordman/effect/chagecrashex/swordtrailc.img",
+                            "sprite/character/swordman/effect/chagecrashex/swordtrailcsmoke.img",
+                            "sprite/character/swordman/effect/chagecrashex/upper.img",
+                            "sprite/character/swordman/effect/chagecrashex/upperupdodge.img",
+                            "sprite/character/swordman/effect/chagecrashex/vp01.img",
+                            "sprite/character/swordman/effect/chagecrashex/vp02.img"
+                        ],
+    "excludedFrameKeys":  [
+                              "sprite/character/swordman/effect/chagecrashex/shockshapea.img#0",
+                              "sprite/character/swordman/effect/chagecrashex/swordtrailc.img#14",
+                              "sprite/character/swordman/effect/chagecrashex/swordtrailc.img#15"
+                          ]
+}

@@ -1,0 +1,79 @@
+Sun Jul 12 2026 03:08:10 GMT+0800 render start
+Sun Jul 12 2026 03:08:10 GMT+0800 frame 003 begin
+Sun Jul 12 2026 03:08:16 GMT+0800 ERROR 错误: 无效枚举值 line=213
+Sun Jul 12 2026 03:09:54 GMT+0800 render start
+Sun Jul 12 2026 03:09:54 GMT+0800 frame 003 begin
+Sun Jul 12 2026 03:10:01 GMT+0800 frame 003 export png
+Sun Jul 12 2026 03:10:02 GMT+0800 frame 003 done
+Sun Jul 12 2026 03:10:02 GMT+0800 frame 004 begin
+Sun Jul 12 2026 03:10:07 GMT+0800 frame 004 export png
+Sun Jul 12 2026 03:10:08 GMT+0800 frame 004 done
+Sun Jul 12 2026 03:10:08 GMT+0800 frame 005 begin
+Sun Jul 12 2026 03:10:14 GMT+0800 frame 005 export png
+Sun Jul 12 2026 03:10:15 GMT+0800 frame 005 done
+Sun Jul 12 2026 03:10:15 GMT+0800 frame 006 begin
+Sun Jul 12 2026 03:10:20 GMT+0800 frame 006 export png
+Sun Jul 12 2026 03:10:21 GMT+0800 frame 006 done
+Sun Jul 12 2026 03:10:21 GMT+0800 frame 007 begin
+Sun Jul 12 2026 03:10:27 GMT+0800 frame 007 export png
+Sun Jul 12 2026 03:10:28 GMT+0800 frame 007 done
+Sun Jul 12 2026 03:10:28 GMT+0800 frame 008 begin
+Sun Jul 12 2026 03:10:33 GMT+0800 frame 008 export png
+Sun Jul 12 2026 03:10:34 GMT+0800 frame 008 done
+Sun Jul 12 2026 03:10:34 GMT+0800 frame 009 begin
+Sun Jul 12 2026 03:10:40 GMT+0800 frame 009 export png
+Sun Jul 12 2026 03:10:40 GMT+0800 frame 009 done
+Sun Jul 12 2026 03:10:40 GMT+0800 frame 010 begin
+Sun Jul 12 2026 03:10:46 GMT+0800 frame 010 export png
+Sun Jul 12 2026 03:10:47 GMT+0800 frame 010 done
+Sun Jul 12 2026 03:10:47 GMT+0800 frame 011 begin
+Sun Jul 12 2026 03:10:53 GMT+0800 frame 011 export png
+Sun Jul 12 2026 03:10:53 GMT+0800 frame 011 done
+Sun Jul 12 2026 03:10:53 GMT+0800 frame 012 begin
+Sun Jul 12 2026 03:10:59 GMT+0800 frame 012 save layered psd
+Sun Jul 12 2026 03:10:59 GMT+0800 frame 012 export png
+Sun Jul 12 2026 03:11:00 GMT+0800 frame 012 done
+Sun Jul 12 2026 03:11:00 GMT+0800 frame 013 begin
+Sun Jul 12 2026 03:11:06 GMT+0800 frame 013 export png
+Sun Jul 12 2026 03:11:06 GMT+0800 frame 013 done
+Sun Jul 12 2026 03:11:06 GMT+0800 frame 014 begin
+Sun Jul 12 2026 03:11:12 GMT+0800 frame 014 export png
+Sun Jul 12 2026 03:11:13 GMT+0800 frame 014 done
+Sun Jul 12 2026 03:11:13 GMT+0800 frame 015 begin
+Sun Jul 12 2026 03:11:19 GMT+0800 frame 015 export png
+Sun Jul 12 2026 03:11:19 GMT+0800 frame 015 done
+Sun Jul 12 2026 03:11:19 GMT+0800 frame 016 begin
+Sun Jul 12 2026 03:11:25 GMT+0800 frame 016 export png
+Sun Jul 12 2026 03:11:26 GMT+0800 frame 016 done
+Sun Jul 12 2026 03:11:26 GMT+0800 frame 017 begin
+Sun Jul 12 2026 03:11:32 GMT+0800 frame 017 export png
+Sun Jul 12 2026 03:11:32 GMT+0800 frame 017 done
+Sun Jul 12 2026 03:11:32 GMT+0800 frame 018 begin
+Sun Jul 12 2026 03:11:38 GMT+0800 frame 018 export png
+Sun Jul 12 2026 03:11:39 GMT+0800 frame 018 done
+Sun Jul 12 2026 03:11:39 GMT+0800 frame 019 begin
+Sun Jul 12 2026 03:11:46 GMT+0800 frame 019 export png
+Sun Jul 12 2026 03:11:46 GMT+0800 frame 019 done
+Sun Jul 12 2026 03:11:46 GMT+0800 frame 020 begin
+Sun Jul 12 2026 03:11:54 GMT+0800 frame 020 export png
+Sun Jul 12 2026 03:11:54 GMT+0800 frame 020 done
+Sun Jul 12 2026 03:11:54 GMT+0800 frame 021 begin
+Sun Jul 12 2026 03:12:02 GMT+0800 frame 021 export png
+Sun Jul 12 2026 03:12:02 GMT+0800 frame 021 done
+Sun Jul 12 2026 03:12:02 GMT+0800 frame 022 begin
+Sun Jul 12 2026 03:12:09 GMT+0800 frame 022 export png
+Sun Jul 12 2026 03:12:10 GMT+0800 frame 022 done
+Sun Jul 12 2026 03:12:10 GMT+0800 frame 023 begin
+Sun Jul 12 2026 03:12:17 GMT+0800 frame 023 export png
+Sun Jul 12 2026 03:12:18 GMT+0800 frame 023 done
+Sun Jul 12 2026 03:12:18 GMT+0800 frame 024 begin
+Sun Jul 12 2026 03:12:23 GMT+0800 frame 024 export png
+Sun Jul 12 2026 03:12:25 GMT+0800 frame 024 done
+Sun Jul 12 2026 03:12:25 GMT+0800 frame 025 begin
+Sun Jul 12 2026 03:12:30 GMT+0800 frame 025 export png
+Sun Jul 12 2026 03:12:31 GMT+0800 frame 025 done
+Sun Jul 12 2026 03:12:31 GMT+0800 frame 026 begin
+Sun Jul 12 2026 03:12:37 GMT+0800 frame 026 export png
+Sun Jul 12 2026 03:12:38 GMT+0800 frame 026 done
+Sun Jul 12 2026 03:12:38 GMT+0800 render complete
+Sun Jul 12 2026 03:12:38 GMT+0800 ERROR 引用错误: app.quit 不是函数 line=28

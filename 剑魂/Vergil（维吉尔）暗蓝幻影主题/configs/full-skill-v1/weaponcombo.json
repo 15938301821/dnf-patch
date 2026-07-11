@@ -1,0 +1,53 @@
+{
+    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+    "schemaVersion":  1,
+    "themeId":  "weaponmaster-vergil-dark-blue",
+    "sourceNpk":  {
+                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_weaponcombo.NPK",
+                      "sha256":  "FFC3D30092E9460A1E7C2F545DDC04AE49C881D0BF559D781A7A2FC7C5F74F79",
+                      "length":  978913
+                  },
+    "output":  {
+                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-weaponcombo-v1.NPK",
+                   "buildSummaryPath":  "../../validation/full-skill-v1/components/weaponcombo/build-summary.json"
+               },
+    "allowedImgPaths":  [
+                            "sprite/character/swordman/effect/weaponcombo/regi_frame_blade01.img",
+                            "sprite/character/swordman/effect/weaponcombo/regi_frame_blade02.img",
+                            "sprite/character/swordman/effect/weaponcombo/sword_light_glow_under.img",
+                            "sprite/character/swordman/effect/weaponcombo/sword_light_glow_upper.img",
+                            "sprite/character/swordman/effect/weaponcombo/sword_light_motionblur_under.img",
+                            "sprite/character/swordman/effect/weaponcombo/sword_light_motionblur_upper.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_beam.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_club.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_club_new.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_katana.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_katana_plus01.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_ls.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_ls_wind.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_ss.img",
+                            "sprite/character/swordman/effect/weaponcombo/ura_ss_plus.img",
+                            "sprite/character/swordman/effect/weaponcombo/windb001.img",
+                            "sprite/character/swordman/effect/weaponcombo/windb002.img",
+                            "sprite/character/swordman/effect/weaponcombo/windb003.img",
+                            "sprite/character/swordman/effect/weaponcombo/windb004.img",
+                            "sprite/character/swordman/effect/weaponcombo/windb005.img"
+                        ],
+    "excludedFrameKeys":  [
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_under.img#11",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_under.img#12",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_under.img#18",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_under.img#3",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_under.img#4",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_under.img#5",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_under.img#7",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_upper.img#0",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_upper.img#1",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_upper.img#10",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_upper.img#2",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_upper.img#6",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_upper.img#8",
+                              "sprite/character/swordman/effect/weaponcombo/sword_light_glow_upper.img#9",
+                              "sprite/character/swordman/effect/weaponcombo/windb003.img#12"
+                          ]
+}

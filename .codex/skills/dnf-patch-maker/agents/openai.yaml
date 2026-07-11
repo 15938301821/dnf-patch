@@ -1,0 +1,4 @@
+interface:
+  display_name: "DNF NPK 通用补丁生成"
+  short_description: "逐帧重绘、构建、验证并闭环发布 DNF NPK/IMG 视觉补丁"
+  default_prompt: "使用 $dnf-patch-maker 按当前仓库规则盘点、逐帧重绘、构建、验证并闭环发布 DNF 视觉补丁，未经明确授权不要部署。"
