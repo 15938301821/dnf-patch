@@ -27,7 +27,7 @@
 8. 部署目标与回滚路径。
 9. 待目标客户端验证项。
 
-逐帧重绘任务还必须记录 source inventory、redraw run plan、逐帧 attempt、模型/适配器/包装器 provenance、generated/edited/runtime 哈希清单、Photoshop 适配说明、配置漂移计数和时序验收结果。
+逐帧重绘任务还必须记录 source inventory、redraw run plan、逐帧 attempt、模型/适配器/包装器 provenance、Aseprite 可执行文件与 API 能力证据、generated/分层工程/runtime 哈希清单、Aseprite 适配说明、工程重开与像素等价结果、配置漂移计数和时序验收结果。
 
 ## 五、两阶段发布闭环
 

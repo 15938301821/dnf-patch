@@ -507,7 +507,15 @@ Assert-Condition -Condition ($resourcePlanValidators.Count -eq 1) `
     -Message "Final summary must contain exactly one resource-plan-validator; found $($resourcePlanValidators.Count)."
 $resourcePlanValidatorPath = Resolve-ExistingFile -Value ([string]$resourcePlanValidators[0].path) `
     -BaseDirectory $summaryDirectory -Label 'Resource-plan validator'
-$resourcePlanGateText = & $resourcePlanValidatorPath -ResourcePlanPath $manifestPlan.path | Out-String
+$resourcePlanValidatorCommand = Get-Command -LiteralPath $resourcePlanValidatorPath -ErrorAction Stop
+$resourcePlanValidatorArguments = @{ ResourcePlanPath = $manifestPlan.path }
+if ($resourcePlanValidatorCommand.Parameters.ContainsKey('RepoRoot')) {
+    $resourcePlanValidatorArguments.RepoRoot = $script:RepositoryRoot
+}
+if ($resourcePlanValidatorCommand.Parameters.ContainsKey('AsJson')) {
+    $resourcePlanValidatorArguments.AsJson = $true
+}
+$resourcePlanGateText = & $resourcePlanValidatorPath @resourcePlanValidatorArguments | Out-String
 Assert-Condition -Condition (-not [string]::IsNullOrWhiteSpace($resourcePlanGateText)) `
     -Message 'Resource-plan validator returned no result.'
 $resourcePlanGate = $resourcePlanGateText | ConvertFrom-Json

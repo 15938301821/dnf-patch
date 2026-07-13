@@ -70,3 +70,25 @@
 - 个人模型端点、密钥、机器绝对路径和可写 `ImagePacks2` 的配置不进入仓库通用 skill 或共享配置。
 
 带职业或主题名称的 builder/图像脚本属于领域工具，只能通过对应职业/主题规则发现，不能登记为通用默认链。
+
+## 十、项目本地 Aseprite
+
+`tools/Import-DnfAseprite.ps1`
+
+- 从用户提供的工作区外授权安装目录导入完整 Aseprite 运行目录到被忽略的版本/哈希槽位。
+- 导入前后复核版本、SHA-256、签名策略和真实 API 能力；商业二进制不得提交或随项目分发。
+
+`tools/Test-DnfAsepriteApi.lua` 与 `Test-DnfAsepriteApiCapability()`
+
+- 实际执行 `Image.context`、路径绘制、裁切、缩放、图层、混合模式、工程/PNG 保存、重开和像素等价检查。
+- 活动 Cut-in 要求 Aseprite API 30 或更高；仅有 `--version` 输出不能通过门禁。
+
+`tools/Test-DnfLocalToolchain.ps1`
+
+- 只读检查本地配置、只读 DNF 源、ExtractorSharp、DirectXTex、Aseprite 和系统前置条件。
+- 不带 `-RequireAseprite` 时，尚未导入会明确报告 `partial-aseprite-not-imported`；活动栅格编辑和发布迁移必须使用 `-RequireAseprite`。
+
+`tools/Export-SakuraPreview.ps1`
+
+- 从冻结联系表经 Aseprite 批量导出新的版本化 PNG，并记录输入、输出、脚本、可执行文件和 API 能力 provenance。
+- 只生成主题工作区预览，不构建 NPK、不部署，也不覆盖历史 Photoshop 预览。

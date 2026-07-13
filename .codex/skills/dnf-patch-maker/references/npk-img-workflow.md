@@ -21,8 +21,9 @@
 
 1. 从 inventory 导出并冻结 source 帧及结构 sidecar，不按显示名猜目录或帧序。
 2. 使用新的 runId 建立运行计划，记录分组、模型/适配器、Prompt 哈希、每帧 seed、输入输出尺寸和外部工具 provenance。
-3. 把原始生成、Photoshop 适配和 runtime 输入分目录保存；生成服务不得直接写 NPK。
-4. runtime 帧逐项满足目标 handler 的尺寸、alpha、色彩和载荷输入契约后，才进入构建。
+3. 把原始生成、Aseprite 分层工程和 runtime 输入分目录保存；生成服务与 Aseprite 脚本不得直接写 NPK。
+4. Aseprite 活动入口先通过固定版本/SHA-256 解析和真实 API 能力探针；工程重开后导出的 runtime 帧逐项满足目标 handler 的尺寸、alpha、色彩和载荷输入契约后，才进入构建。
+5. Aseprite 不编码 DDS/BC，也不决定 Sprite/Texture 声明；需要压缩时仍使用经验证的 DirectXTex 并独立检查载荷。
 
 ## 四、构建
 

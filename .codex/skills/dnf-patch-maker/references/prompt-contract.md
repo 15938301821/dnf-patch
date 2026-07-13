@@ -66,7 +66,7 @@
 - 显示名映射未核验时，不加载猜测的逐技能 Prompt。只能组合源帧语义、职业/主题规则中与具体名称无关的共同约束，以及 manifest 独立授权的允许变化。
 - 合成顺序固定为“源帧几何与分类 -> 已核验职业语义 -> 已核验主题增量”。任何 Prompt 都不能新增 IMG、帧、人物层、武器、Cut-in、阶段或部署权限。
 - Negative Prompt 只约束新生成的视觉增量，不删除源资源合法的人物、背景、UI、文字、黑色 RGB、透明占位或加色层。
-- AI 输出标记为概念素材；回灌前仍须在 Photoshop CC 2018 中按源几何、时序、alpha 和构图适配。
+- AI 输出标记为概念素材；回灌前仍须在项目本地 Aseprite 中按源几何、时序、alpha 和构图适配，保存分层工程并导出经验证的 runtime PNG。
 - 修改职业或主题 Prompt 后运行 `tools/Test-DnfPromptTree.ps1`；发布前由 `tools/Test-DnfProjectGate.ps1` 复核全部职业/主题 Prompt 树。
 
 ## 四、索引固定结构

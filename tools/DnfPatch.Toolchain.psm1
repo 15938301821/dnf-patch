@@ -191,6 +191,67 @@ function Resolve-DnfAsepriteExecutable {
     return (Resolve-Path -LiteralPath $resolved).Path
 }
 
+function Test-DnfAsepriteApiCapability {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Executable,
+
+        [string]$RepositoryRoot = (Get-DnfPatchRepositoryRoot),
+
+        [string]$ProbeScriptPath
+    )
+
+    $resolvedExecutable = (Resolve-Path -LiteralPath $Executable).Path
+    if ([string]::IsNullOrWhiteSpace($ProbeScriptPath)) {
+        $ProbeScriptPath = Join-Path $RepositoryRoot 'tools\Test-DnfAsepriteApi.lua'
+    }
+    $resolvedProbe = (Resolve-Path -LiteralPath $ProbeScriptPath).Path
+    $probeRoot = Join-Path $RepositoryRoot 'tools\bin\aseprite'
+    New-Item -ItemType Directory -Path $probeRoot -Force | Out-Null
+    $probeDirectory = Join-Path $probeRoot ('.api-probe-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $probeDirectory | Out-Null
+
+    try {
+        $arguments = @(
+            '--batch',
+            '--script-param', ('outputDirectory=' + $probeDirectory),
+            '--script', $resolvedProbe
+        )
+        $probeOutput = & $resolvedExecutable $arguments 2>&1 | Out-String
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            throw "Aseprite API capability probe failed with exit code ${exitCode}: $probeOutput"
+        }
+        if ($probeOutput -notmatch '(?m)^AsepriteApiProbe=passed\s*$') {
+            throw "Aseprite API capability probe did not emit its success marker: $probeOutput"
+        }
+        $apiMatch = [regex]::Match($probeOutput, '(?m)^AsepriteApiVersion=(\d+)\s*$')
+        $minimumMatch = [regex]::Match($probeOutput, '(?m)^AsepriteMinimumApiVersion=(\d+)\s*$')
+        $featuresMatch = [regex]::Match($probeOutput, '(?m)^AsepriteProbeFeatures=([^\r\n]+)\s*$')
+        if (-not $apiMatch.Success -or -not $minimumMatch.Success -or -not $featuresMatch.Success) {
+            throw "Aseprite API capability probe output is incomplete: $probeOutput"
+        }
+        $apiVersion = [int]$apiMatch.Groups[1].Value
+        $minimumApiVersion = [int]$minimumMatch.Groups[1].Value
+        if ($apiVersion -lt $minimumApiVersion -or $minimumApiVersion -ne 30) {
+            throw "Aseprite API capability mismatch: actual=$apiVersion required=$minimumApiVersion"
+        }
+
+        return [pscustomobject]@{
+            status = 'passed'
+            apiVersion = $apiVersion
+            minimumApiVersion = $minimumApiVersion
+            features = @($featuresMatch.Groups[1].Value.Split(','))
+            probeScript = Get-DnfFileSnapshot -Path $resolvedProbe
+        }
+    }
+    finally {
+        if (Test-Path -LiteralPath $probeDirectory) {
+            Remove-Item -LiteralPath $probeDirectory -Recurse -Force
+        }
+    }
+}
+
 function Resolve-DnfSourceNpk {
     param(
         [Parameter(Mandatory = $true)]
@@ -237,6 +298,7 @@ Export-ModuleMember -Function @(
     'Resolve-DnfExtractorDirectory',
     'Resolve-DnfDirectXTexTool',
     'Resolve-DnfAsepriteExecutable',
+    'Test-DnfAsepriteApiCapability',
     'Resolve-DnfSourceNpk',
     'Get-DnfFileSnapshot'
 )

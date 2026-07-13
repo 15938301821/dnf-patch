@@ -1,28 +1,27 @@
 {
-    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
-    "schemaVersion":  1,
-    "themeId":  "weaponmaster-vergil-dark-blue",
-    "sourceNpk":  {
-                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_chargecrash.NPK",
-                      "sha256":  "A565AA971CF8958C81AD6499ED2B02E3C299C9C6732B47CC944F5413EF5408FE",
-                      "length":  183619
-                  },
-    "output":  {
-                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-chargecrash-v1.NPK",
-                   "buildSummaryPath":  "../../validation/full-skill-v1/components/chargecrash/build-summary.json"
-               },
-    "allowedImgPaths":  [
-                            "sprite/character/swordman/effect/chargecrash/charge.img",
-                            "sprite/character/swordman/effect/chargecrash/damage-back.img",
-                            "sprite/character/swordman/effect/chargecrash/damage-front.img",
-                            "sprite/character/swordman/effect/chargecrash/dash.img",
-                            "sprite/character/swordman/effect/chargecrash/down-slash.img",
-                            "sprite/character/swordman/effect/chargecrash/dustdash.img",
-                            "sprite/character/swordman/effect/chargecrash/dustdashlast.img",
-                            "sprite/character/swordman/effect/chargecrash/fire_dodge.img",
-                            "sprite/character/swordman/effect/chargecrash/sub_dodge.img",
-                            "sprite/character/swordman/effect/chargecrash/up-slash.img"
-                        ],
-    "excludedFrameKeys":  [
-                          ]
+  "$schema": "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+  "schemaVersion": 1,
+  "themeId": "weaponmaster-vergil-dark-blue",
+  "sourceNpk": {
+    "path": "G:/Program Files (x86)/dnfCopy/地下城与勇士-补丁制作引用源码/ImagePacks2/sprite_character_swordman_effect_chargecrash.NPK",
+    "sha256": "A565AA971CF8958C81AD6499ED2B02E3C299C9C6732B47CC944F5413EF5408FE",
+    "length": 183619
+  },
+  "output": {
+    "componentNpkPath": "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-chargecrash-v1.NPK",
+    "buildSummaryPath": "../../validation/full-skill-v1/components/chargecrash/build-summary.json"
+  },
+  "allowedImgPaths": [
+    "sprite/character/swordman/effect/chargecrash/charge.img",
+    "sprite/character/swordman/effect/chargecrash/damage-back.img",
+    "sprite/character/swordman/effect/chargecrash/damage-front.img",
+    "sprite/character/swordman/effect/chargecrash/dash.img",
+    "sprite/character/swordman/effect/chargecrash/down-slash.img",
+    "sprite/character/swordman/effect/chargecrash/dustdash.img",
+    "sprite/character/swordman/effect/chargecrash/dustdashlast.img",
+    "sprite/character/swordman/effect/chargecrash/fire_dodge.img",
+    "sprite/character/swordman/effect/chargecrash/sub_dodge.img",
+    "sprite/character/swordman/effect/chargecrash/up-slash.img"
+  ],
+  "excludedFrameKeys": []
 }

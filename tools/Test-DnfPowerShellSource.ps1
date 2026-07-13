@@ -65,14 +65,14 @@ $strictUtf8 = New-Object System.Text.UTF8Encoding($false, $true)
 $issues = New-Object System.Collections.Generic.List[object]
 
 $item = Get-Item -LiteralPath $scanRoot
-$files = if ($item -is [IO.FileInfo]) {
-    @($item)
+$files = @(if ($item -is [IO.FileInfo]) {
+    $item
 }
 else {
-    @(Get-ChildItem -LiteralPath $scanRoot -Recurse -File | Where-Object {
+    Get-ChildItem -LiteralPath $scanRoot -Recurse -File | Where-Object {
         $_.Extension -in @('.ps1', '.psm1', '.psd1')
-    } | Sort-Object FullName)
-}
+    } | Sort-Object FullName
+})
 
 $asciiFileCount = 0
 $utf8BomFileCount = 0

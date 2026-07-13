@@ -1,27 +1,27 @@
 {
-    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
-    "schemaVersion":  1,
-    "themeId":  "weaponmaster-vergil-dark-blue",
-    "sourceNpk":  {
-                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_momentaryslash.NPK",
-                      "sha256":  "B1B0758EC8D958547E3184F9482E83ED4128C8513609E367B6CF3D287CE6B105",
-                      "length":  223755
-                  },
-    "output":  {
-                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-momentaryslash-v1.NPK",
-                   "buildSummaryPath":  "../../validation/full-skill-v1/components/momentaryslash/build-summary.json"
-               },
-    "allowedImgPaths":  [
-                            "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_under.img",
-                            "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_upper.img",
-                            "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_under.img",
-                            "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_upper.img",
-                            "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_under.img",
-                            "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_upper.img"
-                        ],
-    "excludedFrameKeys":  [
-                              "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_upper.img#0",
-                              "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_upper.img#0",
-                              "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_upper.img#0"
-                          ]
+  "$schema": "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+  "schemaVersion": 1,
+  "themeId": "weaponmaster-vergil-dark-blue",
+  "sourceNpk": {
+    "path": "G:/Program Files (x86)/dnfCopy/地下城与勇士-补丁制作引用源码/ImagePacks2/sprite_character_swordman_effect_momentaryslash.NPK",
+    "sha256": "B1B0758EC8D958547E3184F9482E83ED4128C8513609E367B6CF3D287CE6B105",
+    "length": 223755
+  },
+  "output": {
+    "componentNpkPath": "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-momentaryslash-v1.NPK",
+    "buildSummaryPath": "../../validation/full-skill-v1/components/momentaryslash/build-summary.json"
+  },
+  "allowedImgPaths": [
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_under.img",
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_upper.img",
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_under.img",
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_upper.img",
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_under.img",
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_upper.img"
+  ],
+  "excludedFrameKeys": [
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_blue_ldodge_upper.img#0",
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_red_ldodge_upper.img#0",
+    "sprite/character/swordman/effect/momentaryslash/drawingsword_white_ldodge_upper.img#0"
+  ]
 }

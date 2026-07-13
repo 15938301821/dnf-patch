@@ -29,13 +29,13 @@
 5. Prompt、Negative Prompt 及其 SHA-256；逐技能 Prompt 仍受显示名映射门禁约束。
 6. seed 策略以及每帧实际 seed。重试必须产生新 attempt 记录，不能覆盖失败结果。
 7. 外部入口身份、版本、命令或 URL 的非敏感标识、超时和网络需求。
-8. 原始生成目录、Photoshop 适配目录、运行帧目录和报告目录。
+8. 原始生成目录、Aseprite 分层工程目录、运行帧目录和报告目录。
 
 同一动作组默认固定模型、适配器、采样器、分辨率、控制参数和 Prompt 哈希。允许逐帧改变的字段必须在计划中列明。共享 seed 可以作为时序一致性策略，但不是硬编码要求，也不能证明没有闪烁；确定性要求的是每帧实际参数可复现。
 
 ControlNet、Canny、Lineart 或 LoRA 均为可选实现。只有来源、授权和模型身份可追踪，且不会越过人物/特效/Cut-in 边界时才可使用。不得把特定模型、端口、工作流或本机路径写成项目通用必需项。
 
-## 四、目录隔离与 Photoshop 适配
+## 四、目录隔离与 Aseprite 适配
 
 仅在对应工作流真实使用时建立以下分层，目录名可由主题规则进一步约束：
 
@@ -49,11 +49,18 @@ validation/<run-id>/redraw/
 
 - `source`：从只读 NPK 导出的不可变证据。
 - `generated`：外部生成服务的原始结果，不得直接回灌。
-- `edited`：Photoshop CC 2018 非破坏适配与人工精修结果。
+- `edited`：Aseprite 分层 `.aseprite` 工程与人工精修结果。
 - `runtime`：按目标 handler 导入契约导出的最终 PNG 或纹理输入。
 - `validation`：运行计划、逐帧记录、哈希、异常和时序验收。
 
-外部生成不得覆盖任何已有文件。每次 attempt 使用新路径。Photoshop 适配必须恢复源帧所需的尺寸、Canvas/偏移语义、alpha、边缘和构图；不能统一采用 `256x256`、`512x512`、`1024x1024`、透明背景、居中或无人物。mipmap、Sprite/Texture 类型和压缩方式由源 IMG 与目标 handler 决定，不得统一关闭或转换。
+外部生成不得覆盖任何已有文件。每次 attempt 使用新路径。Aseprite 适配必须恢复源帧所需的尺寸、Canvas/偏移语义、alpha、边缘和构图；不能统一采用 `256x256`、`512x512`、`1024x1024`、透明背景、居中或无人物。mipmap、Sprite/Texture 类型和压缩方式由源 IMG 与目标 handler 决定，不得统一关闭或转换。
+
+Aseprite 使用以下活动门禁：
+
+- 授权二进制只导入被忽略的 `tools/bin/aseprite/<version-hash-slot>/`，不提交、不分发；解析入口绑定 `current.json` 或显式路径中的版本、长度和 SHA-256。
+- `--version` 不构成脚本兼容证明。任何活动 Lua 在写输出前必须通过 `tools/Test-DnfAsepriteApi.lua` 的真实 API 探针；使用 `Image.context` 的流程最低要求 API 30。
+- 每个 runtime PNG 必须绑定唯一分层工程、源帧和 run plan 记录；工程从磁盘重开后再次导出或合成的像素必须与已记录 runtime 输出一致。
+- Aseprite 只处理分层栅格和 PNG。DDS/BC 编码、Sprite/Texture 声明、IMG/NPK 写入与客户端兼容仍由 DirectXTex、目标版本 handler 和独立验证器证明。
 
 ## 五、外部适配器与 MCP 边界
 
@@ -88,7 +95,8 @@ validation/<run-id>/redraw/
 - redraw run plan 与逐帧 attempt summary；
 - 模型、适配器与外部包装器 provenance；
 - generated、edited、runtime 的逐帧哈希清单；
-- Photoshop 适配说明；
+- Aseprite 可执行文件、API 能力探针与适配说明；
+- 分层工程重开、runtime PNG 和像素等价证据；
 - 配置漂移、缺帧、重帧、错序和时序异常计数；
 - 未完成的人工时序检查与目标客户端 A/B 项。
 

@@ -45,17 +45,30 @@ $directXTexFiles = foreach ($path in @($texconv, $texdiag)) {
 }
 
 $asepriteRecord = if ($null -ne $aseprite) {
-    $snapshot = Get-DnfFileSnapshot -Path $aseprite
-    $versionOutput = (& $aseprite --version 2>&1 | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) {
-        throw "Aseprite --version failed: $versionOutput"
+    try {
+        $snapshot = Get-DnfFileSnapshot -Path $aseprite
+        $versionOutput = (& $aseprite --version 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            throw "Aseprite --version failed: $versionOutput"
+        }
+        $capability = Test-DnfAsepriteApiCapability -Executable $aseprite -RepositoryRoot $repoRoot
+        [pscustomobject]@{
+            available = $true
+            path = $snapshot.path
+            version = $versionOutput
+            length = $snapshot.length
+            sha256 = $snapshot.sha256
+            apiCapability = $capability
+        }
     }
-    [pscustomobject]@{
-        available = $true
-        path = $snapshot.path
-        version = $versionOutput
-        length = $snapshot.length
-        sha256 = $snapshot.sha256
+    catch {
+        if ($RequireAseprite) {
+            throw
+        }
+        [pscustomobject]@{
+            available = $false
+            reason = $_.Exception.Message
+        }
     }
 }
 else {

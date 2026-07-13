@@ -1,8 +1,14 @@
 # Vergil（维吉尔）暗蓝幻影主题
 
-## 当前发布
+## 当前活动状态
 
-当前 manifest 已证明范围的 v1 定制 NPK 已完成离线发布门禁，状态为 `offline-validated-client-pending`，`fullSkillCoverageProven=true`：
+活动图像编辑契约已迁移到项目本地 Aseprite。当前机器尚未导入合法 Aseprite，帧 3–26 的 24 个分层工程、24 个 runtime PNG、新 Cut-in NPK、活动聚合包和新 final summary 均未生成，因此活动状态为门禁阻断，`fullSkillCoverageProven=false`。
+
+DNF 源通过仓库根的忽略型本地配置解析，官方 `ImagePacks2` 始终只读。ExtractorSharp 与 DirectXTex 已使用项目本地入口；Aseprite 必须由用户从工作区外导入授权副本，项目不提交或分发其二进制。
+
+## 历史 v1 发布
+
+旧契约下的 manifest-scope v1 定制 NPK 已完成当时的离线发布门禁，历史状态为 `offline-validated-client-pending`、历史 `fullSkillCoverageProven=true`：
 
     npk\full-skill-v1\weaponmaster-vergil-dark-blue-manifest-scope-v1.NPK
 
@@ -12,7 +18,7 @@
 - 最终验证摘要：`validation\full-skill-v1\final-v3\final-validation-summary.json`。
 - package summary：`validation\full-skill-v1\package-v1\package-summary-v1.json`。
 
-这里的“完整覆盖”严格限定为当前 manifest 已证明的男鬼剑剑魂视觉资源范围：28 个技术根、31 个显式选择组件、417 个组件 IMG，以及唯一获准的 `cutin_weaponmaster_neo.img`，最终共 418 个 IMG、3822 帧。它不把零匹配 Replay 名称猜成资源别名，也不证明中文 Prompt 显示名逐项映射、客户端加载优先级或目标客户端兼容。
+这里的历史“完整覆盖”严格限定为旧 final summary 当时证明的男鬼剑剑魂视觉资源范围：28 个技术根、31 个显式选择组件、417 个组件 IMG，以及唯一获准的 `cutin_weaponmaster_neo.img`，最终共 418 个 IMG、3822 帧。它不把零匹配 Replay 名称猜成资源别名，也不证明中文 Prompt 显示名逐项映射、客户端加载优先级或目标客户端兼容，更不能授权当前 Aseprite 契约下的新发布。
 
 ## 变化与保留
 
@@ -25,26 +31,30 @@
 
 共同色板仍为 `#0A1633`、`#1A8FFF`、`#00D4FF`、`#FFFFFF`。三觉 Cut-in 只聚合 `sprite/character/swordman/effect/cutin/cutin_weaponmaster_neo.img`；`#3-26` 为变化帧，`#0-2` 为 1x1 透明占位，原 Cut-in 包另外 25 个 IMG 不进入最终定制 NPK。
 
-## 构建
+## Aseprite 活动链
 
-先在仓库根目录运行资源计划门禁：
+从工作区外导入合法 Aseprite，并运行版本、SHA-256 与真实 API 30 能力门禁：
 
-    & '.\tools\Test-VergilResourcePlan.ps1' -ResourcePlanPath '.\剑魂\Vergil（维吉尔）暗蓝幻影主题\configs\full-skill-v1\resource-plan-v2.json'
+    & '.\tools\Import-DnfAseprite.ps1' -SourceDirectory '<合法 Aseprite 安装目录>'
+    & '.\tools\Test-DnfLocalToolchain.ps1' -RequireAseprite
 
-需要从已验证组件生成新版本时，必须使用新的版本化输出和摘要路径，不能覆盖 v1：
+使用同一个 `RunId` 渲染并构建 Cut-in；两个入口均拒绝覆盖已有路径：
 
-    $plan = Get-Content '.\剑魂\Vergil（维吉尔）暗蓝幻影主题\configs\full-skill-v1\resource-plan-v2.json' -Raw -Encoding UTF8 | ConvertFrom-Json
-    $components = @($plan.components | Where-Object { $_.selectedForAggregation -eq $true })
-    $reuse = @($plan.reuseComponents | Where-Object { $_.requiredForFinalAggregation -eq $true })
-    $sources = @($components | ForEach-Object { Join-Path $PWD $_.output.componentNpkPath }) + @((Join-Path $PWD $reuse[0].sourceComponent.path))
-    $imgs = @($components | ForEach-Object { $_.selectedImgPaths }) + @($reuse[0].selectedImgPaths)
-    & '.\tools\New-DnfCustomNpk.ps1' -SourceNpk $sources -IncludeImgPath $imgs -OutputPath '<新的版本化 NPK 路径>' -SummaryPath '<新的 package summary JSON 路径>'
+    $runId = 'cutin-weaponmaster-neo-aseprite-v1'
+    & '.\剑魂\Vergil（维吉尔）暗蓝幻影主题\tools\Render-CutinWeaponmasterNeoVergil.ps1' -RunId $runId
+    & '.\剑魂\Vergil（维吉尔）暗蓝幻影主题\tools\Build-VergilCutinWeaponmasterNeo.ps1' -RunId $runId
 
-封装器按原始 payload 聚合，不重新编码 IMG；输入必须保持 32 个唯一源 NPK 和 418 个唯一 IMG 路径。
+渲染阶段输出 `frames\edited\<RunId>\aseprite`、`frames\runtime\<RunId>\png` 和 `validation\<RunId>\render-summary.json`。构建阶段只接受该摘要绑定的 runtime PNG，并输出 `npk\<RunId>` 与 `validation\build-<RunId>`。Aseprite 不编码 DDS/BC；BC3、Ver5 和 NPK 门禁仍由 DirectXTex、实际 handler、texdiag 与独立索引完成。
 
-## 验证
+当前活动资源计划为 `configs\full-skill-v1\resource-plan-v4.json`。它继承 31 个历史组件证据，但停用历史 Cut-in v2 复用项，并在 Aseprite 与新 Cut-in 证据齐全前保持阻断。活动计划门禁：
 
-v1 已通过以下门禁：
+    & '.\tools\Test-VergilAsepriteMigrationPlan.ps1' -ResourcePlanPath '.\剑魂\Vergil（维吉尔）暗蓝幻影主题\configs\full-skill-v1\resource-plan-v4.json'
+
+只有计划返回 `ReadyForAggregation=true` 后，才可在新的版本化路径聚合 31 个组件与新 Cut-in，并使用新的活动最终验证入口写入新的空目录。不得覆盖历史 v1 package、final 或 release 证据。
+
+## 历史验证
+
+历史 v1 已通过以下门禁：
 
 - 独立 PowerShell/.NET NPK 索引：418 条目、418 唯一路径、头部 SHA-256 与 IMG magic 全部有效。
 - package summary、最终 NPK 与 32 个组件来源逐 IMG payload 长度和 SHA-256 一致。
@@ -53,9 +63,7 @@ v1 已通过以下门禁：
 - 生成 15 张覆盖全帧的黑、白、棋盘联系表；已人工抽查 `frames-0001.png`、`frames-0008.png`、`frames-0015.png`，未见空白页、意外整画布黑帧或布局异常。
 - Cut-in 目标联系表未见参考图水印，源几何、Canvas、偏移和 3 个透明占位保持。
 
-复核现有 v1 时必须使用新的空验证目录，避免混入旧证据：
-
-    & '.\tools\Test-VergilFullSkillRelease.ps1' -ResourcePlanPath '.\剑魂\Vergil（维吉尔）暗蓝幻影主题\configs\full-skill-v1\resource-plan-v2.json' -FinalNpk '.\剑魂\Vergil（维吉尔）暗蓝幻影主题\npk\full-skill-v1\weaponmaster-vergil-dark-blue-manifest-scope-v1.NPK' -PackageSummaryPath '.\剑魂\Vergil（维吉尔）暗蓝幻影主题\validation\full-skill-v1\package-v1\package-summary-v1.json' -OutputDirectory '<新的空验证目录>' -ExtractorDirectory 'G:\Program Files\ExtractorSharp'
+旧 final summary、package、release 和资源计划保持不可变。当前总门禁只校验这些历史文件及产物的引用完整性，不把旧根规则哈希或旧 Photoshop Cut-in 证据提升为当前 Aseprite 契约。
 
 ## 部署与回滚
 

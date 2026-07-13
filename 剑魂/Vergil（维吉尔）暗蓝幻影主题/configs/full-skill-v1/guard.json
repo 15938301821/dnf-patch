@@ -1,23 +1,23 @@
 {
-    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
-    "schemaVersion":  1,
-    "themeId":  "weaponmaster-vergil-dark-blue",
-    "sourceNpk":  {
-                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_guard.NPK",
-                      "sha256":  "C53822F2454A736EF94CD5CA84805D8ED24976807AC0BD31740224B54134DC71",
-                      "length":  153052
-                  },
-    "output":  {
-                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-guard-v1.NPK",
-                   "buildSummaryPath":  "../../validation/full-skill-v1/components/guard/build-summary.json"
-               },
-    "allowedImgPaths":  [
-                            "sprite/character/swordman/effect/guard/guard_attack_ldodge.img",
-                            "sprite/character/swordman/effect/guard/guard_attack_none.img",
-                            "sprite/character/swordman/effect/guard/guard_ldodge.img",
-                            "sprite/character/swordman/effect/guard/guarddust.img"
-                        ],
-    "excludedFrameKeys":  [
-                              "sprite/character/swordman/effect/guard/guard_attack_none.img#0"
-                          ]
+  "$schema": "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+  "schemaVersion": 1,
+  "themeId": "weaponmaster-vergil-dark-blue",
+  "sourceNpk": {
+    "path": "G:/Program Files (x86)/dnfCopy/地下城与勇士-补丁制作引用源码/ImagePacks2/sprite_character_swordman_effect_guard.NPK",
+    "sha256": "C53822F2454A736EF94CD5CA84805D8ED24976807AC0BD31740224B54134DC71",
+    "length": 153052
+  },
+  "output": {
+    "componentNpkPath": "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-guard-v1.NPK",
+    "buildSummaryPath": "../../validation/full-skill-v1/components/guard/build-summary.json"
+  },
+  "allowedImgPaths": [
+    "sprite/character/swordman/effect/guard/guard_attack_ldodge.img",
+    "sprite/character/swordman/effect/guard/guard_attack_none.img",
+    "sprite/character/swordman/effect/guard/guard_ldodge.img",
+    "sprite/character/swordman/effect/guard/guarddust.img"
+  ],
+  "excludedFrameKeys": [
+    "sprite/character/swordman/effect/guard/guard_attack_none.img#0"
+  ]
 }

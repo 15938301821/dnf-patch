@@ -172,6 +172,8 @@ foreach ($jsonFile in $jsonFiles) {
 $promptValidator = Join-Path $repositoryRoot 'tools\Test-DnfPromptTree.ps1'
 $promptResults = New-Object System.Collections.Generic.List[object]
 $releaseResults = New-Object System.Collections.Generic.List[object]
+$historicalReleaseResults = New-Object System.Collections.Generic.List[object]
+$activityMigrationResults = New-Object System.Collections.Generic.List[object]
 $professionDirectories = @(Get-ChildItem -LiteralPath $repositoryRoot -Directory | Where-Object {
     (Test-Path -LiteralPath (Join-Path $_.FullName 'AGENTS.md') -PathType Leaf) -and
     (Test-Path -LiteralPath (Join-Path $_.FullName 'prompts\README.md') -PathType Leaf)
@@ -215,6 +217,37 @@ foreach ($profession in $professionDirectories) {
                 -Label "Release closure $($profession.Name)"
             $releaseResults.Add($releaseResult)
         }
+        if ($null -ne $manifest.PSObject.Properties['historicalFullSkillReleases'] -and
+            @($manifest.historicalFullSkillReleases).Count -gt 0) {
+            $historicalResult = Invoke-JsonValidator `
+                -ScriptPath (Join-Path $repositoryRoot 'tools\Test-DnfHistoricalReleaseIntegrity.ps1') `
+                -Arguments @{ ProfessionManifestPath = $manifestPath; RepoRoot = $repositoryRoot; AsJson = $true } `
+                -Label "Historical release integrity $($profession.Name)"
+            $historicalReleaseResults.Add($historicalResult)
+        }
+        if ($null -ne $manifest.PSObject.Properties['activityMigration']) {
+            $migration = $manifest.activityMigration
+            $manifestDirectory = Split-Path -Parent $manifestPath
+            $migrationValidator = [IO.Path]::GetFullPath((Join-Path $manifestDirectory `
+                ([string]$migration.validator).Replace('/', [IO.Path]::DirectorySeparatorChar)))
+            $migrationPlan = [IO.Path]::GetFullPath((Join-Path $manifestDirectory `
+                ([string]$migration.resourcePlan.path).Replace('/', [IO.Path]::DirectorySeparatorChar)))
+            $migrationResult = Invoke-JsonValidator `
+                -ScriptPath $migrationValidator `
+                -Arguments @{ ResourcePlanPath = $migrationPlan; RepoRoot = $repositoryRoot; AsJson = $true } `
+                -Label "Activity migration $($profession.Name)"
+            Assert-Condition -Condition ([string]$migrationResult.planId -eq [string]$migration.resourcePlan.planId) `
+                -Message "Activity migration planId mismatch: $($migrationResult.planId)/$($migration.resourcePlan.planId)"
+            Assert-Condition -Condition ($migrationResult.readyForAggregation -eq $migration.readyForAggregation) `
+                -Message "Activity migration readiness differs from the manifest: $($migrationResult.readyForAggregation)/$($migration.readyForAggregation)"
+            Assert-Condition -Condition ($migrationResult.fullSkillCoverageProven -eq $false -and
+                $migration.fullSkillCoverageProven -eq $false) `
+                -Message 'Activity migration must remain coverage=false before final release closure.'
+            Assert-Condition -Condition ($migrationResult.deployment -eq 'not-authorized-not-performed' -and
+                $migration.deployment.authorized -eq $false -and $migration.deployment.performed -eq $false) `
+                -Message 'Activity migration unexpectedly records deployment.'
+            $activityMigrationResults.Add($migrationResult)
+        }
     }
 }
 
@@ -236,6 +269,8 @@ if (Test-Path -LiteralPath $gitDirectory) {
 
 $promptArray = $promptResults.ToArray()
 $releaseArray = $releaseResults.ToArray()
+$historicalReleaseArray = $historicalReleaseResults.ToArray()
+$activityMigrationArray = $activityMigrationResults.ToArray()
 $skillArray = $skillResults.ToArray()
 $result = [pscustomobject]@{
     schemaVersion = 1
@@ -251,6 +286,10 @@ $result = [pscustomobject]@{
     promptTrees = $promptArray
     releaseClosureCount = $releaseArray.Count
     releases = $releaseArray
+    historicalReleaseGateCount = $historicalReleaseArray.Count
+    historicalReleases = $historicalReleaseArray
+    activityMigrationGateCount = $activityMigrationArray.Count
+    activityMigrations = $activityMigrationArray
     gitDiffCheck = $gitDiffCheck
 }
 

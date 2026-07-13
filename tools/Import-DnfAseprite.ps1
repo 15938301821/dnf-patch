@@ -34,6 +34,7 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($versionOutput)) {
     throw "Aseprite --version failed: $versionOutput"
 }
 $version = $versionOutput.Trim()
+$sourceCapability = Test-DnfAsepriteApiCapability -Executable $sourceExecutable -RepositoryRoot $repoRoot
 $sourceHash = (Get-FileHash -LiteralPath $sourceExecutable -Algorithm SHA256).Hash
 $safeVersion = [regex]::Replace($version, '[^A-Za-z0-9._-]+', '-')
 $slotName = $safeVersion + '-' + $sourceHash.Substring(0, 12).ToLowerInvariant()
@@ -71,6 +72,7 @@ else {
     }
 }
 
+$importedCapability = Test-DnfAsepriteApiCapability -Executable $slotExecutable -RepositoryRoot $repoRoot
 $slotSignature = Get-AuthenticodeSignature -LiteralPath $slotExecutable
 $provenance = [ordered]@{
     schemaVersion = 1
@@ -86,6 +88,10 @@ $provenance = [ordered]@{
         status = $slotSignature.Status.ToString()
         signer = if ($null -ne $slotSignature.SignerCertificate) { $slotSignature.SignerCertificate.Subject } else { $null }
     }
+    apiCapability = [ordered]@{
+        source = $sourceCapability
+        imported = $importedCapability
+    }
     redistribution = 'project-local ignored copy only; do not commit or distribute to third parties'
 }
 $provenancePath = Join-Path $slotPath 'provenance.json'
@@ -99,6 +105,8 @@ $current = [ordered]@{
     relativeExecutable = $relativeExecutable
     length = [long](Get-Item -LiteralPath $slotExecutable).Length
     sha256 = $sourceHash
+    apiVersion = [int]$importedCapability.apiVersion
+    minimumApiVersion = [int]$importedCapability.minimumApiVersion
     provenance = ($provenancePath.Substring($targetRoot.Length).TrimStart('\').Replace('\', '/'))
 }
 $currentPath = Join-Path $targetRoot 'current.json'
@@ -117,6 +125,7 @@ finally {
     status = 'passed'
     executable = $slotExecutable
     version = $version
+    apiVersion = [int]$importedCapability.apiVersion
     sha256 = $sourceHash
     currentManifest = $currentPath
     committed = $false

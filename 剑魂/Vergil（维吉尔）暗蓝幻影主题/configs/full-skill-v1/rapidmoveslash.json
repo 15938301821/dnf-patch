@@ -1,38 +1,38 @@
 {
-    "$schema":  "../../tools/vergil-ver5-dds-recolor.config.schema.json",
-    "schemaVersion":  1,
-    "themeId":  "weaponmaster-vergil-dark-blue",
-    "sourceNpk":  {
-                      "path":  "G:/Program Files (x86)/WeGameApps/地下城与勇士：创新世纪/ImagePacks2/sprite_character_swordman_effect_rapidmoveslash.NPK",
-                      "sha256":  "F506F48ADC5BB34F4F18EA5912531B156A7BF060448473B6CFFB229BFD983364",
-                      "length":  2239652
-                  },
-    "output":  {
-                   "componentNpkPath":  "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-rapidmoveslash-v1.NPK",
-                   "buildSummaryPath":  "../../validation/full-skill-v1/components/rapidmoveslash/build-summary.json"
-               },
-    "allowedImgPaths":  [
-                            "sprite/character/swordman/effect/rapidmoveslash/add_floor.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/add_line.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/add_smoke.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/dasha.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/dragonheada.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/dragonheadb.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/dragonheadc.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/dusta.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/dustb.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/face.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/m-02.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/s-01.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/s-02.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/shockshapea.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/speedlinea.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/swordtraila.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/swordtrailb.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/swordtrailc.img",
-                            "sprite/character/swordman/effect/rapidmoveslash/swordtraild.img"
-                        ],
-    "excludedFrameKeys":  [
-                              "sprite/character/swordman/effect/rapidmoveslash/shockshapea.img#5"
-                          ]
+  "$schema": "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+  "schemaVersion": 1,
+  "themeId": "weaponmaster-vergil-dark-blue",
+  "sourceNpk": {
+    "path": "G:/Program Files (x86)/dnfCopy/地下城与勇士-补丁制作引用源码/ImagePacks2/sprite_character_swordman_effect_rapidmoveslash.NPK",
+    "sha256": "F506F48ADC5BB34F4F18EA5912531B156A7BF060448473B6CFFB229BFD983364",
+    "length": 2239652
+  },
+  "output": {
+    "componentNpkPath": "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-rapidmoveslash-v1.NPK",
+    "buildSummaryPath": "../../validation/full-skill-v1/components/rapidmoveslash/build-summary.json"
+  },
+  "allowedImgPaths": [
+    "sprite/character/swordman/effect/rapidmoveslash/add_floor.img",
+    "sprite/character/swordman/effect/rapidmoveslash/add_line.img",
+    "sprite/character/swordman/effect/rapidmoveslash/add_smoke.img",
+    "sprite/character/swordman/effect/rapidmoveslash/dasha.img",
+    "sprite/character/swordman/effect/rapidmoveslash/dragonheada.img",
+    "sprite/character/swordman/effect/rapidmoveslash/dragonheadb.img",
+    "sprite/character/swordman/effect/rapidmoveslash/dragonheadc.img",
+    "sprite/character/swordman/effect/rapidmoveslash/dusta.img",
+    "sprite/character/swordman/effect/rapidmoveslash/dustb.img",
+    "sprite/character/swordman/effect/rapidmoveslash/face.img",
+    "sprite/character/swordman/effect/rapidmoveslash/m-02.img",
+    "sprite/character/swordman/effect/rapidmoveslash/s-01.img",
+    "sprite/character/swordman/effect/rapidmoveslash/s-02.img",
+    "sprite/character/swordman/effect/rapidmoveslash/shockshapea.img",
+    "sprite/character/swordman/effect/rapidmoveslash/speedlinea.img",
+    "sprite/character/swordman/effect/rapidmoveslash/swordtraila.img",
+    "sprite/character/swordman/effect/rapidmoveslash/swordtrailb.img",
+    "sprite/character/swordman/effect/rapidmoveslash/swordtrailc.img",
+    "sprite/character/swordman/effect/rapidmoveslash/swordtraild.img"
+  ],
+  "excludedFrameKeys": [
+    "sprite/character/swordman/effect/rapidmoveslash/shockshapea.img#5"
+  ]
 }

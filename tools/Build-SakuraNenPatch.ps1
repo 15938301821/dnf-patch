@@ -1,4 +1,7 @@
 ﻿param(
+    [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')]
+    [string]$RunId = 'sakura-program-recolor-v1',
+
     [string]$ImagePacks2,
 
     [string]$OutputFile,
@@ -13,22 +16,31 @@ Import-Module (Join-Path $PSScriptRoot 'DnfPatch.Toolchain.psm1') -Force
 $imagePacksPath = Resolve-DnfImagePacks2 -Path $ImagePacks2 -RepositoryRoot $projectRoot
 $extractorDir = Resolve-DnfExtractorDirectory -Path $ExtractorDirectory -RepositoryRoot $projectRoot
 $themeRoot = Join-Path $projectRoot '气功师（女）\樱花主题'
-$binDir = Join-Path $PSScriptRoot 'bin'
+$binDir = Join-Path $PSScriptRoot (Join-Path 'bin' ('sakura-nen-patch-build-' + $RunId))
 $sourceFile = Join-Path $PSScriptRoot 'Build-SakuraNenPatch.cs'
 $builder = Join-Path $binDir 'Build-SakuraNenPatch.exe'
 $compiler = 'C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe'
 $sourceLink = Join-Path $binDir 'ImagePacks2'
-$temporaryOutput = Join-Path $binDir 'sakura-nen-patch.npk'
+$buildToken = [Guid]::NewGuid().ToString('N')
+$temporaryOutput = Join-Path $binDir ("sakura-nen-patch-$buildToken.npk")
 $previousExactSecondFix = $env:SAKURA_EXACT_SECOND_FIX
 
 if ([string]::IsNullOrWhiteSpace($OutputFile)) {
     $outputName = if ($ExactSecondFix) {
-        '!!!女气功全技能-樱花粉-第二次修复原版.NPK'
+        'nenmaster-sakura-second-fix-reproduction-v1.NPK'
     }
     else {
-        '!!!女气功全技能-樱花粉.NPK'
+        'nenmaster-sakura-program-recolor-v1.NPK'
     }
-    $OutputFile = Join-Path (Join-Path $themeRoot 'npk') $outputName
+    $OutputFile = Join-Path $themeRoot (Join-Path 'npk' (Join-Path $RunId $outputName))
+}
+$outputPath = [IO.Path]::GetFullPath($OutputFile)
+$themePath = (Resolve-Path -LiteralPath $themeRoot).Path
+if (-not $outputPath.StartsWith($themePath + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Output must remain inside the Sakura theme workspace: $outputPath"
+}
+if (Test-Path -LiteralPath $outputPath) {
+    throw "Refusing to overwrite an existing versioned output: $outputPath"
 }
 
 New-Item -ItemType Directory -Path $binDir -Force | Out-Null
@@ -73,10 +85,10 @@ try {
         throw "Patch generation failed with exit code $LASTEXITCODE."
     }
 
-    $outputDirectory = Split-Path -Parent $OutputFile
+    $outputDirectory = Split-Path -Parent $outputPath
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
-    Move-Item -LiteralPath $temporaryOutput -Destination $OutputFile -Force
-    Write-Output "FinalOutput=$OutputFile"
+    Move-Item -LiteralPath $temporaryOutput -Destination $outputPath
+    Write-Output "FinalOutput=$outputPath"
 }
 finally {
     if ($null -eq $previousExactSecondFix) {
@@ -87,5 +99,8 @@ finally {
     }
     if (Test-Path -LiteralPath $sourceLink) {
         [IO.Directory]::Delete($sourceLink, $false)
+    }
+    if (Test-Path -LiteralPath $temporaryOutput -PathType Leaf) {
+        Remove-Item -LiteralPath $temporaryOutput -Force
     }
 }

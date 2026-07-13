@@ -57,9 +57,10 @@ Prompt 的中文稳定结构和合成规则见 [Prompt 契约](references/prompt
 3. 先按 IMG magic/version 选择 handler，再解释或写入帧结构。
 4. 保留所有未授权路径、帧序、几何、偏移、Hidden/LINK、图集、TextureVersion、旋转、共享关系和解码像素。
 5. 只有 manifest 已核验显示名映射时，才应用对应逐技能职业 Prompt 与主题增量；映射未核验时只使用源帧语义和 manifest 独立授权的主题共同规则。
-6. 涉及 AI 或外部生成服务时，先冻结源帧 inventory 和机器可读运行计划；分离 source、generated、edited、runtime，记录每帧实际配置与哈希，生成结果经 Photoshop CC 2018 适配后才可进入回灌。
+6. 涉及 AI 或外部生成服务时，先冻结源帧 inventory 和机器可读运行计划；分离 source、generated、edited、runtime，记录每帧实际配置与哈希。生成结果经项目本地 Aseprite 适配、保存分层 `.aseprite` 工程、导出 runtime PNG 并通过真实 API 能力与重开验证后才可进入回灌。
 7. 外部适配器默认最小权限、网络关闭且不能写游戏目录；不采用未经现场验证的 MCP、端口、模型端点、包装器或绝对路径配置。
-8. 临时产物通过全部门禁后，再原子更新最终工作区产物。
+8. Aseprite 只承担栅格编辑与 PNG 导出，不承担 DDS/BC 编码、IMG/NPK 封装或客户端兼容证明；压缩和封装继续由经验证的 DirectXTex、实际 IMG handler 与独立检查路径完成。
+9. 临时产物通过全部门禁后，再原子更新最终工作区产物。
 
 构建或修复时读取 [NPK/IMG 工作流](references/npk-img-workflow.md)。修改 Sprite/Texture 前读取 [纹理完整性](references/texture-integrity.md)。
 涉及逐帧重绘、ControlNet/LoRA、图像生成 API、MCP 或外部包装器时读取 [逐帧重绘与外部适配器契约](references/frame-redraw-and-adapter-contract.md)。

@@ -34,7 +34,7 @@ DMC5 Vergil aesthetic, icy cobalt-blue energy, Mirage Edge phantom blades, Yamat
 - `referencediagram/DNF剑魂3觉立绘改维吉尔.png`：主体造型参考。继承银白长发、正面人物焦点、蓝黑战装、金属护甲、双刀关系、冰蓝主刀光和冷色空间碎片。
 - `referencediagram/DNF剑魂3觉立绘改维吉尔 (1).png`：电影式构图参考。继承前景人物与后景暗色幻影的双层层次、斜向主切线、黑色空间背景、紫蓝裂隙和碎片环绕关系。
 
-两图只提供人物、服装、武器、构图、光线和材质参考，不能直接决定源 IMG、帧号或阶段。实际 Cut-in 必须在 Photoshop CC 2018 中按经核验源帧的宽幅裁切、人物位置、时序、alpha、Canvas 和偏移逐帧适配；不得把 `1728x2304` 参考画幅直接回灌。参考图右下角的“豆包AI生成”以及任何生成式水印、签名和文字都必须从最终立绘与所有运行帧中完全移除。
+两图只提供人物、服装、武器、构图、光线和材质参考，不能直接决定源 IMG、帧号或阶段。实际 Cut-in 必须在通过项目 API 能力探针的本地 Aseprite 中按经核验源帧的宽幅裁切、人物位置、时序、alpha、Canvas 和偏移逐帧适配；每个活动帧同时保存分层 `.aseprite` 工程和 runtime PNG，不得把 `1728x2304` 参考画幅直接回灌。参考图右下角的“豆包AI生成”以及任何生成式水印、签名和文字都必须从最终立绘与所有运行帧中完全移除。
 
 三觉立绘仍以暗蓝、冰蓝、青色和白色为主；参考图中的紫色只允许作为次级空间裂隙边光，不能取代冰蓝主刀光或让整体转为紫色主题。不得复制参考图中与源 Cut-in 构图冲突的地面、完整竖幅背景或被裁断后无法辨认的装饰。
 
@@ -68,6 +68,19 @@ DMC5 Vergil aesthetic, icy cobalt-blue energy, Mirage Edge phantom blades, Yamat
 - C# 构建器只允许保留 Ver5 和源 DXT5 结构，在 BC3 块内保留原 alpha 数据并替换允许帧的颜色数据；不得调用会重建图集关系的 Adjust、Refresh 或 Bitmap 替换接口。
 - 该入口是部分资源 pilot，不得扩展到其他 NPK、从技术资源 ID 推断中文技能名，也不得据此声明全技能覆盖或目标客户端兼容。
 - 构建产物只写入当前主题工作区；部署只在用户当前请求明确授权时作为独立步骤执行。
+
+活动三觉 Cut-in 使用以下两阶段入口：
+
+- tools/Render-CutinWeaponmasterNeoVergil.ps1：冻结源 inventory、24 张源帧和两张参考图，在同一 `RunId` 下生成帧 3–26 的 24 个分层 `.aseprite` 工程、24 个 1068x600 runtime PNG 与 `render-summary.json`。写输出前必须通过 Aseprite API 30 能力探针；工程重开和 runtime 像素等价均为硬门禁。
+- tools/Build-VergilCutinWeaponmasterNeo.ps1：只接受与自身 `RunId` 完全一致且通过的渲染摘要和 runtime PNG；帧 0–2 保留 1x1 透明占位，帧 3–26 才允许变化。输出使用新的版本化 NPK 与验证目录，不覆盖历史 Cut-in v2。
+- Aseprite 只负责分层编辑和 PNG。构建阶段仍由 DirectXTex 编码真实 DDS/BC3，由 Ver5 handler 保留 TextureVersion、纹理索引、图集裁剪、旋转、共享关系、几何和压缩语义，并由 texdiag 与独立索引复核。
+- Render 和 Build 必须显式使用同一 `RunId`；历史 Photoshop JSX、历史 Cut-in v2 payload 和旧 final summary 不能代替当前 Aseprite 渲染摘要或授权新发布。
+
+## 活动迁移门禁
+
+- 旧 v1 manifest-scope 发布及其 final/release/package 只作为旧契约下的不可变历史证据。
+- 根规则、主题规则、Aseprite 脚本、构建器、资源计划或验证器发生变化后，活动链必须从新的 `fullSkillCoverageProven=false` 资源计划开始，并在新的空目录重跑聚合、全帧验证和发布闭环。
+- 未导入合法 Aseprite、API 能力不满足、24 帧工程/runtime/摘要未生成或新的独立最终验证未通过时，活动状态保持阻断，不得沿用旧 v1 已归档的覆盖结论宣称新契约已经完成。
 
 ## 本主题本地成品约定
 
