@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "adapters": [
+    {
+      "id": "project-gate",
+      "script": "tools/Test-DnfProjectGate.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "read-only",
+      "network": "forbidden",
+      "allowedParameters": ["AsJson"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "powershell-source-gate",
+      "script": "tools/Test-DnfPowerShellSource.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "read-only",
+      "network": "forbidden",
+      "allowedParameters": ["Path", "AsJson"],
+      "pathParameters": ["Path"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "local-toolchain-gate",
+      "script": "tools/Test-DnfLocalToolchain.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "read-only",
+      "network": "forbidden",
+      "allowedParameters": ["RequireAseprite", "AsJson"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "vergil-aseprite-migration-gate",
+      "script": "tools/Test-VergilAsepriteMigrationPlan.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "read-only",
+      "network": "forbidden",
+      "allowedParameters": ["ResourcePlanPath", "RepoRoot", "AsJson"],
+      "pathParameters": ["ResourcePlanPath", "RepoRoot"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "vergil-aseprite-aggregate",
+      "script": "tools/New-VergilAsepriteFullSkillPackage.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "workspace-write",
+      "network": "forbidden",
+      "allowedParameters": [
+        "ResourcePlanPath",
+        "OutputNpk",
+        "PackageSummaryPath",
+        "RepoRoot",
+        "AsJson"
+      ],
+      "pathParameters": [
+        "ResourcePlanPath",
+        "OutputNpk",
+        "PackageSummaryPath",
+        "RepoRoot"
+      ],
+      "writePathParameters": ["OutputNpk", "PackageSummaryPath"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "vergil-aseprite-final-validation",
+      "script": "tools/Test-VergilAsepriteFullSkillRelease.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "workspace-write",
+      "network": "forbidden",
+      "allowedParameters": [
+        "ResourcePlanPath",
+        "FinalNpk",
+        "PackageSummaryPath",
+        "OutputDirectory",
+        "RepoRoot",
+        "ExtractorDirectory",
+        "AsJson"
+      ],
+      "pathParameters": [
+        "ResourcePlanPath",
+        "FinalNpk",
+        "PackageSummaryPath",
+        "OutputDirectory",
+        "RepoRoot",
+        "ExtractorDirectory"
+      ],
+      "writePathParameters": ["OutputDirectory"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "final-manual-review-template",
+      "script": "tools/New-DnfFinalManualReviewTemplate.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "workspace-write",
+      "network": "forbidden",
+      "allowedParameters": [
+        "FinalSummaryPath",
+        "OutputPath",
+        "RepoRoot",
+        "AsJson"
+      ],
+      "pathParameters": ["FinalSummaryPath", "OutputPath", "RepoRoot"],
+      "writePathParameters": ["OutputPath"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "final-manual-review-gate",
+      "script": "tools/Test-DnfFinalManualReview.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "read-only",
+      "network": "forbidden",
+      "allowedParameters": [
+        "FinalSummaryPath",
+        "ManualReviewPath",
+        "MaxAgeHours",
+        "RepoRoot",
+        "AsJson"
+      ],
+      "pathParameters": ["FinalSummaryPath", "ManualReviewPath", "RepoRoot"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "release-metadata-close",
+      "script": "tools/New-DnfReleaseMetadata.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "workspace-write",
+      "network": "forbidden",
+      "allowedParameters": [
+        "FinalSummaryPath",
+        "ManualReviewPath",
+        "ProfessionManifestPath",
+        "ReleaseReportPath",
+        "TransactionReceiptPath",
+        "ReleaseId",
+        "ManualReviewMaxAgeHours",
+        "RepoRoot",
+        "AsJson"
+      ],
+      "pathParameters": [
+        "FinalSummaryPath",
+        "ManualReviewPath",
+        "ProfessionManifestPath",
+        "ReleaseReportPath",
+        "TransactionReceiptPath",
+        "RepoRoot"
+      ],
+      "writePathParameters": [
+        "ProfessionManifestPath",
+        "ReleaseReportPath",
+        "TransactionReceiptPath"
+      ],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "release-closure-gate",
+      "script": "tools/Test-DnfReleaseClosure.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "read-only",
+      "network": "forbidden",
+      "allowedParameters": [
+        "ProfessionManifestPath",
+        "ReleaseReportPath",
+        "RepoRoot",
+        "AsJson"
+      ],
+      "pathParameters": [
+        "ProfessionManifestPath",
+        "ReleaseReportPath",
+        "RepoRoot"
+      ],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    }
+  ]
+}

@@ -229,27 +229,40 @@ foreach ($archive in $selected) {
     Assert-Condition ($final.validation.manifestScopeOfflineCoverage.targetClientCompatibilityProven -eq $false) `
         "Historical final summary claims target-client compatibility: $archiveId"
 
-    $finalArtifact = Assert-FileSnapshot -Snapshot $final.finalArtifact -BaseDirectory $finalDirectory `
+    $finalArtifactSnapshot = New-Snapshot -Path $artifact.path `
+        -Length ([long]$final.finalArtifact.length) -Sha256 ([string]$final.finalArtifact.sha256)
+    $finalArtifact = Assert-FileSnapshot -Snapshot $finalArtifactSnapshot -BaseDirectory $finalDirectory `
         -Label "Final-summary artifact $archiveId"
-    $finalPackage = Assert-FileSnapshot -Snapshot $final.packageSummary -BaseDirectory $finalDirectory `
+    $finalPackageSnapshot = New-Snapshot -Path $package.path `
+        -Length ([long]$final.packageSummary.length) -Sha256 ([string]$final.packageSummary.sha256)
+    $finalPackage = Assert-FileSnapshot -Snapshot $finalPackageSnapshot -BaseDirectory $finalDirectory `
         -Label "Final-summary package $archiveId"
-    $finalPlanSnapshot = New-Snapshot -Path ([string]$final.resourcePlan.inputPath) `
+    Assert-Condition (-not [string]::IsNullOrWhiteSpace([string]$final.resourcePlan.inputPath)) `
+        "Final-summary historical resource-plan input path is missing: $archiveId"
+    Assert-Condition (-not [string]::IsNullOrWhiteSpace([string]$final.resourcePlan.validatedSnapshotPath)) `
+        "Final-summary historical validated-plan path is missing: $archiveId"
+    $finalPlanSnapshot = New-Snapshot -Path 'validated-resource-plan.json' `
         -Length ([long]$final.resourcePlan.length) -Sha256 ([string]$final.resourcePlan.sha256)
     $finalPlan = Assert-FileSnapshot -Snapshot $finalPlanSnapshot -BaseDirectory $finalDirectory `
-        -Label "Final-summary resource plan $archiveId"
-    $validatedPlanSnapshot = New-Snapshot -Path ([string]$final.resourcePlan.validatedSnapshotPath) `
-        -Length ([long]$final.resourcePlan.length) -Sha256 ([string]$final.resourcePlan.sha256)
-    $null = Assert-FileSnapshot -Snapshot $validatedPlanSnapshot -BaseDirectory $finalDirectory `
-        -Label "Final-summary validated plan snapshot $archiveId"
-    $finalIndexSnapshot = New-Snapshot -Path ([string]$final.validation.independentIndex.report) `
+        -Label "Final-summary local validated resource plan $archiveId"
+    $finalIndexSnapshot = New-Snapshot -Path $index.path `
         -Length $null -Sha256 ([string]$final.validation.independentIndex.reportSha256)
     $finalIndex = Assert-FileSnapshot -Snapshot $finalIndexSnapshot -BaseDirectory $finalDirectory `
         -Label "Final-summary independent index $archiveId" -LengthOptional
-    $finalAlbum = Assert-FileSnapshot -Snapshot $final.validation.fullFrame.albumInventory `
+    $finalAlbumSnapshot = New-Snapshot -Path $album.path `
+        -Length ([long]$final.validation.fullFrame.albumInventory.length) `
+        -Sha256 ([string]$final.validation.fullFrame.albumInventory.sha256)
+    $finalAlbum = Assert-FileSnapshot -Snapshot $finalAlbumSnapshot `
         -BaseDirectory $finalDirectory -Label "Final-summary album inventory $archiveId"
-    $finalFrames = Assert-FileSnapshot -Snapshot $final.validation.fullFrame.frameInventory `
+    $finalFrameSnapshot = New-Snapshot -Path $frames.path `
+        -Length ([long]$final.validation.fullFrame.frameInventory.length) `
+        -Sha256 ([string]$final.validation.fullFrame.frameInventory.sha256)
+    $finalFrames = Assert-FileSnapshot -Snapshot $finalFrameSnapshot `
         -BaseDirectory $finalDirectory -Label "Final-summary frame inventory $archiveId"
-    $null = Assert-FileSnapshot -Snapshot $final.validation.fullFrame.log -BaseDirectory $finalDirectory `
+    $finalLogSnapshot = New-Snapshot -Path 'full-frame-validation.log' `
+        -Length ([long]$final.validation.fullFrame.log.length) `
+        -Sha256 ([string]$final.validation.fullFrame.log.sha256)
+    $null = Assert-FileSnapshot -Snapshot $finalLogSnapshot -BaseDirectory $finalDirectory `
         -Label "Final-summary full-frame log $archiveId"
 
     Assert-SameFile $artifact $finalArtifact "Archive/final artifact $archiveId"
@@ -261,7 +274,13 @@ foreach ($archive in $selected) {
 
     $contactSheetCount = 0
     foreach ($sheet in @($final.validation.fullFrame.contactSheets)) {
-        $null = Assert-FileSnapshot -Snapshot $sheet -BaseDirectory $finalDirectory `
+        $sheetName = [IO.Path]::GetFileName([string]$sheet.path)
+        Assert-Condition (-not [string]::IsNullOrWhiteSpace($sheetName)) `
+            "Historical contact sheet has no filename: $archiveId/$contactSheetCount"
+        $localSheetSnapshot = New-Snapshot `
+            -Path (Join-Path 'full-frame-validation\sheets' $sheetName) `
+            -Length ([long]$sheet.length) -Sha256 ([string]$sheet.sha256)
+        $null = Assert-FileSnapshot -Snapshot $localSheetSnapshot -BaseDirectory $finalDirectory `
             -Label "Historical contact sheet $archiveId/$contactSheetCount"
         $contactSheetCount++
     }

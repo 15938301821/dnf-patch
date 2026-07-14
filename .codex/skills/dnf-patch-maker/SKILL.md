@@ -61,9 +61,11 @@ Prompt 的中文稳定结构和合成规则见 [Prompt 契约](references/prompt
 7. 外部适配器默认最小权限、网络关闭且不能写游戏目录；不采用未经现场验证的 MCP、端口、模型端点、包装器或绝对路径配置。
 8. Aseprite 只承担栅格编辑与 PNG 导出，不承担 DDS/BC 编码、IMG/NPK 封装或客户端兼容证明；压缩和封装继续由经验证的 DirectXTex、实际 IMG handler 与独立检查路径完成。
 9. 临时产物通过全部门禁后，再原子更新最终工作区产物。
+10. 存在职业 manifest 注册的 workflow 时，先按声明式控制面静态验证；真实执行必须显式 `-Execute` 和新 `RunId`，不得直接串接未注册脚本。
 
 构建或修复时读取 [NPK/IMG 工作流](references/npk-img-workflow.md)。修改 Sprite/Texture 前读取 [纹理完整性](references/texture-integrity.md)。
 涉及逐帧重绘、ControlNet/LoRA、图像生成 API、MCP 或外部包装器时读取 [逐帧重绘与外部适配器契约](references/frame-redraw-and-adapter-contract.md)。
+涉及声明式 DAG、白名单适配器、暂停、人工审核、恢复或遗留隔离时读取 [自动化工作流契约](references/automation-workflow-contract.md)。
 
 ## 六、验证与发布
 
@@ -77,6 +79,7 @@ Prompt 的中文稳定结构和合成规则见 [Prompt 契约](references/prompt
 8. 最终验证写入新的空版本目录；被 final summary 记录哈希的工具或来源变化后必须重跑，不能只改报告。
 9. 保持资源计划起始覆盖状态为 false，由 final summary 授权生成 manifest/release 元数据，再运行发布后闭环门禁。
 10. 更新 README 后运行项目总门禁；任何引用漂移、PowerShell 编码、Prompt 树或 JSON 问题都阻断交付。
+11. 人工审核模板不得由自动化改成通过；审核人另存审核证据后，只能用同一 `RunId`、`-Execute` 和 `-Resume` 继续。
 
 封装或部署前读取 [验证与发布](references/validation-and-release.md)。生成完整覆盖元数据或收口发布时必须读取 [发布闭环契约](references/release-closure-contract.md)。选择工具前读取 [项目工具表](references/tool-map.md)。
 

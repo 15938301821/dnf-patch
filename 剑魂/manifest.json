@@ -238,7 +238,7 @@
         "selectedComponentCount": 31,
         "selectedReuseComponentCount": 1,
         "resourcePlan": {
-          "path": "Vergil（维吉尔）暗蓝幻影主题/configs/full-skill-v1/resource-plan-v2.json",
+          "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/validated-resource-plan.json",
           "length": 383295,
           "sha256": "FBC3CB5DB68F79ED9321E513C28A5E527AFDCF5389948CFF9C75CABEBE4BF217",
           "validatedStartState": "components-offline-validated-final-aggregation-pending",
@@ -363,6 +363,16 @@
     "migrationId": "weaponmaster-vergil-dark-blue-aseprite-v1",
     "status": "blocked-pre-aggregation",
     "historicalBaselineReleaseId": "weaponmaster-vergil-dark-blue-manifest-scope-v1",
+    "workflow": {
+      "path": "Vergil（维吉尔）暗蓝幻影主题/workflows/aseprite-full-skill-v1.json",
+      "workflowId": "weaponmaster.vergil.aseprite-full-skill-v1",
+      "validator": "../tools/Test-DnfWorkflow.ps1",
+      "runner": "../tools/Invoke-DnfWorkflow.ps1",
+      "executeRequiresExplicitSwitch": true,
+      "resumeRequiresExecuteSwitch": true,
+      "network": "forbidden",
+      "deployment": "forbidden"
+    },
     "resourcePlan": {
       "path": "Vergil（维吉尔）暗蓝幻影主题/configs/full-skill-v1/resource-plan-v4.json",
       "planId": "weaponmaster-vergil-dark-blue-aseprite-migration-v4"

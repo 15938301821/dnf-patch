@@ -82,6 +82,16 @@ DMC5 Vergil aesthetic, icy cobalt-blue energy, Mirage Edge phantom blades, Yamat
 - 根规则、主题规则、Aseprite 脚本、构建器、资源计划或验证器发生变化后，活动链必须从新的 `fullSkillCoverageProven=false` 资源计划开始，并在新的空目录重跑聚合、全帧验证和发布闭环。
 - 未导入合法 Aseprite、API 能力不满足、24 帧工程/runtime/摘要未生成或新的独立最终验证未通过时，活动状态保持阻断，不得沿用旧 v1 已归档的覆盖结论宣称新契约已经完成。
 
+## 正式 DAG 路由
+
+- 当前主题正式 workflow ID 为 `weaponmaster.vergil.aseprite-full-skill-v1`，声明文件为 `workflows/aseprite-full-skill-v1.json`；职业 manifest 必须保持该注册关系，不能从 README 或历史 handoff 猜入口。
+- DAG 固定为 10 步：PowerShell 源码门禁、本地 Aseprite 工具链、活动迁移 readiness、32 源聚合、新目录最终验证、pending 人工审核模板、人工审核门禁、发布元数据事务、发布引用闭环、项目总门禁。
+- 默认调用 `tools/Invoke-DnfWorkflow.ps1` 只做静态验证。真实执行必须使用新的 3–64 字符小写 `RunId` 和 `-Execute`；已有 Run 只能使用同一 `RunId -Execute -Resume` 恢复。
+- 最终验证通过后只允许生成不可覆盖的 `manual-review-template.json`。审核人必须另存同一 Run 下的 `manual-review.json`，填写非空身份与零偏移 UTC 审核时间，逐张审核全部黑、白、棋盘联系表，并把五类 findings 写成显式整数零；客户端兼容和四个部署字段必须为 false。
+- 人工审核有效期为 168 小时。首次审核门禁、恢复复用和发布元数据生成都会重新检查时效、证据快照和成功谓词；修改结果 JSON 中的通过状态不能绕过门禁。
+- 发布元数据步骤只允许原子替换职业 manifest 和创建新的主题 release；后置闭环失败时必须删除新 release 并按字节恢复旧 manifest。该 DAG 始终禁止网络、部署、`ImagePacks2` 写入和 DNF 进程操作。
+- 当前机器尚未导入合法 Aseprite，且新的 24 帧分层工程/runtime、Cut-in 构建、32 源聚合和最终验证证据均不存在，因此只允许静态验证；不得执行正式写链、生成审核通过状态或提升活动覆盖结论。
+
 ## 本主题本地成品约定
 
 - 官方源 NPK 只读。本主题的最终交付必须使用带 `weaponmaster-vergil-dark-blue` 与版本号的独立文件名，不得沿用官方 NPK 文件名。

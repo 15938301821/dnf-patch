@@ -9,6 +9,10 @@
 **/npk/
 **/frames/preview/
 **/*预览.png
+**/automation-runs/
+tools/workflow/fixtures/.runs/
+tools/workflow/fixtures/.test-*/
+tools/workflow/fixtures/.metadata-*/
 
 # Local compiled tool outputs
 tools/bin/

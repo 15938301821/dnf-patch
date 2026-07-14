@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dnf-patch.local/schemas/workflow.schema.json",
+  "title": "DNF patch automation workflow",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "workflowId",
+    "themeRoot",
+    "runRoot",
+    "policy",
+    "steps"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "workflowId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "themeRoot": {
+      "$ref": "#/$defs/repositoryRelativePath"
+    },
+    "runRoot": {
+      "$ref": "#/$defs/repositoryRelativePath"
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executeRequiresExplicitSwitch",
+        "network",
+        "deployment",
+        "processOperations",
+        "imagePacks2Write",
+        "requireFreshRunDirectory",
+        "recovery"
+      ],
+      "properties": {
+        "executeRequiresExplicitSwitch": {
+          "const": true
+        },
+        "network": {
+          "enum": ["forbidden", "explicit-authorization-required"]
+        },
+        "deployment": {
+          "const": "forbidden"
+        },
+        "processOperations": {
+          "const": "forbidden"
+        },
+        "imagePacks2Write": {
+          "const": "forbidden"
+        },
+        "requireFreshRunDirectory": {
+          "const": true
+        },
+        "allowedWriteRoots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/repositoryRelativePath"
+          },
+          "uniqueItems": true
+        },
+        "allowedAtomicReplacePaths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/repositoryRelativePath"
+          },
+          "uniqueItems": true
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requireWorkflowHash",
+            "requireRegistryHash",
+            "requireRunnerHash",
+            "requireAdapterScriptHash",
+            "requireParameterHash",
+            "requireInputSnapshots",
+            "requireOutputSnapshots"
+          ],
+          "properties": {
+            "requireWorkflowHash": { "const": true },
+            "requireRegistryHash": { "const": true },
+            "requireRunnerHash": { "const": true },
+            "requireAdapterScriptHash": { "const": true },
+            "requireParameterHash": { "const": true },
+            "requireInputSnapshots": { "const": true },
+            "requireOutputSnapshots": { "const": true }
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "adapter",
+          "mode",
+          "dependsOn",
+          "parameters",
+          "success"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "adapter": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "mode": {
+            "enum": ["read-only", "workspace-write"]
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "parameters": {
+            "type": "object"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/evidencePath"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                { "$ref": "#/$defs/evidencePath" },
+                {
+                  "type": "object",
+                  "required": ["kind"],
+                  "properties": {
+                    "kind": {
+                      "enum": ["file", "directory"]
+                    },
+                    "disposition": {
+                      "enum": [
+                        "create-new",
+                        "resume-reconcile",
+                        "atomic-replace"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "approval": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidencePath",
+              "statusPath",
+              "approvedValue",
+              "approvedAtPath",
+              "maxAgeHours"
+            ],
+            "properties": {
+              "evidencePath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "statusPath": {
+                "$ref": "#/$defs/propertyPath"
+              },
+              "approvedValue": {},
+              "approvedAtPath": {
+                "$ref": "#/$defs/propertyPath"
+              },
+              "maxAgeHours": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8760
+              }
+            }
+          },
+          "success": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["all"],
+            "properties": {
+              "all": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["path", "operator"],
+                  "properties": {
+                    "path": {
+                      "$ref": "#/$defs/propertyPath"
+                    },
+                    "operator": {
+                      "enum": [
+                        "equals",
+                        "notEquals",
+                        "isTrue",
+                        "isFalse",
+                        "greaterThan",
+                        "equalsParameter"
+                      ]
+                    },
+                    "value": {},
+                    "parameter": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "repositoryRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\:]+$"
+    },
+    "propertyPath": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(?:\\.[A-Za-z_][A-Za-z0-9_-]*)*$"
+    },
+    "evidencePath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "required", "snapshot"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "snapshot": {
+          "const": "sha256"
+        },
+        "kind": {
+          "enum": ["file", "directory"]
+        }
+      }
+    }
+  }
+}

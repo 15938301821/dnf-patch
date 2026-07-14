@@ -58,6 +58,8 @@ DnfPatch/
 - 相对证据路径以拥有该字段的 JSON 文件所在目录为基准解析。manifest、release、final summary 的路径基准不得混用。
 - ExtractorSharp、图像生成服务、MCP 或其他外部适配器都不是默认可信事实源。使用前必须固定入口、参数、版本或 SHA-256、读写边界、超时和网络需求，并把原始响应转换为工作区内可复核的结构化证据。
 - 外部适配器默认只读官方源，只能向当前主题工作区的新路径写入；不得把密钥、令牌、个人模型端点或机器绝对路径提交到通用 skill、manifest 或共享配置。网络默认关闭，确需联网时必须由当前任务明确需要并限制目标。
+- 自动化控制面必须使用 manifest 注册的 JSON DAG 与固定适配器白名单。默认调用只做静态验证；写步骤需要显式执行开关、新 `RunId`、声明输出和成功谓词，恢复还必须绑定 workflow、registry、runner、脚本、参数与输入输出哈希。人工审核不可由自动化生成通过状态。
+- 没有职业规则、manifest、来源 inventory 和验证证据的顶层 NPK 只能进入哈希冻结的遗留隔离清单；不得被职业发现、构建、发布或部署流程自动提升。
 - 修改 PowerShell 后运行 `tools/Test-DnfPowerShellSource.ps1`；工程交付前运行只读总门禁 `tools/Test-DnfProjectGate.ps1`。
 
 ## 修改边界
@@ -163,6 +165,7 @@ DnfPatch/
 4. final summary 全部通过后，才从该摘要更新 manifest 与 `release.json` 的覆盖状态及路径、长度、SHA-256、工具链和未部署状态。
 5. 元数据更新后必须运行 `tools/Test-DnfReleaseClosure.ps1`，复核资源计划起始状态为 false、三方引用一致、证据快照未漂移、实时独立索引通过且部署仍为 false。
 6. 最后更新 README 并运行 `tools/Test-DnfProjectGate.ps1`。只有发布后闭环与项目总门禁均通过，才能报告当前 manifest 范围的完整离线产物。
+7. 使用声明式工作流时，最终验证后只生成不可覆盖的 pending 审核模板；审核人另存 `manual-review.json` 并完成全联系表审核后，才以同一 Run 恢复发布元数据、闭环和项目门禁步骤。
 
 被 final summary 记录哈希的生成器、验证器、配置、组件或来源若在验证后变化，必须使用新的验证目录重跑；不得只更新元数据哈希。具体状态机与 PowerShell 5 约束见 `$dnf-patch-maker` 的 `references/release-closure-contract.md`。
 

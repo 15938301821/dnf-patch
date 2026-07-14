@@ -90,6 +90,36 @@ function Assert-PathInsideRepository {
         -Message "$Label must stay inside the repository: $Path"
 }
 
+function Assert-NoReparsePointPath {
+    param(
+        [string]$Path,
+        [string]$RepositoryRoot,
+        [string]$Label
+    )
+
+    $candidate = [IO.Path]::GetFullPath($Path)
+    $root = [IO.Path]::GetFullPath($RepositoryRoot).TrimEnd(
+        [IO.Path]::DirectorySeparatorChar,
+        [IO.Path]::AltDirectorySeparatorChar)
+    Assert-PathInsideRepository -Path $candidate -RepositoryRoot $root -Label $Label
+    while ($true) {
+        if (Test-Path -LiteralPath $candidate) {
+            $item = Get-Item -LiteralPath $candidate -Force
+            Assert-Condition -Condition (
+                ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) `
+                -Message "$Label cannot traverse a reparse point: $($item.FullName)"
+        }
+        if ($candidate.Equals($root, [StringComparison]::OrdinalIgnoreCase)) {
+            break
+        }
+        $parent = Split-Path -Parent $candidate
+        Assert-Condition -Condition (-not [string]::IsNullOrWhiteSpace($parent) -and
+            $parent -ne $candidate) `
+            -Message "$Label path ancestry could not be resolved: $Path"
+        $candidate = $parent
+    }
+}
+
 function Resolve-ExistingFile {
     param(
         [string]$Value,
@@ -103,6 +133,8 @@ function Resolve-ExistingFile {
     $resolved = (Resolve-Path -LiteralPath $path).Path
     if ($RequireInsideRepository) {
         Assert-PathInsideRepository -Path $resolved -RepositoryRoot $script:RepositoryRoot -Label $Label
+        Assert-NoReparsePointPath -Path $resolved `
+            -RepositoryRoot $script:RepositoryRoot -Label $Label
     }
     return $resolved
 }
@@ -222,14 +254,13 @@ function Assert-NoDeployment {
     )
 
     Assert-Condition -Condition ($null -ne $Deployment) -Message "$Label deployment record is missing."
-    foreach ($name in @('authorized', 'performed')) {
+    foreach ($name in @(
+        'authorized',
+        'performed',
+        'imagePacks2Write',
+        'processOperation')) {
         Assert-FalseValue -Actual (Get-RequiredProperty -Object $Deployment -Name $name -Label "$Label deployment") `
             -Label "$Label deployment.$name"
-    }
-    foreach ($name in @('imagePacks2Write', 'processOperation')) {
-        if (Test-ObjectProperty -Object $Deployment -Name $name) {
-            Assert-FalseValue -Actual $Deployment.PSObject.Properties[$name].Value -Label "$Label deployment.$name"
-        }
     }
 }
 
@@ -286,6 +317,12 @@ $manifestSummary = Assert-FileSnapshot -Snapshot (Get-RequiredProperty $manifest
     -BaseDirectory $manifestDirectory -Label 'Manifest final summary'
 $releaseSummary = Assert-FileSnapshot -Snapshot (Get-RequiredProperty $releaseValidation 'finalSummary' 'Release validation') `
     -BaseDirectory $releaseDirectory -Label 'Release final summary'
+$manifestManualReview = Assert-FileSnapshot -Snapshot (Get-RequiredProperty `
+    $manifestValidation 'manualReview' 'Manifest validation') `
+    -BaseDirectory $manifestDirectory -Label 'Manifest manual review'
+$releaseManualReview = Assert-FileSnapshot -Snapshot (Get-RequiredProperty `
+    $releaseValidation 'manualReview' 'Release validation') `
+    -BaseDirectory $releaseDirectory -Label 'Release manual review'
 $manifestIndex = Assert-FileSnapshot -Snapshot (Get-RequiredProperty $manifestValidation 'independentIndex' 'Manifest validation') `
     -BaseDirectory $manifestDirectory -Label 'Manifest independent index'
 $releaseIndex = Assert-FileSnapshot -Snapshot (Get-RequiredProperty $releaseValidation 'independentIndex' 'Release validation') `
@@ -315,6 +352,8 @@ Assert-SameFile $manifestPackage $releasePackage 'Manifest/release package summa
 Assert-SameFile $manifestPlan $releasePlan 'Manifest/release resource plan'
 Assert-SameFile $manifestAccounting $releaseAccounting 'Manifest/release frame accounting'
 Assert-SameFile $manifestSummary $releaseSummary 'Manifest/release final summary'
+Assert-SameFile $manifestManualReview $releaseManualReview `
+    'Manifest/release manual review'
 Assert-SameFile $manifestIndex $releaseIndex 'Manifest/release independent index'
 Assert-SameFile $manifestAlbum $releaseAlbum 'Manifest/release album inventory'
 Assert-SameFile $manifestFrames $releaseFrames 'Manifest/release frame inventory'
@@ -372,6 +411,66 @@ Assert-Condition -Condition ($summaryValidatedPlan.sha256 -eq $manifestPlan.sha2
 Assert-SameFile $manifestIndex $summaryIndex 'Manifest/summary independent index'
 Assert-SameFile $manifestAlbum $summaryAlbum 'Manifest/summary album inventory'
 Assert-SameFile $manifestFrames $summaryFrames 'Manifest/summary frame inventory'
+
+$manifestReviewApproval = Get-RequiredProperty $manifestValidation `
+    'manualReviewApproval' 'Manifest validation'
+$releaseReviewApproval = Get-RequiredProperty $releaseValidation `
+    'manualReviewApproval' 'Release validation'
+$manifestReviewMaxAge = [int](Get-RequiredProperty $manifestReviewApproval `
+    'maxAgeHours' 'Manifest manual-review approval')
+$releaseReviewMaxAge = [int](Get-RequiredProperty $releaseReviewApproval `
+    'maxAgeHours' 'Release manual-review approval')
+Assert-Condition -Condition ($manifestReviewMaxAge -ge 1 -and
+    $manifestReviewMaxAge -le 8760 -and
+    $releaseReviewMaxAge -eq $manifestReviewMaxAge) `
+    -Message 'Manifest/release manual-review maxAgeHours differs or is invalid.'
+$manifestGeneratedAt = [DateTimeOffset]::MinValue
+$releaseGeneratedAt = [DateTimeOffset]::MinValue
+Assert-Condition -Condition ([DateTimeOffset]::TryParse(
+    [string](Get-RequiredProperty $manifestRelease 'generatedAtUtc' `
+        'Manifest fullSkillRelease'), [ref]$manifestGeneratedAt)) `
+    -Message 'Manifest fullSkillRelease.generatedAtUtc is invalid.'
+Assert-Condition -Condition ([DateTimeOffset]::TryParse(
+    [string](Get-RequiredProperty $release 'generatedAtUtc' 'Release report'),
+    [ref]$releaseGeneratedAt)) `
+    -Message 'Release generatedAtUtc is invalid.'
+Assert-Condition -Condition ($manifestGeneratedAt.Offset -eq [TimeSpan]::Zero -and
+    $releaseGeneratedAt.Offset -eq [TimeSpan]::Zero -and
+    $manifestGeneratedAt -eq $releaseGeneratedAt) `
+    -Message 'Manifest/release generatedAtUtc must be the same zero-offset UTC value.'
+Assert-Condition -Condition ($releaseGeneratedAt -le [DateTimeOffset]::UtcNow.AddMinutes(5)) `
+    -Message 'Release generatedAtUtc is in the future.'
+$manualValidatorPath = Join-Path $script:RepositoryRoot `
+    'tools\Test-DnfFinalManualReview.ps1'
+Assert-Condition -Condition (Test-Path -LiteralPath $manualValidatorPath -PathType Leaf) `
+    -Message "Manual-review validator was not found: $manualValidatorPath"
+$manualGateText = & $manualValidatorPath -FinalSummaryPath $manifestSummary.path `
+    -ManualReviewPath $manifestManualReview.path -MaxAgeHours $manifestReviewMaxAge `
+    -ReferenceTimeUtc $releaseGeneratedAt.ToUniversalTime().ToString('o') `
+    -RepoRoot $script:RepositoryRoot -AsJson | Out-String
+Assert-Condition -Condition (-not [string]::IsNullOrWhiteSpace($manualGateText)) `
+    -Message 'Manual-review validator returned no result during release closure.'
+$manualGate = $manualGateText | ConvertFrom-Json
+Assert-TextEqual (Get-RequiredProperty $manualGate 'status' `
+    'Live manual-review validation') 'passed' 'Live manual-review status'
+Assert-TrueValue (Get-RequiredProperty $manualGate 'approved' `
+    'Live manual-review validation') 'Live manual-review approval'
+Assert-TrueValue (Get-RequiredProperty $manualGate 'reviewedAllContactSheets' `
+    'Live manual-review validation') 'Live manual-review contact-sheet coverage'
+Assert-LongEqual (Get-RequiredProperty $manualGate 'findingCount' `
+    'Live manual-review validation') 0 'Live manual-review finding count'
+Assert-TextEqual (Get-RequiredProperty $manifestReviewApproval 'reviewedBy' `
+    'Manifest manual-review approval') (Get-RequiredProperty $manualGate `
+    'reviewedBy' 'Live manual-review validation') 'Manifest/live reviewer identity'
+Assert-TextEqual (Get-RequiredProperty $releaseReviewApproval 'reviewedBy' `
+    'Release manual-review approval') (Get-RequiredProperty $manualGate `
+    'reviewedBy' 'Live manual-review validation') 'Release/live reviewer identity'
+Assert-TextEqual (Get-RequiredProperty $manifestReviewApproval 'approvedAtUtc' `
+    'Manifest manual-review approval') (Get-RequiredProperty $manualGate `
+    'approvedAtUtc' 'Live manual-review validation') 'Manifest/live approval time'
+Assert-TextEqual (Get-RequiredProperty $releaseReviewApproval 'approvedAtUtc' `
+    'Release manual-review approval') (Get-RequiredProperty $manualGate `
+    'approvedAtUtc' 'Live manual-review validation') 'Release/live approval time'
 
 $provenance = Get-RequiredProperty $summary 'provenance' 'Final summary'
 foreach ($collectionName in @('officialSources', 'componentConfigs', 'componentToolchains', 'tools')) {
@@ -507,7 +606,8 @@ Assert-Condition -Condition ($resourcePlanValidators.Count -eq 1) `
     -Message "Final summary must contain exactly one resource-plan-validator; found $($resourcePlanValidators.Count)."
 $resourcePlanValidatorPath = Resolve-ExistingFile -Value ([string]$resourcePlanValidators[0].path) `
     -BaseDirectory $summaryDirectory -Label 'Resource-plan validator'
-$resourcePlanValidatorCommand = Get-Command -LiteralPath $resourcePlanValidatorPath -ErrorAction Stop
+$resourcePlanValidatorCommand = Get-Command -Name $resourcePlanValidatorPath `
+    -CommandType ExternalScript -ErrorAction Stop
 $resourcePlanValidatorArguments = @{ ResourcePlanPath = $manifestPlan.path }
 if ($resourcePlanValidatorCommand.Parameters.ContainsKey('RepoRoot')) {
     $resourcePlanValidatorArguments.RepoRoot = $script:RepositoryRoot
@@ -540,6 +640,7 @@ $result = [pscustomobject]@{
     provenanceSnapshotCount = $script:ProvenanceSnapshotCount
     contactSheetCount = $contactSheetCount
     resourcePlanValidation = 'passed-live-and-snapshot'
+    manualReviewValidation = 'passed-live-and-snapshot-at-release-time'
     independentIndex = 'passed-live-and-snapshot'
     fullSkillCoverageProvenAtValidationStart = $false
     fullSkillCoverageProvenAfterMetadataClosure = $true

@@ -55,14 +55,40 @@
 - 实时重跑 final summary 绑定的资源计划验证器和 `Test-DnfNpkIndex.ps1`；不重新编码、不写产物、不部署。
 - 只在新的最终验证摘要已经通过、发布元数据已更新后运行。
 
-## 八、项目总门禁
+## 八、声明式工作流、人工审核与事务发布
+
+`tools/Invoke-DnfWorkflow.ps1`、`tools/workflow/DnfPatch.Workflow.psm1`
+
+- 读取 manifest 注册的 JSON DAG，通过 `tools/workflow/adapter-registry.json` 固定 PowerShell 适配器、宿主、参数、网络策略和写路径参数。
+- 默认只做静态验证；真实写步骤必须使用新的 `RunId` 和显式 `-Execute`。恢复必须使用同一 `RunId`、`-Execute -Resume`，并复核 workflow、registry、runner、适配器脚本、参数及输入输出哈希。
+- 所有声明路径必须留在仓库和 workflow 允许写根内，拒绝绝对路径、越界、未绑定写输出和 reparse point 穿越。恢复时从保存的适配器原始结果重新计算成功谓词，并重新检查人工批准时效。
+- `tools/workflow/schemas/workflow.schema.json` 与 `step-result.schema.json` 保存声明和结果结构；runtime 仍以模块中的逐字段门禁为执行事实源。
+
+`tools/New-DnfFinalManualReviewTemplate.ps1`、`tools/Test-DnfFinalManualReview.ps1`
+
+- 最终验证后只创建不可覆盖的 pending 模板；自动化不得生成通过状态或填写审核人。
+- 审核人另存 `manual-review.json`，填写非空身份和 UTC 审核时间，检查该 Run 的全部联系表；所有 finding 必须是显式整数零，客户端兼容与四个部署字段必须为 false。
+- 正式 workflow 的审核有效期由 DAG 固定；过期审核在首次执行、恢复和发布元数据生成时都必须重新拒绝。
+
+`tools/New-DnfReleaseMetadata.ps1`
+
+- 再次验证 final summary 与人工审核后，用新 release 临时文件和 manifest 原子替换提交发布元数据，随即运行发布闭环。
+- 任一后置门禁失败时删除新 release 并按字节恢复旧 manifest；若回滚本身失败，保留 manifest 备份并以硬失败报告其路径。
+
+`tools/Test-DnfWorkflowFixtures.ps1`、`tools/Test-DnfReleaseMetadataRollbackFixture.ps1`
+
+- 前者覆盖 DAG、路径、写边界、成功谓词、人工审核和恢复安全；后者验证闭环失败后的 manifest 字节恢复、release 删除和临时文件清理。
+- 两者均为隔离 fixture，不执行真实职业工作流、不联网、不部署。
+
+## 九、项目总门禁
 
 `tools/Test-DnfProjectGate.ps1`
 
 - 检查项目 skills、全仓 JSON、PowerShell 5 源码、所有职业/主题 Prompt 树、已有完整发布闭环和 `git diff --check`。
+- 同时运行声明式 workflow fixtures、发布元数据回滚 fixture、manifest 注册的正式 workflow 静态检查，以及活动/历史状态机和遗留隔离门禁。
 - 作为 README 更新后的最后只读门禁，不代替职业/主题的二进制深度验证器。
 
-## 九、AI 与外部适配器
+## 十、AI 与外部适配器
 
 - 项目没有通用必需的 SD API、ControlNet、LoRA、MCP 或固定端口；按任务读取 `references/frame-redraw-and-adapter-contract.md`。
 - 外部生成服务只产出 `generated` 素材，不能直接回灌、封装或部署。Extractor 包装器默认只读官方源，写入范围限制在当前主题工作区的新路径。
@@ -71,7 +97,7 @@
 
 带职业或主题名称的 builder/图像脚本属于领域工具，只能通过对应职业/主题规则发现，不能登记为通用默认链。
 
-## 十、项目本地 Aseprite
+## 十一、项目本地 Aseprite
 
 `tools/Import-DnfAseprite.ps1`
 
