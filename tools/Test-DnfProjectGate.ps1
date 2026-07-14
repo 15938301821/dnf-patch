@@ -140,16 +140,16 @@ Assert-Condition -Condition (Test-Path -LiteralPath $rootAgents -PathType Leaf) 
 Assert-Condition -Condition (Test-Path -LiteralPath $skillPath -PathType Leaf) `
     -Message "Project dnf-patch-maker skill was not found: $skillPath"
 foreach ($fixedControlPath in @(
-    $fixedWorkflowValidator,
-    $fixedWorkflowRunner,
-    $adapterRegistryPath)) {
+        $fixedWorkflowValidator,
+        $fixedWorkflowRunner,
+        $adapterRegistryPath)) {
     Assert-Condition -Condition (Test-Path -LiteralPath $fixedControlPath -PathType Leaf) `
         -Message "Fixed workflow control file was not found: $fixedControlPath"
     Assert-NoReparsePointPath -Path $fixedControlPath -RepositoryRoot $repositoryRoot `
         -Label 'Fixed workflow control file'
 }
 $adapterRegistry = Get-Content -LiteralPath $adapterRegistryPath -Raw -Encoding UTF8 |
-    ConvertFrom-Json
+ConvertFrom-Json
 
 $skillResults = New-Object System.Collections.Generic.List[object]
 $skillsRoot = Join-Path $repositoryRoot '.codex\skills'
@@ -219,17 +219,17 @@ foreach ($skillDirectory in $skillDirectories) {
         -Message ('Skill default_prompt must mention ${0}: {1}' -f $skillName, $agentFile)
 
     $unexpectedFiles = @(Get-ChildItem -LiteralPath $skillDirectory.FullName -Recurse -File | Where-Object {
-        $_.Name -in @('README.md', 'CHANGELOG.md', 'INSTALLATION_GUIDE.md', 'QUICK_REFERENCE.md')
-    })
+            $_.Name -in @('README.md', 'CHANGELOG.md', 'INSTALLATION_GUIDE.md', 'QUICK_REFERENCE.md')
+        })
     $unexpectedFileNames = @($unexpectedFiles | ForEach-Object { $_.FullName }) -join ', '
     Assert-Condition -Condition ($unexpectedFiles.Count -eq 0) `
         -Message "Skill contains unexpected auxiliary documentation: $unexpectedFileNames"
     $skillResults.Add([pscustomobject]@{
-        name = $skillName
-        lineCount = $skillLines.Count
-        referenceCount = [regex]::Matches($skillText, '\]\(([^)]+)\)').Count
-        shortDescriptionLength = $shortDescription.Length
-    })
+            name                   = $skillName
+            lineCount              = $skillLines.Count
+            referenceCount         = [regex]::Matches($skillText, '\]\(([^)]+)\)').Count
+            shortDescriptionLength = $shortDescription.Length
+        })
 }
 
 $powerShellGate = Invoke-JsonValidator `
@@ -251,8 +251,9 @@ Assert-Condition -Condition ($releaseRollbackFixtureGate.failureObserved -eq $tr
     $releaseRollbackFixtureGate.releaseRemoved -eq $true -and
     [int]$releaseRollbackFixtureGate.temporaryFileCount -eq 0 -and
     $releaseRollbackFixtureGate.transactionRecoveryPassed -eq $true -and
-    $releaseRollbackFixtureGate.committedTransactionIdempotent -eq $true) `
-    -Message 'Release metadata fixture did not prove rollback, recovery, and idempotency.'
+    $releaseRollbackFixtureGate.committedTransactionIdempotent -eq $true -and
+    $releaseRollbackFixtureGate.concurrentManifestCasPassed -eq $true) `
+    -Message 'Release metadata fixture did not prove rollback, recovery, idempotency, and manifest CAS.'
 
 $jsonFiles = @(Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File -Filter '*.json' | Sort-Object FullName)
 foreach ($jsonFile in $jsonFiles) {
@@ -271,36 +272,36 @@ $historicalReleaseResults = New-Object System.Collections.Generic.List[object]
 $activityMigrationResults = New-Object System.Collections.Generic.List[object]
 $workflowResults = New-Object System.Collections.Generic.List[object]
 $professionDirectories = @(Get-ChildItem -LiteralPath $repositoryRoot -Directory | Where-Object {
-    (Test-Path -LiteralPath (Join-Path $_.FullName 'AGENTS.md') -PathType Leaf) -and
-    (Test-Path -LiteralPath (Join-Path $_.FullName 'prompts\README.md') -PathType Leaf)
-} | Sort-Object FullName)
+        (Test-Path -LiteralPath (Join-Path $_.FullName 'AGENTS.md') -PathType Leaf) -and
+        (Test-Path -LiteralPath (Join-Path $_.FullName 'prompts\README.md') -PathType Leaf)
+    } | Sort-Object FullName)
 
 foreach ($profession in $professionDirectories) {
     $professionResult = Invoke-JsonValidator -ScriptPath $promptValidator -Arguments @{
         ProfessionPath = $profession.FullName
-        RepoRoot = $repositoryRoot
+        RepoRoot       = $repositoryRoot
     } -Label "Profession Prompt tree $($profession.Name)"
     $promptResults.Add([pscustomobject]@{
-        profession = $profession.FullName
-        theme = $null
-        checkedFiles = [int]$professionResult.counts.checkedFiles
-    })
+            profession   = $profession.FullName
+            theme        = $null
+            checkedFiles = [int]$professionResult.counts.checkedFiles
+        })
 
     $themeDirectories = @(Get-ChildItem -LiteralPath $profession.FullName -Directory | Where-Object {
-        (Test-Path -LiteralPath (Join-Path $_.FullName 'AGENTS.md') -PathType Leaf) -and
-        (Test-Path -LiteralPath (Join-Path $_.FullName 'prompts\README.md') -PathType Leaf)
-    } | Sort-Object FullName)
+            (Test-Path -LiteralPath (Join-Path $_.FullName 'AGENTS.md') -PathType Leaf) -and
+            (Test-Path -LiteralPath (Join-Path $_.FullName 'prompts\README.md') -PathType Leaf)
+        } | Sort-Object FullName)
     foreach ($theme in $themeDirectories) {
         $themeResult = Invoke-JsonValidator -ScriptPath $promptValidator -Arguments @{
             ProfessionPath = $profession.FullName
-            ThemePath = $theme.FullName
-            RepoRoot = $repositoryRoot
+            ThemePath      = $theme.FullName
+            RepoRoot       = $repositoryRoot
         } -Label "Theme Prompt tree $($profession.Name)/$($theme.Name)"
         $promptResults.Add([pscustomobject]@{
-            profession = $profession.FullName
-            theme = $theme.FullName
-            checkedFiles = [int]$themeResult.counts.checkedFiles
-        })
+                profession   = $profession.FullName
+                theme        = $theme.FullName
+                checkedFiles = [int]$themeResult.counts.checkedFiles
+            })
     }
 
     $manifestPath = Join-Path $profession.FullName 'manifest.json'
@@ -328,14 +329,14 @@ foreach ($profession in $professionDirectories) {
                 -Message "Activity migration has no registered workflow: $manifestPath"
             $workflow = $migration.workflow
             foreach ($name in @(
-                'path',
-                'workflowId',
-                'validator',
-                'runner',
-                'executeRequiresExplicitSwitch',
-                'resumeRequiresExecuteSwitch',
-                'network',
-                'deployment')) {
+                    'path',
+                    'workflowId',
+                    'validator',
+                    'runner',
+                    'executeRequiresExplicitSwitch',
+                    'resumeRequiresExecuteSwitch',
+                    'network',
+                    'deployment')) {
                 Assert-Condition -Condition (Test-ObjectProperty -Object $workflow -Name $name) `
                     -Message "Activity workflow is missing '$name': $manifestPath"
             }
@@ -362,8 +363,8 @@ foreach ($profession in $professionDirectories) {
                 -Message "Activity workflow runner is not the fixed project entrypoint: $workflowRunner"
             $workflowGate = Invoke-JsonValidator -ScriptPath $fixedWorkflowValidator -Arguments @{
                 WorkflowPath = $workflowPath
-                RepoRoot = $repositoryRoot
-                AsJson = $true
+                RepoRoot     = $repositoryRoot
+                AsJson       = $true
             } -Label "Activity workflow $($profession.Name)"
             $workflowDefinitions = @($workflowGate.workflows)
             Assert-Condition -Condition ($workflowDefinitions.Count -eq 1 -and
@@ -376,15 +377,15 @@ foreach ($profession in $professionDirectories) {
                 $workflowGate.deployment.processOperation -eq $false) `
                 -Message "Activity workflow static gate unexpectedly records deployment: $manifestPath"
             $workflowResults.Add([pscustomobject]@{
-                profession = $profession.FullName
-                workflowPath = $workflowPath
-                workflowId = [string]$workflow.workflowId
-                stepCount = [int]$workflowDefinitions[0].stepCount
-                status = 'passed'
-            })
+                    profession   = $profession.FullName
+                    workflowPath = $workflowPath
+                    workflowId   = [string]$workflow.workflowId
+                    stepCount    = [int]$workflowDefinitions[0].stepCount
+                    status       = 'passed'
+                })
 
             $workflowDefinition = Get-Content -LiteralPath $workflowPath -Raw -Encoding UTF8 |
-                ConvertFrom-Json
+            ConvertFrom-Json
             $migrationValidator = Resolve-RepositoryPath `
                 -Value ([string]$migration.validator) -BaseDirectory $manifestDirectory `
                 -RepositoryRoot $repositoryRoot -Label 'Activity migration validator'
@@ -410,9 +411,9 @@ foreach ($profession in $professionDirectories) {
                 -Message "Activity migration validator must match exactly one read-only, forbidden-network adapter: $migrationValidator"
             $migrationAdapter = $matchingAdapters[0]
             $matchingWorkflowSteps = @($workflowDefinition.steps | Where-Object {
-                [string]$_.adapter -ceq [string]$migrationAdapter.id -and
-                [string]$_.mode -eq 'read-only'
-            })
+                    [string]$_.adapter -ceq [string]$migrationAdapter.id -and
+                    [string]$_.mode -eq 'read-only'
+                })
             Assert-Condition -Condition ($matchingWorkflowSteps.Count -eq 1) `
                 -Message "Activity migration adapter must be used by exactly one read-only workflow step: $($migrationAdapter.id)"
             $migrationResult = Invoke-JsonValidator `
@@ -473,7 +474,7 @@ Assert-Condition -Condition ($quarantine.deployment.authorized -eq $false -and
     -Message 'Legacy quarantine unexpectedly records deployment.'
 
 $quarantineDirectorySet = New-Object 'Collections.Generic.HashSet[string]' `
-    ([StringComparer]::OrdinalIgnoreCase)
+([StringComparer]::OrdinalIgnoreCase)
 $quarantineAssets = New-Object System.Collections.Generic.List[object]
 foreach ($directoryRecord in @($quarantine.directories)) {
     Assert-Condition -Condition ([string]$directoryRecord.status -eq 'quarantined-unverified' -and
@@ -489,7 +490,7 @@ foreach ($directoryRecord in @($quarantine.directories)) {
     Assert-Condition -Condition ($quarantineDirectorySet.Add($directoryPath)) `
         -Message "Duplicate legacy quarantine directory: $directoryPath"
     $expectedFiles = New-Object 'Collections.Generic.HashSet[string]' `
-        ([StringComparer]::OrdinalIgnoreCase)
+    ([StringComparer]::OrdinalIgnoreCase)
     foreach ($fileRecord in @($directoryRecord.files)) {
         Assert-Condition -Condition ([string]$fileRecord.classification -eq 'legacy-unverified-npk') `
             -Message "Legacy quarantine classification changed: $($fileRecord.path)"
@@ -510,11 +511,11 @@ foreach ($directoryRecord in @($quarantine.directories)) {
             $item.LastWriteTimeUtc -eq $expectedTime) `
             -Message "Legacy quarantine snapshot changed: $filePath"
         $quarantineAssets.Add([pscustomobject]@{
-            path = $filePath
-            length = [long]$item.Length
-            sha256 = $actualHash
-            status = 'quarantined-unverified'
-        })
+                path   = $filePath
+                length = [long]$item.Length
+                sha256 = $actualHash
+                status = 'quarantined-unverified'
+            })
     }
     $actualFiles = @(Get-ChildItem -LiteralPath $directoryPath -Recurse -File -Force)
     Assert-Condition -Condition ($actualFiles.Count -eq $expectedFiles.Count) `
@@ -527,7 +528,7 @@ foreach ($directoryRecord in @($quarantine.directories)) {
 
 $infrastructureDirectories = @('.agents', '.codex', '.git', 'docs', 'tools', 'validation')
 $professionDirectorySet = New-Object 'Collections.Generic.HashSet[string]' `
-    ([StringComparer]::OrdinalIgnoreCase)
+([StringComparer]::OrdinalIgnoreCase)
 foreach ($profession in $professionDirectories) {
     $null = $professionDirectorySet.Add($profession.FullName)
 }
@@ -538,16 +539,16 @@ $unmanagedTopLevelDirectories = @(
         -not $quarantineDirectorySet.Contains($_.FullName)
     })
 $unmanagedTopLevelDirectoryNames = @($unmanagedTopLevelDirectories | ForEach-Object {
-    $_.FullName
-})
+        $_.FullName
+    })
 Assert-Condition -Condition ($unmanagedTopLevelDirectories.Count -eq 0) `
     -Message "Unmanaged top-level directories: $($unmanagedTopLevelDirectoryNames -join ', ')"
 $unmanagedTopLevelFiles = @(Get-ChildItem -LiteralPath $repositoryRoot -File -Force | Where-Object {
-    $_.Extension -ieq '.npk' -or $_.Name -ieq 'manifest.json'
-})
+        $_.Extension -ieq '.npk' -or $_.Name -ieq 'manifest.json'
+    })
 $unmanagedTopLevelFileNames = @($unmanagedTopLevelFiles | ForEach-Object {
-    $_.FullName
-})
+        $_.FullName
+    })
 Assert-Condition -Condition ($unmanagedTopLevelFiles.Count -eq 0) `
     -Message "Unmanaged top-level NPK or manifest files: $($unmanagedTopLevelFileNames -join ', ')"
 
@@ -575,33 +576,33 @@ $workflowArray = $workflowResults.ToArray()
 $quarantineAssetArray = $quarantineAssets.ToArray()
 $skillArray = $skillResults.ToArray()
 $result = [pscustomobject]@{
-    schemaVersion = 1
-    status = 'passed'
-    mode = 'read-only project gate; no build, deployment, or process operation'
-    repositoryRoot = $repositoryRoot
-    jsonFileCount = $jsonFiles.Count
-    skillCount = $skillArray.Count
-    skills = $skillArray
-    powershell = $powerShellGate
-    workflowFixtureGate = $workflowFixtureGate
+    schemaVersion                      = 1
+    status                             = 'passed'
+    mode                               = 'read-only project gate; no build, deployment, or process operation'
+    repositoryRoot                     = $repositoryRoot
+    jsonFileCount                      = $jsonFiles.Count
+    skillCount                         = $skillArray.Count
+    skills                             = $skillArray
+    powershell                         = $powerShellGate
+    workflowFixtureGate                = $workflowFixtureGate
     releaseMetadataRollbackFixtureGate = $releaseRollbackFixtureGate
-    professionCount = $professionDirectories.Count
-    promptTreeGateCount = $promptArray.Count
-    promptTrees = $promptArray
-    releaseClosureCount = $releaseArray.Count
-    releases = $releaseArray
-    historicalReleaseGateCount = $historicalReleaseArray.Count
-    historicalReleases = $historicalReleaseArray
-    activityMigrationGateCount = $activityMigrationArray.Count
-    activityMigrations = $activityMigrationArray
-    workflowGateCount = $workflowArray.Count
-    workflows = $workflowArray
-    legacyQuarantineDirectoryCount = $quarantineDirectorySet.Count
-    legacyQuarantineAssetCount = $quarantineAssetArray.Count
-    legacyQuarantineAssets = $quarantineAssetArray
-    unmanagedTopLevelDirectoryCount = $unmanagedTopLevelDirectories.Count
-    unmanagedTopLevelFileCount = $unmanagedTopLevelFiles.Count
-    gitDiffCheck = $gitDiffCheck
+    professionCount                    = $professionDirectories.Count
+    promptTreeGateCount                = $promptArray.Count
+    promptTrees                        = $promptArray
+    releaseClosureCount                = $releaseArray.Count
+    releases                           = $releaseArray
+    historicalReleaseGateCount         = $historicalReleaseArray.Count
+    historicalReleases                 = $historicalReleaseArray
+    activityMigrationGateCount         = $activityMigrationArray.Count
+    activityMigrations                 = $activityMigrationArray
+    workflowGateCount                  = $workflowArray.Count
+    workflows                          = $workflowArray
+    legacyQuarantineDirectoryCount     = $quarantineDirectorySet.Count
+    legacyQuarantineAssetCount         = $quarantineAssetArray.Count
+    legacyQuarantineAssets             = $quarantineAssetArray
+    unmanagedTopLevelDirectoryCount    = $unmanagedTopLevelDirectories.Count
+    unmanagedTopLevelFileCount         = $unmanagedTopLevelFiles.Count
+    gitDiffCheck                       = $gitDiffCheck
 }
 
 if ($AsJson) {

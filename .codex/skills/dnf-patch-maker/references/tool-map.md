@@ -61,6 +61,7 @@
 
 - 读取 manifest 注册的 JSON DAG，通过 `tools/workflow/adapter-registry.json` 固定 PowerShell 适配器、宿主、参数、网络策略和写路径参数。
 - 默认只做静态验证；真实写步骤必须使用新的 `RunId` 和显式 `-Execute`。恢复必须使用同一 `RunId`、`-Execute -Resume`，并复核 workflow、registry、runner、适配器脚本、参数及输入输出哈希。
+- `resume-reconcile` 只允许事务发布的 release/receipt 输出在恢复时对账既有文件；普通 `create-new` 产物仍不可覆盖，manifest 仍只能通过允许清单中的 `atomic-replace`。
 - 所有声明路径必须留在仓库和 workflow 允许写根内，拒绝绝对路径、越界、未绑定写输出和 reparse point 穿越。恢复时从保存的适配器原始结果重新计算成功谓词，并重新检查人工批准时效。
 - `tools/workflow/schemas/workflow.schema.json` 与 `step-result.schema.json` 保存声明和结果结构；runtime 仍以模块中的逐字段门禁为执行事实源。
 
@@ -72,12 +73,14 @@
 
 `tools/New-DnfReleaseMetadata.ps1`
 
-- 再次验证 final summary 与人工审核后，用新 release 临时文件和 manifest 原子替换提交发布元数据，随即运行发布闭环。
+- 再次验证 final summary 与人工审核后，用新 release 临时文件、transaction receipt 和 manifest 原子替换提交发布元数据，随即运行发布闭环。
+- 事务收据包含 pending/committed 状态、输入输出快照和 deployment=false；pending 可按同一收据恢复，committed 可幂等返回。
+- 同一 manifest 的提交受命名 Mutex 和 manifest-before CAS 保护；并发旧 pending 事务必须被拒绝，不能覆盖先提交结果。
 - 任一后置门禁失败时删除新 release 并按字节恢复旧 manifest；若回滚本身失败，保留 manifest 备份并以硬失败报告其路径。
 
 `tools/Test-DnfWorkflowFixtures.ps1`、`tools/Test-DnfReleaseMetadataRollbackFixture.ps1`
 
-- 前者覆盖 DAG、路径、写边界、成功谓词、人工审核和恢复安全；后者验证闭环失败后的 manifest 字节恢复、release 删除和临时文件清理。
+- 前者覆盖 DAG、路径、写边界、成功谓词、人工审核、结果防篡改和 `resume-reconcile` 中断恢复；后者验证闭环失败后的 manifest 字节恢复、release 删除、临时文件清理、pending 恢复、committed 幂等和 manifest CAS 竞争。
 - 两者均为隔离 fixture，不执行真实职业工作流、不联网、不部署。
 
 ## 九、项目总门禁

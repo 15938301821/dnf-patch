@@ -19,6 +19,7 @@
 - 职业 manifest 注册 workflow 后，以 JSON DAG、固定适配器注册表和 PowerShell runner 为唯一自动化控制面；不得绕过 DAG 手工串接发布写步骤。
 - 默认调用只进行静态验证，不创建 Run。真实执行要求新的 3–64 字符小写 `RunId` 和显式 `-Execute`；部署、`ImagePacks2` 写入、进程操作与未授权网络始终禁止。
 - workflow、registry、runner、适配器脚本、参数、输入和输出都纳入恢复哈希。任一现场快照漂移时拒绝复用并要求新 Run。
+- 只有声明为 `resume-reconcile` 的事务输出可在同一 `RunId -Execute -Resume` 下由适配器对账既有文件；普通 `create-new` 输出仍拒绝既有路径，`atomic-replace` 仍只限允许清单内的 manifest。
 - 人工审核步骤是暂停点。恢复必须同时提供同一 `RunId`、`-Execute` 和 `-Resume`；已完成 Run 的同参数恢复只允许幂等返回，不得重写证据。
 - 审核状态必须来自审核人另存的文件。`reviewedBy` 必须非空，`approvedAtUtc` 必须使用零偏移 UTC 且不超过 DAG 声明的时效；所有联系表必须逐项闭合，findings 必须为显式整数零，客户端兼容和部署状态必须保持 false。
 - 恢复既复核审核文件哈希，也重新计算审核时效和步骤成功谓词；修改步骤结果中的 `passed=true` 不能提升 readiness。
@@ -41,11 +42,14 @@
 
 ## 五、发布元数据事务与回滚
 
-- `release.json` 必须写入不存在的新路径；manifest 使用同目录临时文件和原子替换，禁止就地截断后写入。
-- 发布脚本在提交前再次验证 final summary、人工审核、当前 manifest 起始状态和所有快照；提交后立即运行发布引用闭环。
+- `release.json` 必须写入不存在的新路径；manifest 使用同目录临时文件和原子替换，禁止就地截断后写入。发布步骤还必须写入 `release-transaction*.json` 收据，记录 pending/committed 状态、输入快照、输出快照和 deployment=false。
+- 发布脚本在提交前再次验证 final summary、人工审核、当前 manifest 起始状态、事务收据自身快照和所有输入输出快照；提交后立即运行发布引用闭环。
+- 同一 manifest 的提交受命名 Mutex 保护；锁内必须复核 manifest-before 快照。两个事务从同一旧 manifest 启动时，只允许先提交者成功，后恢复的旧 pending 收据必须因 manifest CAS 漂移失败，不能覆盖先提交结果。
+- pending 收据只允许在同一 release、manifest、receipt、final summary、manual review 和审核时效均匹配时恢复；若 adapter 已提交 release/receipt 但 runner 尚未写步骤结果，恢复必须通过 `resume-reconcile` 对账既有 release 与收据。
+- committed 收据为幂等状态：现场 manifest、release 和收据快照匹配且发布闭环仍通过时可直接返回；不重复提交、不重写证据。
 - 后置闭环失败时必须删除新 release，并以原始备份字节恢复 manifest。正常回滚后不得残留临时文件或备份。
 - 回滚动作本身失败时，必须继续尝试清理另一侧提交，保留仍存在的 manifest 备份并报告其精确路径；不得用原始门禁异常掩盖回滚失败，也不得宣称事务已恢复。
-- 使用 `tools/Test-DnfReleaseMetadataRollbackFixture.ps1` 对失败注入路径验证 manifest 字节身份、release 删除和临时文件清理。
+- 使用 `tools/Test-DnfReleaseMetadataRollbackFixture.ps1` 对失败注入、pending 恢复、committed 幂等和并发 manifest CAS 路径验证 manifest 字节身份、release 删除、临时文件清理与旧事务拒绝。
 
 ## 六、Windows PowerShell 5 源码约束
 

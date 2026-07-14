@@ -27,6 +27,7 @@ manifest 注册的 `workflowId` 必须与 workflow JSON 一致。项目总门禁
 - 非白名单参数、绝对路径、路径逃逸和仓库外路径。
 - 写参数未与步骤 `outputs` 精确绑定。
 - `create-new` 输出落在 Run 目录之外。
+- `resume-reconcile` 用在非文件输出，或用在没有事务收据对账能力的普通产物。
 - 未显式列入 `allowedAtomicReplacePaths` 的 `atomic-replace`。
 - 少于两个成功谓词，或仅依赖 `status` 的步骤。
 - 未绑定 workflow、registry、runner、脚本、参数和输入输出快照的恢复策略。
@@ -37,9 +38,9 @@ manifest 注册的 `workflowId` 必须与 workflow JSON 一致。项目总门禁
 
 执行必须显式提供 `-Execute` 和新的 `RunId`。非恢复执行拒绝任何已存在 Run 目录。所有普通输出使用 `create-new`，只能写到 `{{runDirectory}}` 下的新路径。
 
-职业 manifest 是正式活动 DAG 唯一允许的 `atomic-replace` 路径。发布元数据生成器必须先生成新的 release 报告和 manifest 临时文件，再提交两者并立即运行发布闭环；闭环失败时恢复 manifest 原字节、删除 release，并清理临时与备份文件。
+`resume-reconcile` 只用于发布事务的 release 报告和 transaction receipt。非恢复执行遇到既有路径仍失败；恢复执行只允许适配器读取既有文件并按收据、快照和成功谓词完成对账，不能作为普通覆盖或跳过验证机制。
 
-适配器只能从固定注册表解析脚本、PowerShell 位数、模式、网络策略、参数白名单、路径参数和写路径参数。workflow JSON 不能指定任意脚本、命令行或宿主。
+职业 manifest 是正式活动 DAG 唯一允许的 `atomic-replace` 路径。发布元数据生成器必须先生成新的 release 报告、transaction receipt 和 manifest 临时文件，再在命名 Mutex 内提交，并立即运行发布闭环；闭环失败时恢复 manifest 原字节、删除 release，并清理临时与备份文件。并发事务必须通过 manifest-before CAS，旧 pending 收据不能覆盖先提交事务。
 
 ## 五、成功语义
 
@@ -64,6 +65,7 @@ manifest 注册的 `workflowId` 必须与 workflow JSON 一致。项目总门禁
 
 - workflow、registry、runner、适配器脚本和参数 SHA-256 不变。
 - 输入和输出快照仍匹配；原子替换步骤以当前输出快照为准，不要求旧输入字节仍存在。
+- `resume-reconcile` 输出必须由事务适配器重新检查 receipt、release、manifest、final summary、manual review 和成功谓词后才能复用。
 - 所有成功谓词通过。
 - 人工审批仍在时效内。
 
@@ -95,7 +97,7 @@ manifest 注册的 `workflowId` 必须与 workflow JSON 一致。项目总门禁
 1. `tools/Test-DnfPowerShellSource.ps1`。
 2. `tools/Test-DnfWorkflow.ps1`。
 3. `tools/Test-DnfWorkflowFixtures.ps1`。
-4. `tools/Test-DnfReleaseMetadataRollbackFixture.ps1`。
+4. `tools/Test-DnfReleaseMetadataRollbackFixture.ps1`，覆盖闭环失败回滚、pending 恢复、committed 幂等和 manifest CAS 竞争。
 5. 历史发布完整性门禁。
 6. `tools/Test-DnfProjectGate.ps1`。
 7. `git diff --check`。

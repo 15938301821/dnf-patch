@@ -43,9 +43,24 @@ function New-Snapshot {
     $baseUri = New-Object Uri($base)
     $pathUri = New-Object Uri([IO.Path]::GetFullPath($Path))
     return [pscustomobject]@{
-        path = [Uri]::UnescapeDataString($baseUri.MakeRelativeUri($pathUri).ToString())
+        path   = [Uri]::UnescapeDataString($baseUri.MakeRelativeUri($pathUri).ToString())
         length = [long]$item.Length
         sha256 = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+    }
+}
+
+function Get-TransactionToken {
+    param([string]$ReceiptPath)
+
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try {
+        $receiptTokenBytes = [Text.Encoding]::UTF8.GetBytes(
+            $ReceiptPath.ToUpperInvariant())
+        return [BitConverter]::ToString(
+            $sha.ComputeHash($receiptTokenBytes)).Replace('-', '').Substring(0, 24)
+    }
+    finally {
+        $sha.Dispose()
     }
 }
 
@@ -118,26 +133,26 @@ throw 'fixture-closure-failure'
     $toolPath = Join-Path $runDirectory 'tool.ps1'
     $reviewPath = Join-Path $runDirectory 'manual-review.json'
     foreach ($record in @(
-        [pscustomobject]@{ path = $artifactPath; text = 'artifact' },
-        [pscustomobject]@{ path = $packagePath; text = '{"status":"passed"}' },
-        [pscustomobject]@{ path = $accountingPath; text = '{"status":"passed"}' },
-        [pscustomobject]@{ path = $indexPath; text = '{"status":"passed"}' },
-        [pscustomobject]@{ path = $albumPath; text = '{"status":"passed"}' },
-        [pscustomobject]@{ path = $framesPath; text = 'frame' },
-        [pscustomobject]@{ path = $sheetPath; text = 'sheet' },
-        [pscustomobject]@{ path = $toolPath; text = 'param()' },
-        [pscustomobject]@{ path = $reviewPath; text = '{"approved":true}' })) {
+            [pscustomobject]@{ path = $artifactPath; text = 'artifact' },
+            [pscustomobject]@{ path = $packagePath; text = '{"status":"passed"}' },
+            [pscustomobject]@{ path = $accountingPath; text = '{"status":"passed"}' },
+            [pscustomobject]@{ path = $indexPath; text = '{"status":"passed"}' },
+            [pscustomobject]@{ path = $albumPath; text = '{"status":"passed"}' },
+            [pscustomobject]@{ path = $framesPath; text = 'frame' },
+            [pscustomobject]@{ path = $sheetPath; text = 'sheet' },
+            [pscustomobject]@{ path = $toolPath; text = 'param()' },
+            [pscustomobject]@{ path = $reviewPath; text = '{"approved":true}' })) {
         Write-Text -Path $record.path -Text $record.text
     }
 
     $manifestPath = Join-Path $professionDirectory 'manifest.json'
     $manifest = [pscustomobject]@{
         schemaVersion = 1
-        coverage = [pscustomobject]@{
-            scope = 'fixture scope'
-            fullSkillCoverageProven = $false
-            reason = 'fixture pre-release'
-            meaning = 'fixture pre-release'
+        coverage      = [pscustomobject]@{
+            scope                     = 'fixture scope'
+            fullSkillCoverageProven   = $false
+            reason                    = 'fixture pre-release'
+            meaning                   = 'fixture pre-release'
             clientCompatibilityProven = $false
         }
     }
@@ -146,83 +161,83 @@ throw 'fixture-closure-failure'
     $manifestBeforeBytes = [IO.File]::ReadAllBytes($manifestPath)
 
     $plan = [pscustomobject]@{
-        schemaVersion = 1
+        schemaVersion          = 1
         professionManifestPath = 'profession/manifest.json'
-        coverage = [pscustomobject]@{
+        coverage               = [pscustomobject]@{
             fullSkillCoverageProven = $false
-            technicalRoots = @([pscustomobject]@{ id = 'fixture-root' })
+            technicalRoots          = @([pscustomobject]@{ id = 'fixture-root' })
         }
     }
     Write-Json -Path $planPath -Value $plan
 
     $tools = New-Object 'Collections.Generic.List[object]'
     foreach ($label in @(
-        'custom-npk-packager',
-        'resource-plan-validator',
-        'final-release-validator',
-        'independent-index',
-        'full-frame-export')) {
+            'custom-npk-packager',
+            'resource-plan-validator',
+            'final-release-validator',
+            'independent-index',
+            'full-frame-export')) {
         $snapshot = New-Snapshot -Path $toolPath -BaseDirectory $runDirectory
         $tools.Add([pscustomobject]@{
-            label = $label
-            path = $snapshot.path
-            length = $snapshot.length
-            sha256 = $snapshot.sha256
-        })
+                label  = $label
+                path   = $snapshot.path
+                length = $snapshot.length
+                sha256 = $snapshot.sha256
+            })
     }
     $summary = [pscustomobject]@{
-        schemaVersion = 1
-        status = 'passed'
+        schemaVersion           = 1
+        status                  = 'passed'
         fullSkillCoverageProven = $false
-        finalArtifact = New-Snapshot -Path $artifactPath -BaseDirectory $runDirectory
-        packageSummary = [pscustomobject]@{
-            path = (New-Snapshot -Path $packagePath -BaseDirectory $runDirectory).path
-            length = (Get-Item -LiteralPath $packagePath).Length
-            sha256 = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash
-            entryCount = 1
-            sourceNpkCount = 1
+        finalArtifact           = New-Snapshot -Path $artifactPath -BaseDirectory $runDirectory
+        packageSummary          = [pscustomobject]@{
+            path               = (New-Snapshot -Path $packagePath -BaseDirectory $runDirectory).path
+            length             = (Get-Item -LiteralPath $packagePath).Length
+            sha256             = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash
+            entryCount         = 1
+            sourceNpkCount     = 1
             payloadEquivalence = 'passed'
         }
-        resourcePlan = [pscustomobject]@{
-            inputPath = (New-Snapshot -Path $planPath -BaseDirectory $runDirectory).path
-            length = (Get-Item -LiteralPath $planPath).Length
-            sha256 = (Get-FileHash -LiteralPath $planPath -Algorithm SHA256).Hash
+        resourcePlan            = [pscustomobject]@{
+            inputPath                = (New-Snapshot -Path $planPath -BaseDirectory $runDirectory).path
+            length                   = (Get-Item -LiteralPath $planPath).Length
+            sha256                   = (Get-FileHash -LiteralPath $planPath -Algorithm SHA256).Hash
             postBuildFrameAccounting = New-Snapshot -Path $accountingPath `
                 -BaseDirectory $runDirectory
-            totals = [pscustomobject]@{
-                componentCount = 1
+            totals                   = [pscustomobject]@{
+                componentCount      = 1
                 activeCutinImgCount = 0
             }
         }
-        validation = [pscustomobject]@{
+        validation              = [pscustomobject]@{
             manifestScopeOfflineCoverage = [pscustomobject]@{
                 eligibleForReleaseMetadataFullSkillCoverage = $true
-                fullSkillCoverageProvenAtValidationStart = $false
-                releaseMetadataGeneratedByThisValidator = $false
-                targetClientCompatibilityProven = $false
+                fullSkillCoverageProvenAtValidationStart    = $false
+                releaseMetadataGeneratedByThisValidator     = $false
+                targetClientCompatibilityProven             = $false
             }
-            independentIndex = [pscustomobject]@{
-                report = (New-Snapshot -Path $indexPath -BaseDirectory $runDirectory).path
+            independentIndex             = [pscustomobject]@{
+                report       = (New-Snapshot -Path $indexPath -BaseDirectory $runDirectory).path
                 reportLength = (Get-Item -LiteralPath $indexPath).Length
                 reportSha256 = (Get-FileHash -LiteralPath $indexPath -Algorithm SHA256).Hash
             }
-            fullFrame = [pscustomobject]@{
-                albumInventory = New-Snapshot -Path $albumPath -BaseDirectory $runDirectory
-                frameInventory = New-Snapshot -Path $framesPath -BaseDirectory $runDirectory
+            fullFrame                    = [pscustomobject]@{
+                albumInventory       = New-Snapshot -Path $albumPath -BaseDirectory $runDirectory
+                frameInventory       = New-Snapshot -Path $framesPath -BaseDirectory $runDirectory
                 decodedNonLinkFrames = 1
-                validatedLinkFrames = 0
-                hiddenFrames = 0
-                backgrounds = @('black', 'white', 'checkerboard')
-                contactSheets = @((New-Snapshot -Path $sheetPath -BaseDirectory $runDirectory))
+                validatedLinkFrames  = 0
+                hiddenFrames         = 0
+                backgrounds          = @('black', 'white', 'checkerboard')
+                contactSheets        = @((New-Snapshot -Path $sheetPath -BaseDirectory $runDirectory))
             }
         }
-        provenance = [pscustomobject]@{
+        provenance              = [pscustomobject]@{
             officialSources = @([pscustomobject]@{ label = 'fixture-source' })
-            tools = $tools.ToArray()
+            tools           = $tools.ToArray()
         }
-        deployment = [pscustomobject]@{
-            authorized = $false
-            performed = $false
+        deployment              = [pscustomobject]@{
+            authorized       = $false
+            performed        = $false
             imagePacks2Write = $false
             processOperation = $false
         }
@@ -288,29 +303,20 @@ if (-not (Test-Path -LiteralPath $ProfessionManifestPath -PathType Leaf) -or
 '@
 
     $successText = (& (Join-Path $repositoryRoot 'tools\New-DnfReleaseMetadata.ps1') `
-        -FinalSummaryPath $summaryPath -ManualReviewPath $reviewPath `
-        -ProfessionManifestPath $manifestPath -ReleaseReportPath $releasePath `
-        -TransactionReceiptPath $receiptPath `
-        -ReleaseId 'fixture.rollback-v1' -RepoRoot $fixtureRoot -AsJson |
+            -FinalSummaryPath $summaryPath -ManualReviewPath $reviewPath `
+            -ProfessionManifestPath $manifestPath -ReleaseReportPath $releasePath `
+            -TransactionReceiptPath $receiptPath `
+            -ReleaseId 'fixture.rollback-v1' -RepoRoot $fixtureRoot -AsJson |
         Out-String).Trim()
     $successResult = $successText | ConvertFrom-Json
     $committedReceipt = Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 |
-        ConvertFrom-Json
+    ConvertFrom-Json
     Assert-Condition ([string]$successResult.status -eq 'passed' -and
         [string]$successResult.transaction.status -eq 'committed' -and
         [string]$committedReceipt.status -eq 'committed') `
         'Successful transaction did not create a committed receipt.'
 
-    $sha = [Security.Cryptography.SHA256]::Create()
-    try {
-        $receiptTokenBytes = [Text.Encoding]::UTF8.GetBytes(
-            $receiptPath.ToUpperInvariant())
-        $receiptToken = [BitConverter]::ToString(
-            $sha.ComputeHash($receiptTokenBytes)).Replace('-', '').Substring(0, 24)
-    }
-    finally {
-        $sha.Dispose()
-    }
+    $receiptToken = Get-TransactionToken -ReceiptPath $receiptPath
     $manifestBackupPath = Join-Path $professionDirectory `
         ".manifest-$receiptToken.backup.json"
     [IO.File]::WriteAllBytes($manifestBackupPath, $manifestBeforeBytes)
@@ -320,42 +326,102 @@ if (-not (Test-Path -LiteralPath $ProfessionManifestPath -PathType Leaf) -or
     Write-Json -Path $receiptPath -Value $committedReceipt
 
     $recoveryText = (& (Join-Path $repositoryRoot 'tools\New-DnfReleaseMetadata.ps1') `
-        -FinalSummaryPath $summaryPath -ManualReviewPath $reviewPath `
-        -ProfessionManifestPath $manifestPath -ReleaseReportPath $releasePath `
-        -TransactionReceiptPath $receiptPath `
-        -ReleaseId 'fixture.rollback-v1' -RepoRoot $fixtureRoot -AsJson |
+            -FinalSummaryPath $summaryPath -ManualReviewPath $reviewPath `
+            -ProfessionManifestPath $manifestPath -ReleaseReportPath $releasePath `
+            -TransactionReceiptPath $receiptPath `
+            -ReleaseId 'fixture.rollback-v1' -RepoRoot $fixtureRoot -AsJson |
         Out-String).Trim()
     $recoveryResult = $recoveryText | ConvertFrom-Json
     $recoveredReceipt = Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 |
-        ConvertFrom-Json
+    ConvertFrom-Json
     Assert-Condition ([string]$recoveryResult.status -eq 'passed' -and
         [string]$recoveredReceipt.status -eq 'committed' -and
         -not (Test-Path -LiteralPath $manifestBackupPath)) `
         'Pending transaction did not reconcile committed targets.'
 
     $idempotentText = (& (Join-Path $repositoryRoot 'tools\New-DnfReleaseMetadata.ps1') `
-        -FinalSummaryPath $summaryPath -ManualReviewPath $reviewPath `
-        -ProfessionManifestPath $manifestPath -ReleaseReportPath $releasePath `
-        -TransactionReceiptPath $receiptPath `
-        -ReleaseId 'fixture.rollback-v1' -RepoRoot $fixtureRoot -AsJson |
+            -FinalSummaryPath $summaryPath -ManualReviewPath $reviewPath `
+            -ProfessionManifestPath $manifestPath -ReleaseReportPath $releasePath `
+            -TransactionReceiptPath $receiptPath `
+            -ReleaseId 'fixture.rollback-v1' -RepoRoot $fixtureRoot -AsJson |
         Out-String).Trim()
     $idempotentResult = $idempotentText | ConvertFrom-Json
     Assert-Condition ([string]$idempotentResult.status -eq 'passed' -and
         [string]$idempotentResult.transaction.status -eq 'committed') `
         'Committed transaction was not idempotent.'
 
+    $casReceiptAPath = Join-Path $runDirectory 'release-transaction-cas-a.json'
+    $casReleaseAPath = Join-Path $runDirectory 'release-cas-a.json'
+    $casReceiptBPath = Join-Path $runDirectory 'release-transaction-cas-b.json'
+    $casReleaseBPath = Join-Path $runDirectory 'release-cas-b.json'
+    Copy-Item -LiteralPath $releasePath -Destination $casReleaseAPath
+    $casReceiptA = Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 |
+    ConvertFrom-Json
+    $casReceiptA.releaseId = 'fixture.cas-a-v1'
+    $casReceiptA.status = 'pending'
+    $casReceiptA.committedAtUtc = $null
+    $casReceiptA.paths.releaseReport = 'run/release-cas-a.json'
+    $casReceiptA.paths.receipt = 'run/release-transaction-cas-a.json'
+    $casReceiptA.outputs.releaseReport.path = 'run/release-cas-a.json'
+    $casReceiptA.closure = $null
+    Write-Json -Path $casReceiptAPath -Value $casReceiptA
+    $casAToken = Get-TransactionToken -ReceiptPath $casReceiptAPath
+    Copy-Item -LiteralPath $casReleaseAPath -Destination (
+        Join-Path $runDirectory ".release-$casAToken.stage.json")
+    Copy-Item -LiteralPath $manifestPath -Destination (
+        Join-Path $professionDirectory ".manifest-$casAToken.stage.json")
+    [IO.File]::WriteAllBytes((Join-Path $professionDirectory `
+                ".manifest-$casAToken.backup.json"), $manifestBeforeBytes)
+    [IO.File]::WriteAllBytes($manifestPath, $manifestBeforeBytes)
+    Remove-Item -LiteralPath $casReleaseAPath -Force
+
+    $casBText = (& (Join-Path $repositoryRoot 'tools\New-DnfReleaseMetadata.ps1') `
+            -FinalSummaryPath $summaryPath -ManualReviewPath $reviewPath `
+            -ProfessionManifestPath $manifestPath -ReleaseReportPath $casReleaseBPath `
+            -TransactionReceiptPath $casReceiptBPath `
+            -ReleaseId 'fixture.cas-b-v1' -RepoRoot $fixtureRoot -AsJson |
+        Out-String).Trim()
+    $casBResult = $casBText | ConvertFrom-Json
+    Assert-Condition ([string]$casBResult.status -eq 'passed' -and
+        [string]$casBResult.transaction.status -eq 'committed') `
+        'CAS winner transaction did not commit.'
+    $casBManifestHash = (Get-FileHash -LiteralPath $manifestPath `
+            -Algorithm SHA256).Hash
+    $casBReleaseHash = (Get-FileHash -LiteralPath $casReleaseBPath `
+            -Algorithm SHA256).Hash
+    $casBReceiptHash = (Get-FileHash -LiteralPath $casReceiptBPath `
+            -Algorithm SHA256).Hash
+
+    $casRejected = $false
+    try {
+        & (Join-Path $repositoryRoot 'tools\New-DnfReleaseMetadata.ps1') `
+            -FinalSummaryPath $summaryPath -ManualReviewPath $reviewPath `
+            -ProfessionManifestPath $manifestPath -ReleaseReportPath $casReleaseAPath `
+            -TransactionReceiptPath $casReceiptAPath `
+            -ReleaseId 'fixture.cas-a-v1' -RepoRoot $fixtureRoot -AsJson | Out-Null
+    }
+    catch {
+        $casRejected = $_.Exception.Message -match 'Release transaction manifest changed'
+    }
+    Assert-Condition ($casRejected -and
+        (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash -eq $casBManifestHash -and
+        (Get-FileHash -LiteralPath $casReleaseBPath -Algorithm SHA256).Hash -eq $casBReleaseHash -and
+        (Get-FileHash -LiteralPath $casReceiptBPath -Algorithm SHA256).Hash -eq $casBReceiptHash) `
+        'Concurrent manifest CAS fixture did not reject the stale pending transaction.'
+
     $result = [pscustomobject]@{
-        schemaVersion = 1
-        status = 'passed'
-        failureObserved = $true
-        manifestByteIdentityRestored = $true
-        releaseRemoved = $true
-        temporaryFileCount = 0
-        transactionRecoveryPassed = $true
+        schemaVersion                  = 1
+        status                         = 'passed'
+        failureObserved                = $true
+        manifestByteIdentityRestored   = $true
+        releaseRemoved                 = $true
+        temporaryFileCount             = 0
+        transactionRecoveryPassed      = $true
         committedTransactionIdempotent = $true
-        deployment = [pscustomobject]@{
-            authorized = $false
-            performed = $false
+        concurrentManifestCasPassed    = $true
+        deployment                     = [pscustomobject]@{
+            authorized       = $false
+            performed        = $false
             imagePacks2Write = $false
             processOperation = $false
         }
