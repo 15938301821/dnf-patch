@@ -25,8 +25,9 @@ for name, value in pairs(requiredBlendModes) do
     error("Required blend mode is unavailable: " .. name)
   end
 end
-if not ResizeMethod or ResizeMethod.BILINEAR == nil then
-  error("Required resize method is unavailable: ResizeMethod.BILINEAR")
+local resizeMethod = "bilinear"
+if ResizeMethod and ResizeMethod.BILINEAR ~= nil then
+  resizeMethod = ResizeMethod.BILINEAR
 end
 
 local projectFile = app.fs.joinPath(outputDirectory, "aseprite-api-probe.aseprite")
@@ -53,7 +54,7 @@ context:closePath()
 context:fill()
 
 local cropped = Image(source, Rectangle(0, 0, 8, 8))
-cropped:resize { width = 16, height = 16, method = ResizeMethod.BILINEAR }
+cropped:resize { width = 16, height = 16, method = resizeMethod }
 local canvas = Image(16, 16, ColorMode.RGB)
 canvas:clear()
 canvas:drawImage(cropped, Point(0, 0))
