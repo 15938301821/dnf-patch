@@ -42,7 +42,9 @@ DMC5 Vergil aesthetic, icy cobalt-blue energy, Mirage Edge phantom blades, Yamat
 
 先加载仓库根规则、剑魂职业规则和经核验的 manifest/inventory，再加载职业目录同名 Prompt，最后追加本主题同名 Prompt。共同 Base Style 从本文件加载，逐技能主题 Prompt 不重复整段共同风格。
 
-职业 Prompt 决定动作和阶段；主题 Prompt 只补充色板、材质、粒子、光线、裂纹和造型隐喻。任何主题专名都只是外观语言，不建立资源映射。
+职业 Prompt 决定动作、阶段、轮廓、锚点和命中辨识；主题 Prompt 只补充色板、材质、粒子、光线、裂纹和造型隐喻。任何主题专名都只是外观语言，不建立资源映射。
+
+全量模型+Aseprite 生成必须使用“源帧几何 + 剑魂 `prompts/` 职业动作骨架 + 本主题 `AGENTS.md` 共同 Base Style/边界 + 本主题 `prompts/` 逐技能增量”。只把本主题 `prompts/` 喂给模型不足以证明技能构图完全正确。执行计划必须快照本主题 `AGENTS.md`、职业 Prompt 包、主题 Prompt 包、每个已核验技能的合成 Prompt 哈希、资源/帧白名单和严格保持源 UI 帧位置尺寸策略。
 
 ## 修改范围与边界
 
@@ -63,10 +65,12 @@ DMC5 Vergil aesthetic, icy cobalt-blue energy, Mirage Edge phantom blades, Yamat
 
 ## 领域工具路由
 
-- 当前主题的离线试制入口是 tools/Build-VergilMomentarySlashPilot.ps1；它只能读取职业 manifest 已核验并授权的单包、内部 IMG 与帧集合。
-- 逐纹理发布门禁入口是 tools/Test-VergilMomentarySlashTextures.ps1；它只读比较源包和候选包，并输出 40 纹理的 DDS、alpha 块、BGRA、alpha 哈希与 texdiag 结果。
-- C# 构建器只允许保留 Ver5 和源 DXT5 结构，在 BC3 块内保留原 alpha 数据并替换允许帧的颜色数据；不得调用会重建图集关系的 Adjust、Refresh 或 Bitmap 替换接口。
-- 该入口是部分资源 pilot，不得扩展到其他 NPK、从技术资源 ID 推断中文技能名，也不得据此声明全技能覆盖或目标客户端兼容。
+- 当前主题的第三版部分技能试制入口是 `tools/Build-VergilVer5DdsRecolor.ps1` 加 `configs/custom-skill-v3/*.json`，目标只限幻影剑舞技术资源的 `illusionslash` 与 `illusionslash/finish` 已列 IMG；聚合与摘要入口是 `tools/New-VergilCustomSkillV3.ps1`。
+- `custom-skill-v3-fix1` 与 `custom-skill-v3-fix2` 是第三版实机未生效反馈后的修复候选，入口分别是 `configs/custom-skill-v3-fix1/*.json`、`tools/New-VergilCustomSkillV3Fix1.ps1`、`configs/custom-skill-v3-fix2/*.json` 和 `tools/New-VergilCustomSkillV3Fix2.ps1`；相对 v3 新增一个经构建证据验证的技术层，最终文件名前缀 `a_` 只作为目标客户端加载顺序测试候选，不证明优先级或兼容。
+- `custom-skill-v3`、`custom-skill-v3-fix1` 与 `custom-skill-v3-fix2` 不使用三觉 Cut-in 或 momentaryslash 作为试制资源，不调用历史 `tools/Build-VergilProgressPackage.ps1`，也不得从 Prompt 标题或技术资源 ID 宣称显示名映射、全技能覆盖或目标客户端兼容。
+- 幻影剑舞第三版的 `promptBinding` 只证明单技能试制引用了同名职业/主题 Prompt 文件和几何保持策略；它不是全量 Prompt 包，也不能证明模型+Aseprite 主链路已执行。
+- Ver5 DDS 调色采用 endpoint-level B 方案：只改 BC1/BC3 color endpoints，保留源 color selector、DDS header、BC3 alpha block、BC1 transparent mode、TextureVersion、纹理索引、图集裁剪、旋转、共享关系、帧几何和 alpha 哈希；不得经 PNG、Bitmap 替换或 texconv 二次重编码制造低清。
+- 第三版及其 fix 候选高清门禁必须记录 `changedColorBlocks`、`visibleRgbChanges`、`sourceDdsSha256/outputDdsSha256`、`sourceAlphaSha256/outputAlphaSha256`、`ddsHeaders`、`bc3AlphaBlocks`、`bc1TransparentMode`、`authorizedDecodedAlpha` 与 `texdiagPerTexture`，并生成独立索引、全帧黑白棋盘联系表和像素状态摘要。
 - 构建产物只写入当前主题工作区；部署只在用户当前请求明确授权时作为独立步骤执行。
 
 活动三觉 Cut-in 使用以下两阶段入口：

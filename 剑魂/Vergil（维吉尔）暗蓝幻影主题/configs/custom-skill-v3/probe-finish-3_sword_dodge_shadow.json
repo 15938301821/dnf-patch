@@ -1,15 +1,15 @@
-{
+﻿{
   "$schema": "../../tools/vergil-ver5-dds-recolor.config.schema.json",
   "schemaVersion": 1,
   "themeId": "weaponmaster-vergil-dark-blue",
   "sourceNpk": {
-    "path": "G:/Program Files (x86)/dnfCopy/地下城与勇士-补丁制作引用源码/ImagePacks2/sprite_character_swordman_effect_illusionslash_finish.NPK",
+    "path": "G:\\Program Files (x86)\\dnfCopy\\地下城与勇士-补丁制作引用源码\\ImagePacks2\\sprite_character_swordman_effect_illusionslash_finish.NPK",
     "sha256": "C0D8B0D84B5AE2636A2A1E1E1881510633DBABE2D84838B1613AD1826070EBDE",
     "length": 223569
   },
   "output": {
-    "componentNpkPath": "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-illusionslash_finish-sparkhead04-stable-v1.NPK",
-    "buildSummaryPath": "../../validation/full-skill-v1/components/illusionslash_finish-sparkhead04-stable/build-summary.json"
+    "componentNpkPath": "../../npk/custom-skill-v3/probes/probe-finish-3_sword_dodge_shadow.NPK",
+    "buildSummaryPath": "../../validation/custom-skill-v3/probes/finish-3_sword_dodge_shadow/build-summary.json"
   },
   "promptBinding": {
     "role": "primary-skill-prompt",
@@ -21,7 +21,7 @@
     "scope": "illusionslash-only"
   },
   "allowedImgPaths": [
-    "sprite/character/swordman/effect/illusionslash/finish/illusionslashsparkhead04.img"
+    "sprite/character/swordman/effect/illusionslash/finish/3_sword_dodge_shadow.img"
   ],
   "excludedFrameKeys": []
 }

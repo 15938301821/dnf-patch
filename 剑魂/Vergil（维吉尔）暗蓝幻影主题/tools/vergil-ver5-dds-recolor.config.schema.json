@@ -25,10 +25,7 @@
     "sourceNpk": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "path",
-        "sha256"
-      ],
+      "required": ["path", "sha256"],
       "properties": {
         "path": {
           "type": "string",
@@ -48,10 +45,7 @@
     "output": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "componentNpkPath",
-        "buildSummaryPath"
-      ],
+      "required": ["componentNpkPath", "buildSummaryPath"],
       "properties": {
         "componentNpkPath": {
           "type": "string",
@@ -80,6 +74,43 @@
         "pattern": "^[^#]+\\.[Ii][Mm][Gg]#[0-9]+$"
       },
       "description": "必须显式存在；没有排除帧时使用空数组。共享 Texture 任一引用命中排除键时整组不改。"
+    },
+    "promptBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "priority",
+        "themeAgentPath",
+        "themePromptPath",
+        "professionPromptPath",
+        "uiFrameGeometryPolicy",
+        "scope"
+      ],
+      "properties": {
+        "role": {
+          "const": "primary-skill-prompt"
+        },
+        "priority": {
+          "const": 1
+        },
+        "themeAgentPath": {
+          "const": "../../AGENTS.md"
+        },
+        "themePromptPath": {
+          "const": "../../prompts/幻影剑舞.md"
+        },
+        "professionPromptPath": {
+          "const": "../../../prompts/幻影剑舞.md"
+        },
+        "uiFrameGeometryPolicy": {
+          "const": "strict-preserve-source-frame-position-size"
+        },
+        "scope": {
+          "const": "illusionslash-only"
+        }
+      },
+      "description": "幻影剑舞配置必须绑定主题 AGENTS 共同规则、用户点名的主题/职业 Prompt，并声明 UI 帧位置尺寸严格保持；该字段只证明引用与门禁，不证明模型或 Aseprite 已执行。"
     }
   }
 }

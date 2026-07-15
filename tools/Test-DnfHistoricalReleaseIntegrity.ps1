@@ -61,7 +61,7 @@ function Assert-FileSnapshot {
         "$Label SHA-256 changed: actual=$actualHash expected=$expectedHash"
     $script:SnapshotCount++
     return [pscustomobject]@{
-        path = $path
+        path   = $path
         length = [long]$item.Length
         sha256 = $actualHash
     }
@@ -119,8 +119,38 @@ if (-not $hasCurrentFullSkillRelease) {
         'Manifest coverage cannot be true without a current fullSkillRelease.'
 }
 
-$historical = @($manifest.historicalFullSkillReleases)
-Assert-Condition ($historical.Count -gt 0) 'Profession manifest has no historical full-skill releases.'
+$historical = @(if ($null -ne $manifest.PSObject.Properties['historicalFullSkillReleases']) {
+        $manifest.historicalFullSkillReleases
+    }
+    else {
+        @()
+    })
+if ($historical.Count -eq 0) {
+    Assert-Condition ([string]::IsNullOrWhiteSpace($ReleaseId)) "Historical release was not found: $ReleaseId"
+    Assert-Condition (-not $hasCurrentFullSkillRelease -and $manifest.coverage.fullSkillCoverageProven -eq $false) `
+        'A manifest without historical releases must remain coverage=false and have no current fullSkillRelease.'
+    $emptyResult = [pscustomobject]@{
+        schemaVersion                          = 1
+        status                                 = 'passed'
+        mode                                   = 'no historical releases registered; current manifest remains coverage=false'
+        professionManifest                     = $manifestPath
+        historicalReleaseCount                 = 0
+        releases                               = @()
+        snapshotCount                          = 0
+        currentFullSkillReleasePresent         = $hasCurrentFullSkillRelease
+        currentFullSkillCoverageProven         = [bool]$manifest.coverage.fullSkillCoverageProven
+        historicalCoverageConclusionsPreserved = $false
+        targetClientCompatibilityProven        = $false
+        deployment                             = 'not-authorized-not-performed'
+    }
+    if ($AsJson) {
+        $emptyResult | ConvertTo-Json -Depth 10
+    }
+    else {
+        $emptyResult
+    }
+    return
+}
 $selected = @(if ([string]::IsNullOrWhiteSpace($ReleaseId)) {
         $historical
     }
@@ -344,38 +374,38 @@ foreach ($archive in $selected) {
         "Historical full-frame sheet/background contents changed: $archiveId"
 
     $releaseResults.Add([pscustomobject]@{
-        releaseId = $archiveId
-        status = 'passed-historical-integrity'
-        artifact = [pscustomobject]@{
-            path = $artifact.path
-            length = $artifact.length
-            sha256 = $artifact.sha256
-            imgCount = $expectedImgCount
-            frameCount = $expectedFrameCount
-        }
-        packageEntryCount = $expectedEntryCount
-        sourceNpkCount = $expectedSourceNpkCount
-        contactSheetCount = $contactSheetCount
-        independentIndex = 'passed-live-and-snapshot'
-        targetClientCompatibilityProven = $false
-        deployment = 'not-authorized-not-performed'
-    })
+            releaseId                       = $archiveId
+            status                          = 'passed-historical-integrity'
+            artifact                        = [pscustomobject]@{
+                path       = $artifact.path
+                length     = $artifact.length
+                sha256     = $artifact.sha256
+                imgCount   = $expectedImgCount
+                frameCount = $expectedFrameCount
+            }
+            packageEntryCount               = $expectedEntryCount
+            sourceNpkCount                  = $expectedSourceNpkCount
+            contactSheetCount               = $contactSheetCount
+            independentIndex                = 'passed-live-and-snapshot'
+            targetClientCompatibilityProven = $false
+            deployment                      = 'not-authorized-not-performed'
+        })
 }
 
 $releaseArray = $releaseResults.ToArray()
 $result = [pscustomobject]@{
-    schemaVersion = 1
-    status = 'passed'
-    mode = 'read-only historical release integrity; no live binding to changed rules or old official source paths'
-    professionManifest = $manifestPath
-    historicalReleaseCount = $releaseArray.Count
-    releases = $releaseArray
-    snapshotCount = $script:SnapshotCount
-    currentFullSkillReleasePresent = $hasCurrentFullSkillRelease
-    currentFullSkillCoverageProven = [bool]$manifest.coverage.fullSkillCoverageProven
+    schemaVersion                          = 1
+    status                                 = 'passed'
+    mode                                   = 'read-only historical release integrity; no live binding to changed rules or old official source paths'
+    professionManifest                     = $manifestPath
+    historicalReleaseCount                 = $releaseArray.Count
+    releases                               = $releaseArray
+    snapshotCount                          = $script:SnapshotCount
+    currentFullSkillReleasePresent         = $hasCurrentFullSkillRelease
+    currentFullSkillCoverageProven         = [bool]$manifest.coverage.fullSkillCoverageProven
     historicalCoverageConclusionsPreserved = $true
-    targetClientCompatibilityProven = $false
-    deployment = 'not-authorized-not-performed'
+    targetClientCompatibilityProven        = $false
+    deployment                             = 'not-authorized-not-performed'
 }
 
 if ($AsJson) {

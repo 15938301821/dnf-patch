@@ -2,11 +2,11 @@
 
 ## 职责
 
-本目录保存相对剑魂职业 Prompt 的逐技能视觉增量。共同 Base Style、色板、材质、粒子、光线和主题边界由 `../AGENTS.md` 集中定义。
+本目录保存相对剑魂职业 Prompt 的逐技能视觉增量。共同 Base Style、色板、材质、粒子、光线和主题边界由 `../AGENTS.md` 集中定义。本目录不是独立构图 Prompt 包；全量生成时必须与 `../AGENTS.md` 和 `../../prompts/` 下的同名职业 Prompt 一起输入模型。
 
 ## 加载顺序
 
-先读取仓库根规则、`../../AGENTS.md` 与经核验的 manifest/inventory。只有技术资源和显示名映射已核验时，才读取 `../../prompts/` 下的同名职业 Prompt，并追加本目录同名主题 Prompt；映射未核验时只使用源帧事实和 manifest 独立授权的主题共同规则。
+先读取仓库根规则、`../../AGENTS.md`、本主题 `../AGENTS.md` 与经核验的 manifest/inventory。只有技术资源和显示名映射已核验时，才读取 `../../prompts/` 下的同名职业 Prompt，并追加本目录同名主题 Prompt；映射未核验时只使用源帧事实和 manifest 独立授权的主题共同规则。全量模型+Aseprite 工作流按“源帧几何 -> 职业 Prompt 动作骨架 -> `../AGENTS.md` 主题共同风格 -> 本目录同名主题增量”的顺序合成。
 
 ## 稳定结构
 

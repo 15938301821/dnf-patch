@@ -64,9 +64,13 @@
 
 - 逐技能 Prompt 只能在 manifest/inventory 已核验技术资源与显示名映射后进入具体资源构建；文件同名、中文翻译、Replay 名称或设计稿标题不能建立映射。
 - 显示名映射未核验时，不加载猜测的逐技能 Prompt。只能组合源帧语义、职业/主题规则中与具体名称无关的共同约束，以及 manifest 独立授权的允许变化。
-- 合成顺序固定为“源帧几何与分类 -> 已核验职业语义 -> 已核验主题增量”。任何 Prompt 都不能新增 IMG、帧、人物层、武器、Cut-in、阶段或部署权限。
+- 合成顺序固定为“源帧几何与分类 -> 已核验职业语义 -> 主题 `AGENTS.md` 共同规则 -> 已核验主题增量”。任何 Prompt 或主题规则都不能新增 IMG、帧、人物层、武器、Cut-in、阶段或部署权限。
 - Negative Prompt 只约束新生成的视觉增量，不删除源资源合法的人物、背景、UI、文字、黑色 RGB、透明占位或加色层。
 - AI 输出标记为概念素材；回灌前仍须在项目本地 Aseprite 中按源几何、时序、alpha 和构图适配，保存分层工程并导出经验证的 runtime PNG。
+- 全量生成必须把职业 `prompts/`、主题 `AGENTS.md` 与主题 `prompts/` 作为 Prompt 包使用：职业 Prompt 负责动作骨架、阶段、轮廓、锚点和命中辨识；主题 `AGENTS.md` 负责共同 Base Style、色板、材质、边界和主题验收；主题 Prompt 负责逐技能粒子、光线和主题增量。只喂主题 Prompt 不能证明构图完全正确。
+- 对每个已核验显示名映射的资源，执行计划必须记录主题 `AGENTS.md`、职业 Prompt 文件、主题 Prompt 文件、三者 SHA-256、合成文本哈希、适用帧白名单和严格保持源 UI 帧位置尺寸的策略；映射未核验时不得按名称选择逐技能 Prompt。
+- 当用户点名某个逐技能 Prompt 用于单技能试制时，该 Prompt 必须与主题 `AGENTS.md` 和同名职业 Prompt 绑定后，只在对应资源/帧白名单内作为最高优先级输入，不能替代全量 Prompt 包。
+- 纯 DDS endpoint 调色、色板映射、脚本硬编码颜色或构建摘要中的 Prompt 文件快照，只能证明低层调色或引用证据存在；不能作为 Prompt 已驱动模型生成、Aseprite 定制或主题图像改造生效的证明。
 - 修改职业或主题 Prompt 后运行 `tools/Test-DnfPromptTree.ps1`；发布前由 `tools/Test-DnfProjectGate.ps1` 复核全部职业/主题 Prompt 树。
 
 ## 四、索引固定结构

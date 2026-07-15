@@ -247,6 +247,18 @@ internal static class BuildVergilVer5DdsRecolor
         public OutputConfig output { get; set; }
         public string[] allowedImgPaths { get; set; }
         public string[] excludedFrameKeys { get; set; }
+        public PromptBindingConfig promptBinding { get; set; }
+    }
+
+    private sealed class PromptBindingConfig
+    {
+        public string role { get; set; }
+        public int priority { get; set; }
+        public string themeAgentPath { get; set; }
+        public string themePromptPath { get; set; }
+        public string professionPromptPath { get; set; }
+        public string uiFrameGeometryPolicy { get; set; }
+        public string scope { get; set; }
     }
 
     private sealed class SourceConfig
@@ -428,6 +440,25 @@ internal static class BuildVergilVer5DdsRecolor
         public string[] explicitExcludedFrameKeys { get; set; }
         public string[] palette { get; set; }
         public int nearBlackMaxChannel { get; set; }
+        public SummaryPromptBinding promptBinding { get; set; }
+    }
+
+    private sealed class SummaryPromptBinding
+    {
+        public string role { get; set; }
+        public int priority { get; set; }
+        public SummaryPromptFile themeAgent { get; set; }
+        public SummaryPromptFile themePrompt { get; set; }
+        public SummaryPromptFile professionPrompt { get; set; }
+        public string uiFrameGeometryPolicy { get; set; }
+        public string scope { get; set; }
+    }
+
+    private sealed class SummaryPromptFile
+    {
+        public string path { get; set; }
+        public long length { get; set; }
+        public string sha256 { get; set; }
     }
 
     private sealed class SummaryCounts
@@ -454,6 +485,10 @@ internal static class BuildVergilVer5DdsRecolor
     {
         public string reopenedFromDisk { get; set; }
         public string structureAndSharing { get; set; }
+        public string framePositionAndSize { get; set; }
+        public string frameCanvasAndOffsets { get; set; }
+        public string atlasRectanglesAndRotation { get; set; }
+        public string textureVersionAndIndexing { get; set; }
         public string ddsHeaders { get; set; }
         public string bc3AlphaBlocks { get; set; }
         public string bc1TransparentMode { get; set; }
@@ -585,6 +620,7 @@ internal static class BuildVergilVer5DdsRecolor
 
         BuildSummary summary = CreateSummary(
             config,
+            configDirectory,
             sourceFile,
             sourceInfo,
             sourceHash,
@@ -636,7 +672,57 @@ internal static class BuildVergilVer5DdsRecolor
             throw new InvalidDataException("Config allowedImgPaths must not be empty.");
         if (config.excludedFrameKeys == null)
             throw new InvalidDataException("Config excludedFrameKeys must be present; use an empty array when none are excluded.");
+        if (UsesIllusionSlashScope(config.allowedImgPaths) || config.promptBinding != null)
+            ValidatePromptBindingConfig(config.promptBinding);
         return config;
+    }
+
+    private static bool UsesIllusionSlashScope(string[] paths)
+    {
+        if (paths == null)
+            return false;
+        foreach (string path in paths)
+        {
+            string normalized = NormalizeImgPath(path);
+            if (normalized.StartsWith("sprite/character/swordman/effect/illusionslash/", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    private static void ValidatePromptBindingConfig(PromptBindingConfig binding)
+    {
+        const string expectedThemeAgent = "../../AGENTS.md";
+        const string expectedThemePrompt = "../../prompts/\u5E7B\u5F71\u5251\u821E.md";
+        const string expectedProfessionPrompt = "../../../prompts/\u5E7B\u5F71\u5251\u821E.md";
+        if (binding == null)
+            throw new InvalidDataException("Illusionslash configs must bind theme AGENTS, theme prompt, and profession prompt with promptBinding.");
+        if (!String.Equals(binding.role, "primary-skill-prompt", StringComparison.Ordinal))
+            throw new InvalidDataException("Config promptBinding.role must be primary-skill-prompt.");
+        if (binding.priority != 1)
+            throw new InvalidDataException("Config promptBinding.priority must be 1.");
+        if (!String.Equals(NormalizeConfigPath(binding.themeAgentPath), expectedThemeAgent, StringComparison.Ordinal))
+            throw new InvalidDataException("Config promptBinding.themeAgentPath must target the theme AGENTS.md file.");
+        if (!String.Equals(NormalizeConfigPath(binding.themePromptPath), expectedThemePrompt, StringComparison.Ordinal))
+            throw new InvalidDataException("Config promptBinding.themePromptPath must target the theme Illusion Slash prompt.");
+        if (!String.Equals(NormalizeConfigPath(binding.professionPromptPath), expectedProfessionPrompt, StringComparison.Ordinal))
+            throw new InvalidDataException("Config promptBinding.professionPromptPath must target the profession Illusion Slash prompt.");
+        if (!String.Equals(binding.uiFrameGeometryPolicy, "strict-preserve-source-frame-position-size", StringComparison.Ordinal))
+            throw new InvalidDataException("Config promptBinding.uiFrameGeometryPolicy must be strict-preserve-source-frame-position-size.");
+        if (!String.Equals(binding.scope, "illusionslash-only", StringComparison.Ordinal))
+            throw new InvalidDataException("Config promptBinding.scope must be illusionslash-only.");
+    }
+
+    private static string NormalizeConfigPath(string value)
+    {
+        if (String.IsNullOrWhiteSpace(value))
+            throw new InvalidDataException("Configured prompt path cannot be empty.");
+        string normalized = value.Trim().Replace('\\', '/');
+        if (Path.IsPathRooted(value.Replace('/', Path.DirectorySeparatorChar)))
+            throw new InvalidDataException("Configured prompt path must be repository-relative, not absolute: " + value);
+        while (normalized.StartsWith("./", StringComparison.Ordinal))
+            normalized = normalized.Substring(2);
+        return normalized;
     }
 
     private static void ValidateResolvedPaths(string sourceFile, string outputFile, string summaryFile)
@@ -1711,6 +1797,7 @@ internal static class BuildVergilVer5DdsRecolor
 
     private static BuildSummary CreateSummary(
         BuildConfig config,
+        string configDirectory,
         string sourceFile,
         FileInfo sourceInfo,
         string sourceHash,
@@ -1751,7 +1838,8 @@ internal static class BuildVergilVer5DdsRecolor
             allowedImgPaths = config.allowedImgPaths,
             explicitExcludedFrameKeys = config.excludedFrameKeys,
             palette = new[] { "#0A1633", "#1A8FFF", "#00D4FF", "#FFFFFF" },
-            nearBlackMaxChannel = NearBlackMaxChannel
+            nearBlackMaxChannel = NearBlackMaxChannel,
+            promptBinding = CreatePromptBindingSummary(configDirectory, config.promptBinding)
         };
         summary.counts = new SummaryCounts
         {
@@ -1776,6 +1864,10 @@ internal static class BuildVergilVer5DdsRecolor
         {
             reopenedFromDisk = "passed",
             structureAndSharing = "passed",
+            framePositionAndSize = "byte-identical Width/Height/X/Y",
+            frameCanvasAndOffsets = "byte-identical CanvasWidth/CanvasHeight/X/Y",
+            atlasRectanglesAndRotation = "byte-identical LeftUp/RightDown/Rotation/Unknown",
+            textureVersionAndIndexing = "byte-identical TextureVersion/TextureIndex/Texture size",
             ddsHeaders = "byte-identical",
             bc3AlphaBlocks = "byte-identical where applicable",
             bc1TransparentMode = "preserved per block where applicable",
@@ -1793,6 +1885,35 @@ internal static class BuildVergilVer5DdsRecolor
             status = "not-authorized-not-performed"
         };
         return summary;
+    }
+
+    private static SummaryPromptBinding CreatePromptBindingSummary(string configDirectory, PromptBindingConfig binding)
+    {
+        if (binding == null)
+            return null;
+        return new SummaryPromptBinding
+        {
+            role = binding.role,
+            priority = binding.priority,
+            themeAgent = SnapshotPromptFile(configDirectory, binding.themeAgentPath),
+            themePrompt = SnapshotPromptFile(configDirectory, binding.themePromptPath),
+            professionPrompt = SnapshotPromptFile(configDirectory, binding.professionPromptPath),
+            uiFrameGeometryPolicy = binding.uiFrameGeometryPolicy,
+            scope = binding.scope
+        };
+    }
+
+    private static SummaryPromptFile SnapshotPromptFile(string configDirectory, string configuredPath)
+    {
+        string path = ResolveConfiguredPath(configDirectory, configuredPath);
+        RequireFile(path, "prompt binding file");
+        FileInfo file = new FileInfo(path);
+        return new SummaryPromptFile
+        {
+            path = path,
+            length = file.Length,
+            sha256 = HashFile(path)
+        };
     }
 
     private static void WriteJsonAtomically(string path, object value)

@@ -238,11 +238,11 @@ function Test-DnfAsepriteApiCapability {
         }
 
         return [pscustomobject]@{
-            status = 'passed'
-            apiVersion = $apiVersion
+            status            = 'passed'
+            apiVersion        = $apiVersion
             minimumApiVersion = $minimumApiVersion
-            features = @($featuresMatch.Groups[1].Value.Split(','))
-            probeScript = Get-DnfFileSnapshot -Path $resolvedProbe
+            features          = @($featuresMatch.Groups[1].Value.Split(','))
+            probeScript       = Get-DnfFileSnapshot -Path $resolvedProbe
         }
     }
     finally {
@@ -283,10 +283,10 @@ function Get-DnfFileSnapshot {
     $resolved = (Resolve-Path -LiteralPath $Path).Path
     $item = Get-Item -LiteralPath $resolved
     return [pscustomobject]@{
-        path = $resolved
-        length = [long]$item.Length
+        path          = $resolved
+        length        = [long]$item.Length
         lastWriteTime = $item.LastWriteTime.ToString('o')
-        sha256 = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash
+        sha256        = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash
     }
 }
 

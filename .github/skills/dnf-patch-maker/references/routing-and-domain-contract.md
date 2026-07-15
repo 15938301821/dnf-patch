@@ -26,12 +26,15 @@
 ```text
 源帧语义与几何
 + 职业 Prompt 的稳定运动、轮廓与阶段
-+ 主题 Prompt 的色板、材质、粒子和技能增量
++ 主题 AGENTS.md 的共同 Base Style、色板、材质和边界
++ 主题 Prompt 的粒子、光线和逐技能增量
 ```
 
-Prompt 不建立资源映射。主题 Prompt 不能加入 manifest 未允许的帧、album、NPK、人物层或 Cut-in。
+Prompt 和主题规则不建立资源映射。主题 `AGENTS.md` 与主题 Prompt 都不能加入 manifest 未允许的帧、album、NPK、人物层或 Cut-in。
 
 逐技能 Prompt 只有在 manifest/inventory 明确证明技术资源与显示名映射后才可路由。映射状态为未核验时，不得根据同名文件、翻译名或 Replay 名称套用逐技能 Prompt；只允许使用源帧事实和不依赖显示名的共同主题规则。
+
+全量生成时，职业 `prompts/`、主题 `AGENTS.md` 与主题 `prompts/` 必须作为 Prompt 包进入图像模型和 Aseprite run plan。职业 Prompt 是构图骨架，主题 `AGENTS.md` 是共同风格与边界，主题 Prompt 是逐技能外观增量；只使用主题 Prompt 不能证明动作阶段、轮廓和锚点构图正确。用户点名单技能 Prompt 时，只能在绑定主题 `AGENTS.md` 和同名职业 Prompt 后，于对应资源/帧白名单内提升该技能 Prompt 优先级，不能替代全量 Prompt 包。路由证据必须记录主题 `AGENTS.md`、Prompt 文件快照和合成哈希；纯调色配置、endpoint recolor 或构建摘要中的文件引用不等同于 Prompt 已驱动图像生成或 Aseprite 修改。
 
 ## 五、冲突处理
 

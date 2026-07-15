@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "../../tools/vergil-ver5-dds-recolor.config.schema.json",
+  "schemaVersion": 1,
+  "themeId": "weaponmaster-vergil-dark-blue",
+  "sourceNpk": {
+    "path": "G:\\Program Files (x86)\\dnfCopy\\地下城与勇士-补丁制作引用源码\\ImagePacks2\\sprite_character_swordman_effect_atillusionslash.NPK",
+    "sha256": "110648338CA1640CDC02A4685FB223DAC9654EB28B54EC70CFFF64D234C61E78",
+    "length": 133800
+  },
+  "output": {
+    "componentNpkPath": "../../npk/custom-skill-v3/probes/probe-at-illusion_cast.NPK",
+    "buildSummaryPath": "../../validation/custom-skill-v3/probes/at-illusion_cast/build-summary.json"
+  },
+  "allowedImgPaths": [
+    "sprite/character/swordman/effect/atillusionslash/illusion_cast.img"
+  ],
+  "excludedFrameKeys": []
+}

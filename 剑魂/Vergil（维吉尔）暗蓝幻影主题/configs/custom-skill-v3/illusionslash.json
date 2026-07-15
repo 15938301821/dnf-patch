@@ -8,8 +8,8 @@
     "length": 956090
   },
   "output": {
-    "componentNpkPath": "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-illusionslash-v1.NPK",
-    "buildSummaryPath": "../../validation/full-skill-v1/components/illusionslash/build-summary.json"
+    "componentNpkPath": "../../npk/custom-skill-v3/components/weaponmaster-vergil-dark-blue-illusionslash-v3.NPK",
+    "buildSummaryPath": "../../validation/custom-skill-v3/components/illusionslash/build-summary.json"
   },
   "promptBinding": {
     "role": "primary-skill-prompt",
@@ -28,11 +28,7 @@
     "sprite/character/swordman/effect/illusionslash/illusionslashvp2lswd.img",
     "sprite/character/swordman/effect/illusionslash/illusionslashvp2sswd.img",
     "sprite/character/swordman/effect/illusionslash/particle.img",
-    "sprite/character/swordman/effect/illusionslash/shot.img",
-    "sprite/character/swordman/effect/illusionslash/shot-back.img",
-    "sprite/character/swordman/effect/illusionslash/shot-front.img",
-    "sprite/character/swordman/effect/illusionslash/shot-front_shadow.img",
-    "sprite/character/swordman/effect/illusionslash/slash.img"
+    "sprite/character/swordman/effect/illusionslash/shot-front_shadow.img"
   ],
   "excludedFrameKeys": [
     "sprite/character/swordman/effect/illusionslash/illusionslashvp2sswd.img#36"

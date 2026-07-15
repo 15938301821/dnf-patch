@@ -86,13 +86,61 @@ if (@($config.allowedImgPaths).Count -eq 0) {
 if ($null -eq $config.PSObject.Properties['excludedFrameKeys']) {
     throw 'Config excludedFrameKeys must be present; use an empty array when none are excluded.'
 }
+$usesIllusionSlashScope = $false
+foreach ($imgPath in @($config.allowedImgPaths)) {
+    $normalizedImgPath = ([string]$imgPath).Trim().Replace('\', '/')
+    if ($normalizedImgPath.StartsWith('sprite/character/swordman/effect/illusionslash/', [StringComparison]::OrdinalIgnoreCase)) {
+        $usesIllusionSlashScope = $true
+    }
+}
+$illusionSlashPromptFileName = [string]::Concat([char]0x5E7B, [char]0x5F71, [char]0x5251, [char]0x821E, '.md')
+$expectedThemeAgentPath = [IO.Path]::GetFullPath((Join-Path $themeRoot 'AGENTS.md'))
+$expectedThemePromptPath = [IO.Path]::GetFullPath((Join-Path (Join-Path $themeRoot 'prompts') $illusionSlashPromptFileName))
+$expectedProfessionPromptPath = [IO.Path]::GetFullPath((Join-Path (Join-Path $professionRoot 'prompts') $illusionSlashPromptFileName))
+if ($usesIllusionSlashScope -or $null -ne $config.PSObject.Properties['promptBinding']) {
+    if ($null -eq $config.promptBinding) {
+        throw 'Illusionslash configs must include promptBinding.'
+    }
+    if ([string]$config.promptBinding.role -ne 'primary-skill-prompt' -or [int]$config.promptBinding.priority -ne 1) {
+        throw 'Illusionslash promptBinding must be the primary skill prompt with priority 1.'
+    }
+    if ([string]$config.promptBinding.uiFrameGeometryPolicy -ne 'strict-preserve-source-frame-position-size' -or
+        [string]$config.promptBinding.scope -ne 'illusionslash-only') {
+        throw 'Illusionslash promptBinding must require strict source frame position/size preservation and illusionslash-only scope.'
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$config.promptBinding.themeAgentPath) -or
+        [string]::IsNullOrWhiteSpace([string]$config.promptBinding.themePromptPath) -or
+        [string]::IsNullOrWhiteSpace([string]$config.promptBinding.professionPromptPath)) {
+        throw 'Illusionslash promptBinding must include themeAgentPath, themePromptPath, and professionPromptPath.'
+    }
+}
 
 $sourceNpk = Resolve-DnfSourceNpk -ConfiguredPath ([string]$config.sourceNpk.path) `
     -ImagePacks2 $ImagePacks2 -RepositoryRoot $repoRoot
 $outputPath = Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.output.componentNpkPath)
 $summaryPath = Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.output.buildSummaryPath)
+$promptFiles = @()
+if ($null -ne $config.promptBinding) {
+    $themeAgentPath = Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.promptBinding.themeAgentPath)
+    $themePromptPath = Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.promptBinding.themePromptPath)
+    $professionPromptPath = Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.promptBinding.professionPromptPath)
+    if (-not [IO.Path]::GetFullPath($themeAgentPath).Equals($expectedThemeAgentPath, [StringComparison]::OrdinalIgnoreCase) -or
+        -not [IO.Path]::GetFullPath($themePromptPath).Equals($expectedThemePromptPath, [StringComparison]::OrdinalIgnoreCase) -or
+        -not [IO.Path]::GetFullPath($professionPromptPath).Equals($expectedProfessionPromptPath, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Illusionslash promptBinding must target the theme AGENTS, theme prompt, and profession prompt files.'
+    }
+    $promptFiles += $themeAgentPath
+    $promptFiles += $themePromptPath
+    $promptFiles += $professionPromptPath
+}
 Assert-PathInsideRoot -Path $outputPath -Root $themeRoot -Label 'Component NPK output'
 Assert-PathInsideRoot -Path $summaryPath -Root $themeRoot -Label 'Build summary output'
+$repoRootForPrefix = [IO.Path]::GetFullPath($repoRoot).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+foreach ($promptFile in $promptFiles) {
+    if (-not [IO.Path]::GetFullPath($promptFile).StartsWith(($repoRootForPrefix + [IO.Path]::DirectorySeparatorChar), [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Prompt binding file must stay inside the repository: $promptFile"
+    }
+}
 
 foreach ($requiredFile in @(
         $sourceCode,

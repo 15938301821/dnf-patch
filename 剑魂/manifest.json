@@ -12,22 +12,24 @@
     "extractorSharpCoreSha256": "99DAD694D2B642134976AF62A0C3FC01792321A0FCB827D8D954D84525258875",
     "independentIndexTool": "../tools/Test-DnfNpkIndex.ps1",
     "independentIndexToolSha256": "B83875A3A251E165CE74F8F2A000791AED6E8BD5AF2DE9B120E2E8C3C132C9F2",
-    "warning": "本 manifest 保留 momentaryslash pilot 与旧 manifest-scope v1 的历史事实；当前活动契约已迁移到 Aseprite，覆盖状态重新从 false 开始。技术资源 ID 仍不自动证明中文技能显示名或目标客户端兼容。"
+    "warning": "本 manifest 保留 momentaryslash pilot 与当前 Aseprite 活动迁移事实；缺少现场证据的旧 manifest-scope v1 不再作为可验证历史完整发布结论。技术资源 ID 仍不自动证明中文技能显示名或目标客户端兼容。"
   },
   "coverage": {
     "scope": "current Aseprite migration for the verified male Weapon Master visual-resource manifest",
     "fullSkillCoverageProven": false,
-    "reason": "旧 manifest-scope v1 已归档为历史发布。当前 Aseprite 活动链尚缺 31 个组件现场重验证、24 帧分层工程与 runtime PNG、人工全序列验收、新 Cut-in 独立验证、最终聚合和新 final summary。",
-    "meaning": "当前顶层只表示活动契约，不继承历史发布的 true；历史 v1 的离线结论仅在 historicalFullSkillReleases 中保留。",
+    "reason": "缺少现场可复核证据的旧 manifest-scope v1 不再作为历史完整发布事实源。当前 Aseprite 活动链尚缺 31 个组件现场重验证、24 帧分层工程与 runtime PNG、人工全序列验收、新 Cut-in 独立验证、最终聚合和新 final summary。",
+    "meaning": "当前顶层只表示活动契约；没有当前 fullSkillRelease，也没有可复核 historicalFullSkillReleases 条目时，完整覆盖结论必须保持 false。",
     "promptCountIsEvidence": false,
     "clientCompatibilityProven": false
   },
   "promptRouting": {
     "professionIndex": "prompts/README.md",
+    "themeAgentPattern": "主题目录/AGENTS.md",
     "themeIndexPattern": "主题目录/prompts/README.md",
     "compositionOrder": [
       "verified source frame semantics and geometry",
       "profession prompt when display-name mapping is verified",
+      "theme AGENTS common rules and Base Style",
       "theme prompt delta when display-name mapping is verified"
     ],
     "currentPilotPromptMapping": "unverified",
@@ -209,160 +211,12 @@
     "builderOutputSha256": "888AE163195273EE828233DFA7FAB9398DF9D585268286EE7731A95719137B65",
     "releaseReport": "Vergil（维吉尔）暗蓝幻影主题/validation/build-pilot-v1/release.json"
   },
-  "historicalFullSkillReleases": [
-    {
-      "schemaVersion": 1,
-      "releaseId": "weaponmaster-vergil-dark-blue-manifest-scope-v1",
-      "generatedAt": "2026-07-13T01:50:12.3389236+08:00",
-      "status": "offline-validated-client-pending",
-      "fullSkillCoverageProven": true,
-      "coverageMeaning": "当前 manifest 已证明视觉资源范围内的完整离线产物；不表示按名称猜出的额外资源、目标客户端兼容、加载优先级或账号安全。",
-      "artifact": {
-        "path": "Vergil（维吉尔）暗蓝幻影主题/npk/full-skill-v1/weaponmaster-vergil-dark-blue-manifest-scope-v1.NPK",
-        "length": 35037857,
-        "sha256": "531DBE6E9E2261531C71293EC7223DE36B57D02948D79831190D4C68FFF247D7",
-        "imgCount": 418,
-        "frameCount": 3822,
-        "deployed": false
-      },
-      "packageSummary": {
-        "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/package-v1/package-summary-v1.json",
-        "length": 227312,
-        "sha256": "7139F847F21284EF5B25FD895BCCD3706A01C2BD4CCE8BB16441C5410AD6959C",
-        "sourceNpkCount": 32,
-        "entryCount": 418,
-        "payloadEquivalence": "passed"
-      },
-      "sourceEvidence": {
-        "officialSourceCount": 28,
-        "selectedComponentCount": 31,
-        "selectedReuseComponentCount": 1,
-        "resourcePlan": {
-          "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/validated-resource-plan.json",
-          "length": 383295,
-          "sha256": "FBC3CB5DB68F79ED9321E513C28A5E527AFDCF5389948CFF9C75CABEBE4BF217",
-          "validatedStartState": "components-offline-validated-final-aggregation-pending",
-          "fullSkillCoverageProvenAtValidationStart": false
-        },
-        "postBuildFrameAccounting": {
-          "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/post-build-frame-accounting.json",
-          "length": 201805,
-          "sha256": "ABCA39784214448031A70F7624C9479054944ACE09CAE7BCDB91D1ED406F5224",
-          "dynamicTextureGroupCount": 70,
-          "dynamicFrameReferenceCount": 74,
-          "hashMismatchCount": 0,
-          "partitionOverlapCount": 0
-        }
-      },
-      "changes": {
-        "componentSelectedFrameCount": 3795,
-        "componentEffectiveChangedFrameCount": 3593,
-        "cutinChangedFrameCount": 24,
-        "finalEffectiveChangedFrameCount": 3617,
-        "imgVersionCounts": {
-          "Ver2": 7,
-          "Ver5": 411
-        },
-        "frameFormatCounts": {
-          "ARGB_1555": 10,
-          "ARGB_8888": 32,
-          "DXT_1": 1850,
-          "DXT_5": 1930
-        }
-      },
-      "preservation": {
-        "explicitFrameCount": 128,
-        "dynamicFrameCount": 74,
-        "cutinTransparentPlaceholderCount": 3,
-        "finalPreservedFrameCount": 205,
-        "nearBlackFrameCount": 22,
-        "noVisibleColorChangeFrameCount": 16,
-        "warmSourceProtectionFrameCount": 36,
-        "preservedPayloadDdsAndBgraHashMismatchCount": 0
-      },
-      "exclusions": {
-        "wholeImgCount": 6,
-        "wholeImgFrameCount": 19,
-        "candidatePoolExcludedFrameCount": 221,
-        "unresolvedReplaySkillsWithNoDedicatedVisualRoot": [
-          "AshenFork",
-          "BackStepCutter",
-          "HitBack",
-          "ChargeBurst"
-        ],
-        "excludedTechnicalRoots": [
-          "atultimateblade",
-          "atillusionslash",
-          "tripleslashbs"
-        ]
-      },
-      "validation": {
-        "finalSummary": {
-          "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/final-validation-summary.json",
-          "length": 236380,
-          "sha256": "3939983F4966A79665247DDF4E8BAA126711825BA72D2CD0911B58B2582F5FAF",
-          "status": "passed"
-        },
-        "independentIndex": {
-          "path": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/independent-index.json",
-          "length": 722,
-          "sha256": "8338B1D74D53E6C5D61647C5C7A2B37DE85C40856AC83F33AA7A681A20C03B4D",
-          "entryCount": 418,
-          "uniquePathCount": 418,
-          "headerSha256Valid": true,
-          "imgMagicValidCount": 418
-        },
-        "fullFrame": {
-          "decodedNonLinkFrames": 3822,
-          "linkFrames": 0,
-          "hiddenFrames": 0,
-          "albumInventoryPath": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/full-frame-validation/album-inventory.json",
-          "albumInventorySha256": "205A800BB840699A909B2EE249855466A0A47747B3BBB4268C0C9FD13451C489",
-          "frameInventoryPath": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/final-v3/full-frame-validation/frame-inventory.csv",
-          "frameInventorySha256": "D93289B4C1C9CEDD1A3521BE6C1C4E56C18292FE75212377924316DE0B59473B",
-          "backgrounds": ["black", "white", "checkerboard"],
-          "contactSheetCount": 15,
-          "manualSampledSheets": [
-            "frames-0001.png",
-            "frames-0008.png",
-            "frames-0015.png"
-          ],
-          "manualSampleResult": "passed-no-blank-page-no-unexpected-full-canvas-black-frame-no-layout-anomaly"
-        },
-        "cutin": {
-          "targetImg": "sprite/character/swordman/effect/cutin/cutin_weaponmaster_neo.img",
-          "visibleChangedFrames": "3-26",
-          "preservedTransparentFrames": "0-2",
-          "manualTargetSheetResult": "passed-no-visible-watermark"
-        }
-      },
-      "toolchain": {
-        "packagerSha256": "CC86156A90B986C4D5F7202B0B60B424E1D9ACBB8AE9DBE0CB8219ED6F7CAD3F",
-        "resourcePlanValidatorSha256": "A758247AFBBE487CD2D3AF62E65F2C5AC46A82824135FAD3FB23FC805546EEA8",
-        "finalReleaseValidatorSha256": "5F85C64CBF2E1B977B5A2BB532C41802FD04AE2913411AEA8CDA2AEFB8E12B88",
-        "independentIndexValidatorSha256": "B83875A3A251E165CE74F8F2A000791AED6E8BD5AF2DE9B120E2E8C3C132C9F2",
-        "fullFrameExportSha256": "C31A652D710E18646E32D8B7DB5AE44E31C7C6914A286340760004AE8887111E"
-      },
-      "releaseReport": "Vergil（维吉尔）暗蓝幻影主题/validation/full-skill-v1/release.json",
-      "deployment": {
-        "authorized": false,
-        "performed": false,
-        "imagePacks2Write": false,
-        "processOperation": false,
-        "status": "not-authorized-not-performed"
-      },
-      "pending": [
-        "目标客户端 A/B 实机验证",
-        "客户端加载优先级验证",
-        "客户端兼容性验证"
-      ]
-    }
-  ],
+  "historicalFullSkillReleases": [],
   "activityMigration": {
     "schemaVersion": 1,
     "migrationId": "weaponmaster-vergil-dark-blue-aseprite-v1",
     "status": "blocked-pre-aggregation",
-    "historicalBaselineReleaseId": "weaponmaster-vergil-dark-blue-manifest-scope-v1",
+    "historicalBaselineReleaseId": null,
     "workflow": {
       "path": "Vergil（维吉尔）暗蓝幻影主题/workflows/aseprite-full-skill-v1.json",
       "workflowId": "weaponmaster.vergil.aseprite-full-skill-v1",

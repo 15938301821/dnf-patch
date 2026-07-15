@@ -189,6 +189,30 @@
       "forcedParameters": {
         "AsJson": true
       }
+    },
+    {
+      "id": "model-tool-catalog",
+      "script": "tools/Get-DnfModelToolCatalog.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "read-only",
+      "network": "forbidden",
+      "allowedParameters": ["AsJson"],
+      "forcedParameters": {
+        "AsJson": true
+      }
+    },
+    {
+      "id": "model-style-plan",
+      "script": "tools/New-DnfModelStylePlan.ps1",
+      "host": "windows-powershell-x64",
+      "mode": "workspace-write",
+      "network": "forbidden",
+      "allowedParameters": ["RequestPath", "OutputPath", "RepoRoot", "AsJson"],
+      "pathParameters": ["RequestPath", "OutputPath", "RepoRoot"],
+      "writePathParameters": ["OutputPath"],
+      "forcedParameters": {
+        "AsJson": true
+      }
     }
   ]
 }

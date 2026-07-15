@@ -8,8 +8,8 @@
     "length": 223569
   },
   "output": {
-    "componentNpkPath": "../../npk/full-skill-v1/components/weaponmaster-vergil-dark-blue-illusionslash_finish-v1.NPK",
-    "buildSummaryPath": "../../validation/full-skill-v1/components/illusionslash_finish/build-summary.json"
+    "componentNpkPath": "../../npk/custom-skill-v3-fix1/components/a_weaponmaster-vergil-dark-blue-illusionslash_finish-sparkhead04-stable-v3-fix1.NPK",
+    "buildSummaryPath": "../../validation/custom-skill-v3-fix1/components/illusionslash_finish-sparkhead04-stable/build-summary.json"
   },
   "promptBinding": {
     "role": "primary-skill-prompt",
@@ -21,13 +21,7 @@
     "scope": "illusionslash-only"
   },
   "allowedImgPaths": [
-    "sprite/character/swordman/effect/illusionslash/finish/1_shockwave_dodge.img",
-    "sprite/character/swordman/effect/illusionslash/finish/2_ground_dodge.img",
-    "sprite/character/swordman/effect/illusionslash/finish/3_sword_dodge.img",
-    "sprite/character/swordman/effect/illusionslash/finish/4_attackt_dodge.img",
-    "sprite/character/swordman/effect/illusionslash/finish/5_light_dodge.img",
-    "sprite/character/swordman/effect/illusionslash/finish/illusionslashspark03.img",
-    "sprite/character/swordman/effect/illusionslash/finish/stone.img"
+    "sprite/character/swordman/effect/illusionslash/finish/illusionslashsparkhead04.img"
   ],
   "excludedFrameKeys": []
 }

@@ -52,14 +52,14 @@ function Get-SnapshotValidation {
     )
 
     $result = [ordered]@{
-        label = $Label
-        passed = $false
-        status = 'invalid-snapshot'
-        path = $null
+        label          = $Label
+        passed         = $false
+        status         = 'invalid-snapshot'
+        path           = $null
         expectedLength = $null
-        actualLength = $null
+        actualLength   = $null
         expectedSha256 = $null
-        actualSha256 = $null
+        actualSha256   = $null
     }
     foreach ($name in @('path', 'length', 'sha256')) {
         if (-not (Test-ObjectProperty -Object $Snapshot -Name $name)) {
@@ -140,7 +140,7 @@ function Get-StringSet {
         Assert-Condition (-not [string]::IsNullOrWhiteSpace([string]$value)) 'A required string set contains an empty value.'
         Assert-Condition ($set.Add([string]$value)) "A required string set contains a duplicate: $value"
     }
-    return ,$set
+    return , $set
 }
 
 function Assert-SetEqual {
@@ -165,8 +165,8 @@ function Compare-StringSet {
     $missing = @($Expected | Where-Object { -not $Actual.Contains($_) } | Sort-Object)
     $unexpected = @($Actual | Where-Object { -not $Expected.Contains($_) } | Sort-Object)
     return [pscustomobject]@{
-        passed = $missing.Count -eq 0 -and $unexpected.Count -eq 0
-        missing = $missing
+        passed     = $missing.Count -eq 0 -and $unexpected.Count -eq 0
+        missing    = $missing
         unexpected = $unexpected
     }
 }
@@ -180,10 +180,10 @@ function Get-PathBindingValidation {
     )
 
     $result = [ordered]@{
-        passed = $false
-        status = 'missing-path'
+        passed       = $false
+        status       = 'missing-path'
         expectedPath = [IO.Path]::GetFullPath($ExpectedPath)
-        actualPath = $null
+        actualPath   = $null
     }
     if ([string]::IsNullOrWhiteSpace([string]$Value)) {
         return [pscustomobject]$result
@@ -221,12 +221,12 @@ function Add-RevalidationIssue {
     )
 
     $null = $List.Add([pscustomobject]@{
-        scope = $Scope
-        componentId = $ComponentId
-        label = $Label
-        status = $Status
-        details = $Details
-    })
+            scope       = $Scope
+            componentId = $ComponentId
+            label       = $Label
+            status      = $Status
+            details     = $Details
+        })
 }
 
 function Add-Blocker {
@@ -258,7 +258,7 @@ function Test-RecordedSnapshot {
         return $false
     }
     return (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -eq
-        ([string]$Snapshot.sha256).ToUpperInvariant()
+    ([string]$Snapshot.sha256).ToUpperInvariant()
 }
 
 $defaultRoot = Split-Path -Parent $PSScriptRoot
@@ -347,10 +347,45 @@ foreach ($component in $selectedComponents) {
     $componentToolStart = $componentToolResults.Count
     Assert-Condition ($component.validatedArtifact.status -eq 'offline-validated-client-pending') `
         "Component status changed: $componentId/$($component.validatedArtifact.status)"
-    $componentPath = Assert-FileSnapshot -RepositoryRoot $repositoryRoot `
+    $componentSnapshot = Get-SnapshotValidation -RepositoryRoot $repositoryRoot `
         -Snapshot $component.validatedArtifact.componentNpk -Label "Component NPK $componentId"
-    $summaryPath = Assert-FileSnapshot -RepositoryRoot $repositoryRoot `
+    $summarySnapshot = Get-SnapshotValidation -RepositoryRoot $repositoryRoot `
         -Snapshot $component.validatedArtifact.buildSummary -Label "Component build summary $componentId"
+    $componentPath = $componentSnapshot.path
+    $summaryPath = $summarySnapshot.path
+    if (-not $componentSnapshot.passed) {
+        Add-RevalidationIssue -List $componentIssues -Scope 'component-artifact' `
+            -ComponentId $componentId -Label 'component-npk' -Status $componentSnapshot.status `
+            -Details $componentSnapshot
+    }
+    if (-not $summarySnapshot.passed) {
+        Add-RevalidationIssue -List $componentIssues -Scope 'component-artifact' `
+            -ComponentId $componentId -Label 'build-summary' -Status $summarySnapshot.status `
+            -Details $summarySnapshot
+    }
+    if (-not ($componentSnapshot.passed -and $summarySnapshot.passed)) {
+        $componentResults.Add([pscustomobject]@{
+                id                     = $componentId
+                entryCount             = @($component.selectedImgPaths).Count
+                sha256                 = [string]$componentSnapshot.actualSha256
+                config                 = $null
+                selection              = [pscustomobject]@{
+                    planSummary = [pscustomobject]@{ passed = $false; missing = @(); unexpected = @() }
+                    planConfig  = [pscustomobject]@{ passed = $false; missing = @(); unexpected = @() }
+                }
+                outputBindings         = [pscustomobject]@{
+                    planComponentNpk    = $null
+                    planBuildSummary    = $null
+                    summaryComponentNpk = $null
+                    summaryBuildSummary = $null
+                    config              = $null
+                    allPassed           = $false
+                }
+                toolchainSnapshotCount = 0
+                status                 = 'blocked-live-revalidation'
+            })
+        continue
+    }
     $summary = Get-Content -LiteralPath $summaryPath -Raw -Encoding UTF8 | ConvertFrom-Json
     Assert-Condition ([string]$summary.status -eq 'passed') "Component build summary did not pass: $componentId"
     Assert-Condition ([long]$summary.output.length -eq [long]$component.validatedArtifact.componentNpk.length) `
@@ -375,11 +410,11 @@ foreach ($component in $selectedComponents) {
         -BaseDirectory $repositoryRoot -Value $summary.output.buildSummaryPath `
         -ExpectedPath $summaryPath
     foreach ($binding in @(
-        [pscustomobject]@{ label = 'plan-component-npk-path'; value = $planComponentBinding },
-        [pscustomobject]@{ label = 'plan-build-summary-path'; value = $planSummaryBinding },
-        [pscustomobject]@{ label = 'summary-component-npk-path'; value = $summaryComponentBinding },
-        [pscustomobject]@{ label = 'summary-build-summary-path'; value = $summarySelfBinding }
-    )) {
+            [pscustomobject]@{ label = 'plan-component-npk-path'; value = $planComponentBinding },
+            [pscustomobject]@{ label = 'plan-build-summary-path'; value = $planSummaryBinding },
+            [pscustomobject]@{ label = 'summary-component-npk-path'; value = $summaryComponentBinding },
+            [pscustomobject]@{ label = 'summary-build-summary-path'; value = $summarySelfBinding }
+        )) {
         if (-not $binding.value.passed) {
             Add-RevalidationIssue -List $componentIssues -Scope 'component-output' `
                 -ComponentId $componentId -Label $binding.label -Status $binding.value.status `
@@ -398,14 +433,14 @@ foreach ($component in $selectedComponents) {
 
     $configPath = Resolve-RepoPath -RepositoryRoot $repositoryRoot -Value ([string]$component.configPath)
     $configRecord = [ordered]@{
-        componentId = $componentId
-        status = 'missing-file'
-        path = $configPath
-        length = $null
-        sha256 = $null
+        componentId          = $componentId
+        status               = 'missing-file'
+        path                 = $configPath
+        length               = $null
+        sha256               = $null
         planSelectionMatches = $false
         outputBindingsPassed = $false
-        outputBindings = $null
+        outputBindings       = $null
     }
     $configSelection = [pscustomobject]@{ passed = $false; missing = @(); unexpected = @() }
     if (-not (Test-PathInsideRepository -RepositoryRoot $repositoryRoot -Path $configPath)) {
@@ -437,11 +472,11 @@ foreach ($component in $selectedComponents) {
                 buildSummary = $configSummaryBinding
             }
             $configRecord.outputBindingsPassed = $configComponentBinding.passed -and
-                $configSummaryBinding.passed
+            $configSummaryBinding.passed
             foreach ($binding in @(
-                [pscustomobject]@{ label = 'config-component-npk-path'; value = $configComponentBinding },
-                [pscustomobject]@{ label = 'config-build-summary-path'; value = $configSummaryBinding }
-            )) {
+                    [pscustomobject]@{ label = 'config-component-npk-path'; value = $configComponentBinding },
+                    [pscustomobject]@{ label = 'config-build-summary-path'; value = $configSummaryBinding }
+                )) {
                 if (-not $binding.value.passed) {
                     Add-RevalidationIssue -List $componentIssues -Scope 'component-output' `
                         -ComponentId $componentId -Label $binding.label -Status $binding.value.status `
@@ -455,7 +490,7 @@ foreach ($component in $selectedComponents) {
                     -ComponentId $componentId -Label 'config-identity' -Status 'identity-drift' `
                     -Details ([pscustomobject]@{
                         schemaVersion = $config.schemaVersion
-                        themeId = $config.themeId
+                        themeId       = $config.themeId
                     })
             }
             else {
@@ -486,10 +521,10 @@ foreach ($component in $selectedComponents) {
     }
     $componentConfigResults.Add([pscustomobject]$configRecord)
     $allOutputBindingsPassed = $planComponentBinding.passed -and
-        $planSummaryBinding.passed -and
-        $summaryComponentBinding.passed -and
-        $summarySelfBinding.passed -and
-        $configRecord.outputBindingsPassed
+    $planSummaryBinding.passed -and
+    $summaryComponentBinding.passed -and
+    $summarySelfBinding.passed -and
+    $configRecord.outputBindingsPassed
     if ($allOutputBindingsPassed) {
         $outputPathBindingCount++
     }
@@ -499,16 +534,16 @@ foreach ($component in $selectedComponents) {
             $toolResult = Get-SnapshotValidation -RepositoryRoot $repositoryRoot `
                 -Snapshot $property.Value -Label "$componentId/$($property.Name)"
             $componentToolResults.Add([pscustomobject]@{
-                componentId = $componentId
-                label = [string]$property.Name
-                passed = $toolResult.passed
-                status = $toolResult.status
-                path = $toolResult.path
-                expectedLength = $toolResult.expectedLength
-                actualLength = $toolResult.actualLength
-                expectedSha256 = $toolResult.expectedSha256
-                actualSha256 = $toolResult.actualSha256
-            })
+                    componentId    = $componentId
+                    label          = [string]$property.Name
+                    passed         = $toolResult.passed
+                    status         = $toolResult.status
+                    path           = $toolResult.path
+                    expectedLength = $toolResult.expectedLength
+                    actualLength   = $toolResult.actualLength
+                    expectedSha256 = $toolResult.expectedSha256
+                    actualSha256   = $toolResult.actualSha256
+                })
             if (-not $toolResult.passed) {
                 Add-RevalidationIssue -List $componentIssues -Scope 'component-toolchain' `
                     -ComponentId $componentId -Label ([string]$property.Name) `
@@ -529,30 +564,30 @@ foreach ($component in $selectedComponents) {
     Assert-Condition ([int]$index.ImgMagicValidCount -eq [int]$index.EntryCount) `
         "Component independent IMG magic count changed: $componentId"
     $componentResults.Add([pscustomobject]@{
-        id = $componentId
-        entryCount = [int]$index.EntryCount
-        sha256 = [string]$index.Sha256
-        config = [pscustomobject]$configRecord
-        selection = [pscustomobject]@{
-            planSummary = $summarySelection
-            planConfig = $configSelection
-        }
-        outputBindings = [pscustomobject]@{
-            planComponentNpk = $planComponentBinding
-            planBuildSummary = $planSummaryBinding
-            summaryComponentNpk = $summaryComponentBinding
-            summaryBuildSummary = $summarySelfBinding
-            config = $configRecord.outputBindings
-            allPassed = $allOutputBindingsPassed
-        }
-        toolchainSnapshotCount = $componentToolResults.Count - $componentToolStart
-        status = if ($componentIssues.Count -eq $componentIssueStart) {
-            'passed-live-revalidation'
-        }
-        else {
-            'blocked-live-revalidation'
-        }
-    })
+            id                     = $componentId
+            entryCount             = [int]$index.EntryCount
+            sha256                 = [string]$index.Sha256
+            config                 = [pscustomobject]$configRecord
+            selection              = [pscustomobject]@{
+                planSummary = $summarySelection
+                planConfig  = $configSelection
+            }
+            outputBindings         = [pscustomobject]@{
+                planComponentNpk    = $planComponentBinding
+                planBuildSummary    = $planSummaryBinding
+                summaryComponentNpk = $summaryComponentBinding
+                summaryBuildSummary = $summarySelfBinding
+                config              = $configRecord.outputBindings
+                allPassed           = $allOutputBindingsPassed
+            }
+            toolchainSnapshotCount = $componentToolResults.Count - $componentToolStart
+            status                 = if ($componentIssues.Count -eq $componentIssueStart) {
+                'passed-live-revalidation'
+            }
+            else {
+                'blocked-live-revalidation'
+            }
+        })
 }
 
 foreach ($builderSnapshot in @($baseline.evidence.builderSnapshots)) {
@@ -608,18 +643,18 @@ else {
     Assert-Condition ($asepriteItem.Length -eq [long]$asepriteManifest.length) 'Aseprite executable length changed.'
     Assert-Condition ($asepriteHash -eq ([string]$asepriteManifest.sha256).ToUpperInvariant()) 'Aseprite executable SHA-256 changed.'
     $apiRecorded = $null -ne $asepriteManifest.PSObject.Properties['apiVersion'] -and
-        [int]$asepriteManifest.apiVersion -ge [int]$plan.activeCutin.minimumAsepriteApiVersion -and
-        [int]$asepriteManifest.minimumApiVersion -eq 30
+    [int]$asepriteManifest.apiVersion -ge [int]$plan.activeCutin.minimumAsepriteApiVersion -and
+    [int]$asepriteManifest.minimumApiVersion -eq 30
     if (-not $apiRecorded) {
         Add-Blocker -List $blockers -Value 'aseprite-api-capability-not-recorded'
     }
     $asepriteRecord = [ordered]@{
-        available = $true
+        available             = $true
         apiCapabilityRecorded = $apiRecorded
-        path = $asepriteExecutable
-        length = [long]$asepriteItem.Length
-        sha256 = $asepriteHash
-        apiVersion = if ($apiRecorded) { [int]$asepriteManifest.apiVersion } else { $null }
+        path                  = $asepriteExecutable
+        length                = [long]$asepriteItem.Length
+        sha256                = $asepriteHash
+        apiVersion            = if ($apiRecorded) { [int]$asepriteManifest.apiVersion } else { $null }
     }
 }
 
@@ -679,13 +714,13 @@ else {
     Assert-Condition ([string]$manual.status -eq 'passed') 'Cut-in manual full-sequence review did not pass.'
     Assert-Condition ([string]$manual.scope.frameIndexes -eq '3-26') 'Cut-in manual review frame scope changed.'
     foreach ($field in @(
-        'fullSequenceContinuity',
-        'sourceTimingAndStageContinuity',
-        'characterAndWeaponFocus',
-        'watermarkAndTextAbsent',
-        'noUnexpectedBlankOrFullCanvasBlackFrame',
-        'themeAcceptance'
-    )) {
+            'fullSequenceContinuity',
+            'sourceTimingAndStageContinuity',
+            'characterAndWeaponFocus',
+            'watermarkAndTextAbsent',
+            'noUnexpectedBlankOrFullCanvasBlackFrame',
+            'themeAcceptance'
+        )) {
         Assert-Condition ([string]$manual.checks.$field -eq 'passed') "Cut-in manual review check did not pass: $field"
     }
     Assert-Condition (Test-RecordedSnapshot -Snapshot $manual.renderSummary) 'Cut-in manual review render-summary binding changed.'
@@ -734,9 +769,9 @@ else {
     $buildValidated = $true
 
     $hasIndependentEvidence = $null -ne $build.PSObject.Properties['validation'] -and
-        $null -ne $build.validation.PSObject.Properties['independentIndex'] -and
-        $null -ne $build.validation.PSObject.Properties['fullFrame'] -and
-        $null -ne $build.validation.PSObject.Properties['targetDiff']
+    $null -ne $build.validation.PSObject.Properties['independentIndex'] -and
+    $null -ne $build.validation.PSObject.Properties['fullFrame'] -and
+    $null -ne $build.validation.PSObject.Properties['targetDiff']
     if (-not $hasIndependentEvidence) {
         Add-Blocker -List $blockers -Value 'cutin-independent-validation-pending'
     }
@@ -844,59 +879,59 @@ $baselineBuilderArray = $baselineBuilderResults.ToArray()
 $componentIssueArray = $componentIssues.ToArray()
 $componentOutputIssueArray = @($componentIssueArray | Where-Object { $_.scope -eq 'component-output' })
 $allOutputPathBindingsPassed = $outputPathBindingCount -eq 31 -and
-    $componentOutputIssueArray.Count -eq 0
+$componentOutputIssueArray.Count -eq 0
 $blockerArray = $blockers.ToArray()
 $preAggregationBlockers = @($blockerArray | Where-Object {
-    $_ -notin @('final-aggregation-not-performed', 'final-validation-not-performed', 'release-closure-not-performed')
-})
+        $_ -notin @('final-aggregation-not-performed', 'final-validation-not-performed', 'release-closure-not-performed')
+    })
 $readyForAggregation = $preAggregationBlockers.Count -eq 0
 $result = [pscustomobject]@{
-    schemaVersion = 1
-    status = 'passed'
-    state = if ($readyForAggregation) { 'ready-for-aggregation' } else { 'blocked-pre-aggregation' }
-    mode = 'validation only; no build, aggregation, deployment, or process operation'
-    planId = [string]$plan.planId
-    resourcePlanPath = $planPath
-    sourceMigration = [pscustomobject]@{
-        status = 'passed'
-        matched = 53
+    schemaVersion           = 1
+    status                  = 'passed'
+    state                   = if ($readyForAggregation) { 'ready-for-aggregation' } else { 'blocked-pre-aggregation' }
+    mode                    = 'validation only; no build, aggregation, deployment, or process operation'
+    planId                  = [string]$plan.planId
+    resourcePlanPath        = $planPath
+    sourceMigration         = [pscustomobject]@{
+        status       = 'passed'
+        matched      = 53
         contentDrift = 0
-        missing = 0
+        missing      = 0
     }
-    components = [pscustomobject]@{
-        status = if ($componentLiveRevalidationPassed) {
+    components              = [pscustomobject]@{
+        status                                 = if ($componentLiveRevalidationPassed) {
             'passed-live-revalidation'
         }
         else {
             'blocked-live-revalidation'
         }
         artifactSnapshotsAndIndependentIndexes = 'passed'
-        count = $componentArray.Count
-        selectedImgCount = $selectedImgCount
-        configCount = $componentConfigArray.Count
-        outputPathBindings = if ($allOutputPathBindingsPassed) { 'passed' } else { 'blocked' }
-        outputPathBindingCount = $outputPathBindingCount
-        outputPathBindingIssueCount = $componentOutputIssueArray.Count
-        summaryToolchainSnapshotCount = $componentToolArray.Count
-        baselineBuilderSnapshotCount = $baselineBuilderArray.Count
-        provenanceIssueCount = $componentIssueArray.Count
-        provenanceIssues = $componentIssueArray
-        configs = $componentConfigArray
-        summaryToolchainSnapshots = $componentToolArray
-        baselineBuilderSnapshots = $baselineBuilderArray
-        records = $componentArray
+        count                                  = $componentArray.Count
+        selectedImgCount                       = $selectedImgCount
+        configCount                            = $componentConfigArray.Count
+        outputPathBindings                     = if ($allOutputPathBindingsPassed) { 'passed' } else { 'blocked' }
+        outputPathBindingCount                 = $outputPathBindingCount
+        outputPathBindingIssueCount            = $componentOutputIssueArray.Count
+        summaryToolchainSnapshotCount          = $componentToolArray.Count
+        baselineBuilderSnapshotCount           = $baselineBuilderArray.Count
+        provenanceIssueCount                   = $componentIssueArray.Count
+        provenanceIssues                       = $componentIssueArray
+        configs                                = $componentConfigArray
+        summaryToolchainSnapshots              = $componentToolArray
+        baselineBuilderSnapshots               = $baselineBuilderArray
+        records                                = $componentArray
     }
-    aseprite = [pscustomobject]$asepriteRecord
-    cutin = [pscustomobject]@{
-        runId = [string]$plan.activeCutin.runId
-        renderValidated = $renderValidated
+    aseprite                = [pscustomobject]$asepriteRecord
+    cutin                   = [pscustomobject]@{
+        runId                 = [string]$plan.activeCutin.runId
+        renderValidated       = $renderValidated
         manualReviewValidated = $manualValidated
-        buildValidated = $buildValidated
+        buildValidated        = $buildValidated
     }
-    readyForAggregation = $readyForAggregation
+    readyForAggregation     = $readyForAggregation
     fullSkillCoverageProven = $false
-    blockers = $blockerArray
-    deployment = 'not-authorized-not-performed'
+    blockers                = $blockerArray
+    deployment              = 'not-authorized-not-performed'
 }
 
 if ($AsJson) {
