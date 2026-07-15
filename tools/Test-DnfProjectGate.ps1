@@ -232,6 +232,59 @@ foreach ($skillDirectory in $skillDirectories) {
         })
 }
 
+$copilotSkillMirrorResults = New-Object System.Collections.Generic.List[object]
+$githubRoot = Join-Path $repositoryRoot '.github'
+$copilotSkillsRoot = Join-Path $githubRoot 'skills'
+if (Test-Path -LiteralPath $githubRoot) {
+    Assert-Condition -Condition (Test-Path -LiteralPath $githubRoot -PathType Container) `
+        -Message ".github must be a directory: $githubRoot"
+    Assert-NoReparsePointPath -Path $githubRoot -RepositoryRoot $repositoryRoot `
+        -Label '.github directory'
+    $unexpectedGithubChildren = @(Get-ChildItem -LiteralPath $githubRoot -Force | Where-Object {
+            $_.Name -ne 'skills'
+        })
+    $unexpectedGithubChildNames = @($unexpectedGithubChildren | ForEach-Object { $_.FullName }) -join ', '
+    Assert-Condition -Condition ($unexpectedGithubChildren.Count -eq 0) `
+        -Message "Unexpected .github content: $unexpectedGithubChildNames"
+    Assert-Condition -Condition (Test-Path -LiteralPath $copilotSkillsRoot -PathType Container) `
+        -Message "Copilot skill mirror was not found: $copilotSkillsRoot"
+    Assert-NoReparsePointPath -Path $copilotSkillsRoot -RepositoryRoot $repositoryRoot `
+        -Label 'Copilot skill mirror'
+
+    $codexSkillsRootPrefix = $skillsRoot.TrimEnd(
+        [IO.Path]::DirectorySeparatorChar,
+        [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    $copilotSkillsRootPrefix = $copilotSkillsRoot.TrimEnd(
+        [IO.Path]::DirectorySeparatorChar,
+        [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    $codexSkillFiles = @(Get-ChildItem -LiteralPath $skillsRoot -Recurse -File | Sort-Object FullName)
+    $copilotSkillFiles = @(Get-ChildItem -LiteralPath $copilotSkillsRoot -Recurse -File | Sort-Object FullName)
+    $codexSkillRelativePaths = New-Object 'Collections.Generic.HashSet[string]' `
+    ([StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($codexSkillFile in $codexSkillFiles) {
+        $relativePath = $codexSkillFile.FullName.Substring($codexSkillsRootPrefix.Length)
+        $null = $codexSkillRelativePaths.Add($relativePath)
+        $copilotSkillFilePath = Join-Path $copilotSkillsRoot $relativePath
+        Assert-Condition -Condition (Test-Path -LiteralPath $copilotSkillFilePath -PathType Leaf) `
+            -Message "Copilot skill mirror file was not found: $copilotSkillFilePath"
+        $codexHash = (Get-FileHash -LiteralPath $codexSkillFile.FullName -Algorithm SHA256).Hash
+        $copilotHash = (Get-FileHash -LiteralPath $copilotSkillFilePath -Algorithm SHA256).Hash
+        Assert-Condition -Condition ($codexHash -eq $copilotHash) `
+            -Message "Copilot skill mirror differs from .codex: $relativePath"
+        $copilotSkillMirrorResults.Add([pscustomobject]@{
+                relativePath = $relativePath.Replace('\', '/')
+                sha256       = $codexHash
+            })
+    }
+
+    foreach ($copilotSkillFile in $copilotSkillFiles) {
+        $relativePath = $copilotSkillFile.FullName.Substring($copilotSkillsRootPrefix.Length)
+        Assert-Condition -Condition ($codexSkillRelativePaths.Contains($relativePath)) `
+            -Message "Copilot skill mirror has no .codex counterpart: $relativePath"
+    }
+}
+
 $powerShellGate = Invoke-JsonValidator `
     -ScriptPath (Join-Path $repositoryRoot 'tools\Test-DnfPowerShellSource.ps1') `
     -Arguments @{ Path = $repositoryRoot; AsJson = $true } `
@@ -526,7 +579,7 @@ foreach ($directoryRecord in @($quarantine.directories)) {
     }
 }
 
-$infrastructureDirectories = @('.agents', '.codex', '.git', 'docs', 'tools', 'validation')
+$infrastructureDirectories = @('.agents', '.codex', '.git', '.github', 'docs', 'tools', 'validation')
 $professionDirectorySet = New-Object 'Collections.Generic.HashSet[string]' `
 ([StringComparer]::OrdinalIgnoreCase)
 foreach ($profession in $professionDirectories) {
@@ -575,6 +628,7 @@ $activityMigrationArray = $activityMigrationResults.ToArray()
 $workflowArray = $workflowResults.ToArray()
 $quarantineAssetArray = $quarantineAssets.ToArray()
 $skillArray = $skillResults.ToArray()
+$copilotSkillMirrorArray = $copilotSkillMirrorResults.ToArray()
 $result = [pscustomobject]@{
     schemaVersion                      = 1
     status                             = 'passed'
@@ -583,6 +637,8 @@ $result = [pscustomobject]@{
     jsonFileCount                      = $jsonFiles.Count
     skillCount                         = $skillArray.Count
     skills                             = $skillArray
+    copilotSkillMirrorFileCount        = $copilotSkillMirrorArray.Count
+    copilotSkillMirror                 = $copilotSkillMirrorArray
     powershell                         = $powerShellGate
     workflowFixtureGate                = $workflowFixtureGate
     releaseMetadataRollbackFixtureGate = $releaseRollbackFixtureGate
