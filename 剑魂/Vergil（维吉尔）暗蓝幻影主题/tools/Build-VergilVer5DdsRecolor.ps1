@@ -7,8 +7,6 @@ param(
 
     [string]$ExtractorDirectory,
 
-    [string]$TexconvPath,
-
     [string]$TexdiagPath
 )
 
@@ -57,11 +55,10 @@ $professionRoot = Split-Path -Parent $themeRoot
 $repoRoot = Split-Path -Parent $professionRoot
 Import-Module (Join-Path $repoRoot 'tools\DnfPatch.Toolchain.psm1') -Force
 $ExtractorDirectory = Resolve-DnfExtractorDirectory -Path $ExtractorDirectory -RepositoryRoot $repoRoot
-$TexconvPath = Resolve-DnfDirectXTexTool -Name 'texconv.exe' -Path $TexconvPath -RepositoryRoot $repoRoot
 $TexdiagPath = Resolve-DnfDirectXTexTool -Name 'texdiag.exe' -Path $TexdiagPath -RepositoryRoot $repoRoot
 $sourceCode = Join-Path $PSScriptRoot 'Build-VergilVer5DdsRecolor.cs'
 $compiler = 'C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe'
-$buildRoot = Join-Path $repoRoot 'tools\bin\vergil-ver5-dds-recolor-v2-local-source'
+$buildRoot = Join-Path $repoRoot 'tools\bin\vergil-ver5-dds-recolor-v3-endpoint-recolor'
 $builder = Join-Path $buildRoot 'Build-VergilVer5DdsRecolor.exe'
 
 $configPath = (Resolve-Path -LiteralPath $ConfigFile).Path
@@ -98,15 +95,14 @@ Assert-PathInsideRoot -Path $outputPath -Root $themeRoot -Label 'Component NPK o
 Assert-PathInsideRoot -Path $summaryPath -Root $themeRoot -Label 'Build summary output'
 
 foreach ($requiredFile in @(
-    $sourceCode,
-    $compiler,
-    $sourceNpk,
-    (Join-Path $ExtractorDirectory 'ExtractorSharp.Core.dll'),
-    (Join-Path $ExtractorDirectory 'ExtractorSharp.Json.dll'),
-    (Join-Path $ExtractorDirectory 'zlib1.dll'),
-    $TexconvPath,
-    $TexdiagPath
-)) {
+        $sourceCode,
+        $compiler,
+        $sourceNpk,
+        (Join-Path $ExtractorDirectory 'ExtractorSharp.Core.dll'),
+        (Join-Path $ExtractorDirectory 'ExtractorSharp.Json.dll'),
+        (Join-Path $ExtractorDirectory 'zlib1.dll'),
+        $TexdiagPath
+    )) {
     if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
         throw "Required file was not found: $requiredFile"
     }
@@ -134,11 +130,9 @@ if ([long]$config.sourceNpk.length -gt 0) {
     }
 }
 
-foreach ($directXTool in @($TexconvPath, $TexdiagPath)) {
-    $signature = Get-AuthenticodeSignature -LiteralPath $directXTool
-    if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
-        throw "DirectXTex signature is not valid: $directXTool ($($signature.Status))"
-    }
+$signature = Get-AuthenticodeSignature -LiteralPath $TexdiagPath
+if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
+    throw "DirectXTex signature is not valid: $TexdiagPath ($($signature.Status))"
 }
 
 New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
@@ -170,7 +164,7 @@ $runId = [Guid]::NewGuid().ToString('N')
 $workDirectory = Join-Path $buildRoot ("work-$runId")
 New-Item -ItemType Directory -Path $workDirectory -Force | Out-Null
 
-$builderOutput = & $builder $configPath $sourceNpk $TexconvPath $TexdiagPath $workDirectory 2>&1
+$builderOutput = & $builder $configPath $sourceNpk $TexdiagPath $workDirectory 2>&1
 $builderExitCode = $LASTEXITCODE
 $builderOutput | Write-Output
 if ($builderExitCode -ne 0) {

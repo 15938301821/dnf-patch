@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
@@ -510,20 +508,18 @@ internal static class BuildVergilVer5DdsRecolor
 
     private static int Run(string[] args)
     {
-        if (args.Length != 5)
+        if (args.Length != 4)
         {
-            Console.Error.WriteLine("Usage: <config.json> <source-npk> <texconv.exe> <texdiag.exe> <work-directory>");
+            Console.Error.WriteLine("Usage: <config.json> <source-npk> <texdiag.exe> <work-directory>");
             return 2;
         }
 
         string configFile = Path.GetFullPath(args[0]);
         string sourceFile = Path.GetFullPath(args[1]);
-        string texconvFile = Path.GetFullPath(args[2]);
-        string texdiagFile = Path.GetFullPath(args[3]);
-        string workDirectory = Path.GetFullPath(args[4]);
+        string texdiagFile = Path.GetFullPath(args[2]);
+        string workDirectory = Path.GetFullPath(args[3]);
         RequireFile(configFile, "build config");
         RequireFile(sourceFile, "source NPK");
-        RequireFile(texconvFile, "texconv");
         RequireFile(texdiagFile, "texdiag");
 
         BuildConfig config = LoadConfig(configFile);
@@ -568,7 +564,7 @@ internal static class BuildVergilVer5DdsRecolor
 
         List<Album> buildAll = NpkCoder.Load(sourceFile);
         List<Album> buildAlbums = SelectAllowedAlbums(buildAll, allowedPaths);
-        ApplyRecolor(buildAlbums, snapshots, texconvFile, texdiagFile, workDirectory, stats);
+        ApplyRecolor(buildAlbums, snapshots, texdiagFile, workDirectory, stats);
         RequireChangedTexturePerAlbum(snapshots);
         EnsureBuildTreeClosed(buildAlbums);
 
@@ -961,19 +957,14 @@ internal static class BuildVergilVer5DdsRecolor
     private static void ApplyRecolor(
         List<Album> buildAlbums,
         List<AlbumSnapshot> snapshots,
-        string texconvFile,
         string texdiagFile,
         string workDirectory,
         BuildStats stats)
     {
         if (buildAlbums.Count != snapshots.Count)
             throw new InvalidDataException("Build album selection changed between source loads.");
-        string pngDirectory = Path.Combine(workDirectory, "png");
-        string encodedDirectory = Path.Combine(workDirectory, "encoded-dds");
-        string mergedDirectory = Path.Combine(workDirectory, "merged-dds");
-        Directory.CreateDirectory(pngDirectory);
-        Directory.CreateDirectory(encodedDirectory);
-        Directory.CreateDirectory(mergedDirectory);
+        string recoloredDirectory = Path.Combine(workDirectory, "endpoint-recolored-dds");
+        Directory.CreateDirectory(recoloredDirectory);
 
         for (int albumIndex = 0; albumIndex < buildAlbums.Count; albumIndex++)
         {
@@ -989,39 +980,24 @@ internal static class BuildVergilVer5DdsRecolor
                     continue;
                 Texture texture = GetBuildTextureForGroup(albumSnapshot, textureSnapshot, map);
                 string baseName = albumIndex.ToString("D4") + "-texture-" + textureSnapshot.GroupId.ToString("D4");
-                string pngFile = Path.Combine(pngDirectory, baseName + ".png");
-                string encodedFile = Path.Combine(encodedDirectory, baseName + ".DDS");
-                string mergedFile = Path.Combine(mergedDirectory, baseName + ".dds");
+                string recoloredFile = Path.Combine(recoloredDirectory, baseName + ".dds");
 
-                byte[] mergedDds;
                 int changedBlocks;
-                using (Bitmap sourceBitmap = CreateBitmapFromBgra(
-                    textureSnapshot.Width,
-                    textureSnapshot.Height,
-                    textureSnapshot.SourceBgra))
-                using (Bitmap recolored = RecolorBitmap(sourceBitmap))
-                {
-                    recolored.Save(pngFile, ImageFormat.Png);
-                    RunTexconv(texconvFile, pngFile, encodedDirectory, textureSnapshot.Format);
-                    RequireFile(encodedFile, "texconv output");
-                    RunTexdiag(texdiagFile, encodedFile, textureSnapshot.Format);
-                    byte[] encodedDds = File.ReadAllBytes(encodedFile);
-                    if (textureSnapshot.Format == BcFormat.Bc3)
-                        mergedDds = MergeBc3ColorBlocks(textureSnapshot.SourceDds, encodedDds, out changedBlocks);
-                    else
-                        mergedDds = MergeBc1ColorBlocks(textureSnapshot.SourceDds, encodedDds, recolored, out changedBlocks);
-                }
+                byte[] recoloredDds = RecolorBcEndpoints(
+                    textureSnapshot.SourceDds,
+                    textureSnapshot.Format,
+                    out changedBlocks);
 
-                DdsInfo mergedInfo = ValidateDds(
-                    mergedDds,
+                DdsInfo recoloredInfo = ValidateDds(
+                    recoloredDds,
                     textureSnapshot.Width,
                     textureSnapshot.Height,
                     textureSnapshot.Format);
-                ValidateDdsInvariants(textureSnapshot.SourceDds, mergedDds, mergedInfo);
-                byte[] mergedBgra = DecodeDdsBgra(mergedDds, mergedInfo);
+                ValidateDdsInvariants(textureSnapshot.SourceDds, recoloredDds, recoloredInfo);
+                byte[] recoloredBgra = DecodeDdsBgra(recoloredDds, recoloredInfo);
                 int visibleRgbChanges = CountVisibleRgbChanges(
                     textureSnapshot.SourceBgra,
-                    mergedBgra);
+                    recoloredBgra);
 
                 if (changedBlocks == 0 || visibleRgbChanges == 0)
                 {
@@ -1034,12 +1010,10 @@ internal static class BuildVergilVer5DdsRecolor
                     continue;
                 }
 
-                // Some BC blocks cannot be replaced without changing source alpha or
-                // BC1 transparent-mode semantics. Preserve those source textures.
-                if (CountWarmVisiblePixels(mergedBgra) != 0)
+                if (CountWarmVisiblePixels(recoloredBgra) != 0)
                 {
                     textureSnapshot.Eligible = false;
-                    textureSnapshot.SkipReason = "warm-visible-after-safe-bc-merge";
+                    textureSnapshot.SkipReason = "warm-visible-after-endpoint-recolor";
                     textureSnapshot.Result.decision = "skipped";
                     textureSnapshot.Result.skipReason = textureSnapshot.SkipReason;
                     stats.SkippedTextures++;
@@ -1047,9 +1021,9 @@ internal static class BuildVergilVer5DdsRecolor
                     continue;
                 }
 
-                File.WriteAllBytes(mergedFile, mergedDds);
-                RunTexdiag(texdiagFile, mergedFile, textureSnapshot.Format);
-                byte[] compressed = Zlib.Compress(mergedDds);
+                File.WriteAllBytes(recoloredFile, recoloredDds);
+                RunTexdiag(texdiagFile, recoloredFile, textureSnapshot.Format);
+                byte[] compressed = Zlib.Compress(recoloredDds);
                 if (compressed == null || compressed.Length == 0)
                     throw new InvalidDataException("Zlib returned an empty payload: " + albumSnapshot.Path + " texture " + textureSnapshot.Index);
 
@@ -1300,112 +1274,65 @@ internal static class BuildVergilVer5DdsRecolor
             throw new InvalidDataException("Output compressed Texture length is inconsistent at texture index " + source.Index);
     }
 
-    private static byte[] MergeBc3ColorBlocks(byte[] sourceDds, byte[] encodedDds, out int changedBlocks)
+    private static byte[] RecolorBcEndpoints(byte[] sourceDds, BcFormat format, out int changedBlocks)
     {
-        DdsInfo sourceInfo = ValidateDds(sourceDds, -1, -1, BcFormat.Bc3);
-        DdsInfo encodedInfo = ValidateDds(encodedDds, sourceInfo.Width, sourceInfo.Height, BcFormat.Bc3);
-        if (sourceInfo.BlockCount != encodedInfo.BlockCount)
-            throw new InvalidDataException("BC3 block count changed after encoding.");
+        DdsInfo sourceInfo = ValidateDds(sourceDds, -1, -1, format);
         byte[] result = CloneBytes(sourceDds);
         changedBlocks = 0;
+
         for (int block = 0; block < sourceInfo.BlockCount; block++)
         {
-            int sourceOffset = sourceInfo.DataOffset + block * 16 + 8;
-            int encodedOffset = encodedInfo.DataOffset + block * 16 + 8;
-            if (!BytesEqual(sourceDds, sourceOffset, encodedDds, encodedOffset, 8))
+            int blockOffset = sourceInfo.DataOffset + block * sourceInfo.BlockBytes;
+            int colorOffset = format == BcFormat.Bc3 ? blockOffset + 8 : blockOffset;
+            ushort sourceColor0 = ReadUInt16(sourceDds, colorOffset);
+            ushort sourceColor1 = ReadUInt16(sourceDds, colorOffset + 2);
+            ushort color0 = RecolorRgb565Endpoint(sourceColor0);
+            ushort color1 = RecolorRgb565Endpoint(sourceColor1);
+
+            if (format == BcFormat.Bc1)
+                PreserveBc1EndpointMode(sourceColor0 <= sourceColor1, ref color0, ref color1);
+
+            WriteUInt16(result, colorOffset, color0);
+            WriteUInt16(result, colorOffset + 2, color1);
+            WriteUInt32(result, colorOffset + 4, ReadUInt32(sourceDds, colorOffset + 4));
+            if (!BytesEqual(sourceDds, colorOffset, result, colorOffset, 8))
                 changedBlocks++;
-            Buffer.BlockCopy(encodedDds, encodedOffset, result, sourceOffset, 8);
         }
+
         return result;
     }
 
-    private static byte[] MergeBc1ColorBlocks(
-        byte[] sourceDds,
-        byte[] encodedDds,
-        Bitmap target,
-        out int changedBlocks)
+    private static ushort RecolorRgb565Endpoint(ushort value)
     {
-        DdsInfo sourceInfo = ValidateDds(sourceDds, -1, -1, BcFormat.Bc1);
-        DdsInfo encodedInfo = ValidateDds(encodedDds, sourceInfo.Width, sourceInfo.Height, BcFormat.Bc1);
-        if (sourceInfo.BlockCount != encodedInfo.BlockCount)
-            throw new InvalidDataException("BC1 block count changed after encoding.");
-        byte[] result = CloneBytes(sourceDds);
-        int blocksWide = (sourceInfo.Width + 3) / 4;
-        int blocksHigh = (sourceInfo.Height + 3) / 4;
-        changedBlocks = 0;
-
-        for (int blockY = 0; blockY < blocksHigh; blockY++)
-        {
-            for (int blockX = 0; blockX < blocksWide; blockX++)
-            {
-                int blockIndex = blockY * blocksWide + blockX;
-                int sourceOffset = sourceInfo.DataOffset + blockIndex * 8;
-                int encodedOffset = encodedInfo.DataOffset + blockIndex * 8;
-                ushort sourceColor0 = ReadUInt16(sourceDds, sourceOffset);
-                ushort sourceColor1 = ReadUInt16(sourceDds, sourceOffset + 2);
-                bool sourceTransparentMode = sourceColor0 <= sourceColor1;
-                uint sourceSelectors = ReadUInt32(sourceDds, sourceOffset + 4);
-
-                ushort color0 = ReadUInt16(encodedDds, encodedOffset);
-                ushort color1 = ReadUInt16(encodedDds, encodedOffset + 2);
-                NormalizeBc1EndpointMode(ref color0, ref color1, sourceTransparentMode);
-                Rgb[] palette = BuildBcColorPalette(color0, color1, !sourceTransparentMode);
-                uint selectors = 0;
-
-                for (int pixel = 0; pixel < 16; pixel++)
-                {
-                    int x = blockX * 4 + pixel % 4;
-                    int y = blockY * 4 + pixel / 4;
-                    int sourceSelector = (int)((sourceSelectors >> (pixel * 2)) & 3);
-                    bool transparent = sourceTransparentMode && sourceSelector == 3;
-                    int selector;
-                    if (transparent)
-                    {
-                        selector = 3;
-                    }
-                    else if (x < target.Width && y < target.Height)
-                    {
-                        Color targetColor = target.GetPixel(x, y);
-                        selector = FindNearestPaletteIndex(targetColor, palette, sourceTransparentMode ? 3 : 4);
-                    }
-                    else
-                    {
-                        selector = sourceTransparentMode && sourceSelector == 3 ? 2 : sourceSelector;
-                        if (sourceTransparentMode && selector > 2)
-                            selector = 2;
-                    }
-                    selectors |= ((uint)selector) << (pixel * 2);
-                }
-
-                WriteUInt16(result, sourceOffset, color0);
-                WriteUInt16(result, sourceOffset + 2, color1);
-                WriteUInt32(result, sourceOffset + 4, selectors);
-                if (!BytesEqual(sourceDds, sourceOffset, result, sourceOffset, 8))
-                    changedBlocks++;
-            }
-        }
-        return result;
+        Rgb source = DecodeRgb565(value);
+        double intensity = Math.Max(source.R, Math.Max(source.G, source.B)) / 255.0;
+        Color mapped = MapPalette(intensity);
+        return EncodeRgb565(mapped.R, mapped.G, mapped.B);
     }
 
-    private static void NormalizeBc1EndpointMode(ref ushort color0, ref ushort color1, bool transparentMode)
+    private static ushort EncodeRgb565(int red, int green, int blue)
+    {
+        int r = (red * 31 + 127) / 255;
+        int g = (green * 63 + 127) / 255;
+        int b = (blue * 31 + 127) / 255;
+        return (ushort)((r << 11) | (g << 5) | b);
+    }
+
+    private static void PreserveBc1EndpointMode(bool transparentMode, ref ushort color0, ref ushort color1)
     {
         if (transparentMode)
         {
-            if (color0 > color1)
-            {
-                ushort swap = color0;
-                color0 = color1;
-                color1 = swap;
-            }
+            if (color0 <= color1)
+                return;
+            ushort high = color0;
+            color0 = color1;
+            color1 = high;
         }
-        else
+        else if (color0 <= color1)
         {
-            if (color0 < color1)
-            {
-                ushort swap = color0;
-                color0 = color1;
-                color1 = swap;
-            }
+            ushort low = color0;
+            color0 = color1;
+            color1 = low;
             if (color0 == color1)
             {
                 if (color0 < UInt16.MaxValue)
@@ -1416,29 +1343,17 @@ internal static class BuildVergilVer5DdsRecolor
         }
     }
 
-    private static int FindNearestPaletteIndex(Color target, Rgb[] palette, int count)
-    {
-        int bestIndex = 0;
-        long bestDistance = Int64.MaxValue;
-        for (int index = 0; index < count; index++)
-        {
-            long red = target.R - palette[index].R;
-            long green = target.G - palette[index].G;
-            long blue = target.B - palette[index].B;
-            long distance = red * red + green * green + blue * blue;
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestIndex = index;
-            }
-        }
-        return bestIndex;
-    }
-
     private static void ValidateDdsInvariants(byte[] source, byte[] output, DdsInfo info)
     {
         if (!BytesEqual(source, 0, output, 0, info.DataOffset))
             throw new InvalidDataException("DDS header changed.");
+        for (int block = 0; block < info.BlockCount; block++)
+        {
+            int offset = info.DataOffset + block * info.BlockBytes;
+            int colorOffset = info.Format == BcFormat.Bc3 ? offset + 8 : offset;
+            if (!BytesEqual(source, colorOffset + 4, output, colorOffset + 4, 4))
+                throw new InvalidDataException("BC color selector bits changed at block " + block);
+        }
         if (info.Format == BcFormat.Bc3)
         {
             for (int block = 0; block < info.BlockCount; block++)
@@ -1642,64 +1557,6 @@ internal static class BuildVergilVer5DdsRecolor
             (byte)((left.B * leftWeight + right.B * rightWeight) / divisor));
     }
 
-    private static Bitmap CreateBitmapFromBgra(int width, int height, byte[] bgra)
-    {
-        if (bgra == null || bgra.Length != checked(width * height * 4))
-            throw new InvalidDataException("BGRA source length is invalid.");
-        Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-        Rectangle rectangle = new Rectangle(0, 0, width, height);
-        BitmapData data = bitmap.LockBits(rectangle, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-        try
-        {
-            for (int y = 0; y < height; y++)
-            {
-                IntPtr row = new IntPtr(data.Scan0.ToInt64() + (long)y * data.Stride);
-                Marshal.Copy(bgra, y * width * 4, row, width * 4);
-            }
-        }
-        finally
-        {
-            bitmap.UnlockBits(data);
-        }
-        return bitmap;
-    }
-
-    private static Bitmap RecolorBitmap(Bitmap source)
-    {
-        Rectangle rectangle = new Rectangle(0, 0, source.Width, source.Height);
-        Bitmap result = source.Clone(rectangle, PixelFormat.Format32bppArgb);
-        BitmapData data = result.LockBits(rectangle, ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
-        try
-        {
-            int stride = Math.Abs(data.Stride);
-            byte[] pixels = new byte[stride * data.Height];
-            Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
-            for (int y = 0; y < data.Height; y++)
-            {
-                int row = y * stride;
-                for (int x = 0; x < data.Width; x++)
-                {
-                    int offset = row + x * 4;
-                    if (pixels[offset + 3] == 0)
-                        continue;
-                    double intensity = Math.Max(
-                        pixels[offset + 2],
-                        Math.Max(pixels[offset + 1], pixels[offset])) / 255.0;
-                    Color mapped = MapPalette(intensity);
-                    pixels[offset] = mapped.B;
-                    pixels[offset + 1] = mapped.G;
-                    pixels[offset + 2] = mapped.R;
-                }
-            }
-            Marshal.Copy(pixels, 0, data.Scan0, pixels.Length);
-        }
-        finally
-        {
-            result.UnlockBits(data);
-        }
-        return result;
-    }
-
     private static Color MapPalette(double intensity)
     {
         for (int index = 1; index < VergilPalette.Length; index++)
@@ -1814,22 +1671,6 @@ internal static class BuildVergilVer5DdsRecolor
             picture.Dispose();
             texture.Pictrue = null;
         }
-    }
-
-    private static void RunTexconv(
-        string texconvFile,
-        string pngFile,
-        string outputDirectory,
-        BcFormat format)
-    {
-        string formatName = format == BcFormat.Bc1 ? "BC1_UNORM" : "BC3_UNORM";
-        string arguments =
-            "-nologo -y -dx9 -m 1 -f " + formatName +
-            " -nogpu --single-proc -bc x -o " + QuoteArgument(outputDirectory) +
-            " -- " + QuoteArgument(pngFile);
-        string output = RunProcess(texconvFile, arguments);
-        if (output.IndexOf("ERROR", StringComparison.OrdinalIgnoreCase) >= 0)
-            throw new InvalidDataException("texconv reported an error: " + output);
     }
 
     private static void RunTexdiag(string texdiagFile, string ddsFile, BcFormat format)
