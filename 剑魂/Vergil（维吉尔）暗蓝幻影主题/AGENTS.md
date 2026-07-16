@@ -65,13 +65,13 @@ DMC5 Vergil aesthetic, icy cobalt-blue energy, Mirage Edge phantom blades, Yamat
 
 ## 领域工具路由
 
-- 当前主题的第三版部分技能试制入口是 `tools/Build-VergilVer5DdsRecolor.ps1` 加 `configs/custom-skill-v3/*.json`，目标只限幻影剑舞技术资源的 `illusionslash` 与 `illusionslash/finish` 已列 IMG；聚合与摘要入口是 `tools/New-VergilCustomSkillV3.ps1`。
-- `custom-skill-v3-fix1` 与 `custom-skill-v3-fix2` 是第三版实机未生效反馈后的修复候选，入口分别是 `configs/custom-skill-v3-fix1/*.json`、`tools/New-VergilCustomSkillV3Fix1.ps1`、`configs/custom-skill-v3-fix2/*.json` 和 `tools/New-VergilCustomSkillV3Fix2.ps1`；相对 v3 新增一个经构建证据验证的技术层，最终文件名前缀 `a_` 只作为目标客户端加载顺序测试候选，不证明优先级或兼容。
-- `custom-skill-v3`、`custom-skill-v3-fix1` 与 `custom-skill-v3-fix2` 不使用三觉 Cut-in 或 momentaryslash 作为试制资源，不调用历史 `tools/Build-VergilProgressPackage.ps1`，也不得从 Prompt 标题或技术资源 ID 宣称显示名映射、全技能覆盖或目标客户端兼容。
-- 幻影剑舞第三版的 `promptBinding` 只证明单技能试制引用了同名职业/主题 Prompt 文件和几何保持策略；它不是全量 Prompt 包，也不能证明模型+Aseprite 主链路已执行。
-- Ver5 DDS 调色采用 endpoint-level B 方案：只改 BC1/BC3 color endpoints，保留源 color selector、DDS header、BC3 alpha block、BC1 transparent mode、TextureVersion、纹理索引、图集裁剪、旋转、共享关系、帧几何和 alpha 哈希；不得经 PNG、Bitmap 替换或 texconv 二次重编码制造低清。
-- 第三版及其 fix 候选高清门禁必须记录 `changedColorBlocks`、`visibleRgbChanges`、`sourceDdsSha256/outputDdsSha256`、`sourceAlphaSha256/outputAlphaSha256`、`ddsHeaders`、`bc3AlphaBlocks`、`bc1TransparentMode`、`authorizedDecodedAlpha` 与 `texdiagPerTexture`，并生成独立索引、全帧黑白棋盘联系表和像素状态摘要。
-- 构建产物只写入当前主题工作区；部署只在用户当前请求明确授权时作为独立步骤执行。
+- 默认补丁生成入口必须走官方源帧、模型 Prompt 包、Aseprite 分层工程和 runtime PNG 证据链；策略标记为 `default-generation-requires-official-source-model-prompt-package-aseprite-runtime-evidence`。新的“跑项目”“生成补丁”“制作技能”请求必须从官方源 NPK 重新冻结 inventory/source frames，绑定剑魂职业 Prompt、本主题 `AGENTS.md` 与本主题逐技能 Prompt，经模型输出受控 style plan，再由本地 Aseprite 按源 UI 帧位置、尺寸、Canvas、偏移、帧序和锚点生成分层工程与 runtime PNG，最后才允许回灌、封装和验证。
+- `custom-skill-v3/fix1/fix2` 只能作为 `legacy-diagnostic-endpoint-recolor-only` 历史证据和低层 DDS endpoint 诊断入口；它们不得作为默认生成、正式试制、当前补丁交付或 Prompt/Aseprite 生效证明。需要复现这些旧证据时，必须在脚本上显式传入 legacy opt-in 参数，并在结果中继续记录 `promptAsepriteMainPipelineComplete=false`。
+- 缺少模型或 Aseprite 证据时必须阻断；策略标记为 `missing-model-or-aseprite-evidence-must-block`。不得回退到已有组件 NPK、旧验证摘要、旧 runtime 图、历史 Photoshop/JSX 输出、endpoint recolor、文件名前缀或上次聊天记录来生成新补丁。
+- 已存在的 NPK、component、validation summary、contact sheet 和历史 release 只能作为基线、隔离证据或差异比较输入；新执行必须使用新的 `RunId`、新的版本化输出目录和当前线程现场快照。
+- 幻影剑舞旧第三版的 `promptBinding` 只证明曾引用同名职业/主题 Prompt 文件和几何保持策略；它不是全量 Prompt 包，也不能证明模型+Aseprite 主链路已执行。
+- Ver5 DDS endpoint 调色只改 BC1/BC3 color endpoints，保留源 color selector、DDS header、BC3 alpha block、BC1 transparent mode、TextureVersion、纹理索引、图集裁剪、旋转、共享关系、帧几何和 alpha 哈希；它只能用于 legacy diagnostic，不能满足默认补丁生成工作流。
+- 默认构建产物只写入当前主题工作区的新路径；部署只在用户当前请求明确授权时作为独立步骤执行。
 
 活动三觉 Cut-in 使用以下两阶段入口：
 

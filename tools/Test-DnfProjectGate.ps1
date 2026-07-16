@@ -319,10 +319,12 @@ foreach ($jsonFile in $jsonFiles) {
 }
 
 $promptValidator = Join-Path $repositoryRoot 'tools\Test-DnfPromptTree.ps1'
+$generationPolicyValidator = Join-Path $repositoryRoot 'tools\Test-DnfGenerationWorkflowPolicy.ps1'
 $promptResults = New-Object System.Collections.Generic.List[object]
 $releaseResults = New-Object System.Collections.Generic.List[object]
 $historicalReleaseResults = New-Object System.Collections.Generic.List[object]
 $activityMigrationResults = New-Object System.Collections.Generic.List[object]
+$generationWorkflowPolicyResults = New-Object System.Collections.Generic.List[object]
 $workflowResults = New-Object System.Collections.Generic.List[object]
 $professionDirectories = @(Get-ChildItem -LiteralPath $repositoryRoot -Directory | Where-Object {
         (Test-Path -LiteralPath (Join-Path $_.FullName 'AGENTS.md') -PathType Leaf) -and
@@ -439,6 +441,15 @@ foreach ($profession in $professionDirectories) {
 
             $workflowDefinition = Get-Content -LiteralPath $workflowPath -Raw -Encoding UTF8 |
             ConvertFrom-Json
+            $generationPolicyResult = Invoke-JsonValidator -ScriptPath $generationPolicyValidator -Arguments @{
+                ThemePath      = [string]$workflowDefinition.themeRoot
+                ProfessionPath = $profession.FullName
+                WorkflowPath   = $workflowPath
+                RepoRoot       = $repositoryRoot
+                AsJson         = $true
+            } -Label "Generation workflow policy $($profession.Name)"
+            $generationWorkflowPolicyResults.Add($generationPolicyResult)
+
             $migrationValidator = Resolve-RepositoryPath `
                 -Value ([string]$migration.validator) -BaseDirectory $manifestDirectory `
                 -RepositoryRoot $repositoryRoot -Label 'Activity migration validator'
@@ -625,6 +636,7 @@ $promptArray = $promptResults.ToArray()
 $releaseArray = $releaseResults.ToArray()
 $historicalReleaseArray = $historicalReleaseResults.ToArray()
 $activityMigrationArray = $activityMigrationResults.ToArray()
+$generationWorkflowPolicyArray = $generationWorkflowPolicyResults.ToArray()
 $workflowArray = $workflowResults.ToArray()
 $quarantineAssetArray = $quarantineAssets.ToArray()
 $skillArray = $skillResults.ToArray()
@@ -651,6 +663,8 @@ $result = [pscustomobject]@{
     historicalReleases                 = $historicalReleaseArray
     activityMigrationGateCount         = $activityMigrationArray.Count
     activityMigrations                 = $activityMigrationArray
+    generationWorkflowPolicyGateCount  = $generationWorkflowPolicyArray.Count
+    generationWorkflowPolicies         = $generationWorkflowPolicyArray
     workflowGateCount                  = $workflowArray.Count
     workflows                          = $workflowArray
     legacyQuarantineDirectoryCount     = $quarantineDirectorySet.Count

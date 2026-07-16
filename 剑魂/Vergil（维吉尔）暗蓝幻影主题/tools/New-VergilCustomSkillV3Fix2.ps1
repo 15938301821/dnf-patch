@@ -1,7 +1,12 @@
 [CmdletBinding()]
-param()
+param(
+    [switch]$AllowLegacyEndpointRecolor
+)
 
 $ErrorActionPreference = 'Stop'
+if (-not $AllowLegacyEndpointRecolor) {
+    throw 'This script aggregates legacy endpoint recolor outputs only. Default patch generation must run the registered official-source model prompt package Aseprite workflow and produce layered/runtime evidence. Re-run with -AllowLegacyEndpointRecolor only when intentionally reproducing legacy evidence.'
+}
 
 $themeRoot = Split-Path -Parent $PSScriptRoot
 $professionRoot = Split-Path -Parent $themeRoot

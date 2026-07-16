@@ -5,10 +5,15 @@ param(
 
     [string]$ImagePacks2,
 
-    [string]$ExtractorDirectory
+    [string]$ExtractorDirectory,
+
+    [switch]$AllowLegacyEndpointRecolor
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $AllowLegacyEndpointRecolor) {
+    throw 'This script is legacy ARGB recolor diagnostic only. Default patch generation must run the registered official-source model prompt package Aseprite workflow and produce layered/runtime evidence. Re-run with -AllowLegacyEndpointRecolor only when intentionally reproducing legacy evidence.'
+}
 
 function Resolve-ConfiguredPath {
     param(

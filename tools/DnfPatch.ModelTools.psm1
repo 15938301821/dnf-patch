@@ -13,7 +13,8 @@ $script:AllowedToolIds = @(
     'validate.npk-index',
     'validate.npk-pixels',
     'validate.full-frame-export',
-    'workflow.invoke-registered-dag'
+    'workflow.invoke-registered-dag',
+    'workflow.policy.default-generation'
 )
 
 function Test-DnfModelProperty {
@@ -139,30 +140,45 @@ function Get-DnfModelToolCatalog {
             description = 'Normalize model generated style operations into a safe DSL; arbitrary code is rejected.'
             parameters  = @('operations', 'palette', 'geometryPolicy')
             writes      = @()
+            defaultGenerationEligible = $true
+        },
+        [ordered]@{
+            id          = 'workflow.policy.default-generation'
+            category    = 'workflow-policy'
+            mode        = 'read-only'
+            description = 'Default patch generation must start from official source frames, bind profession prompt plus theme AGENTS plus theme prompt, require model style evidence, require Aseprite layered project and runtime PNG evidence, then package and validate through the registered workflow.'
+            parameters  = @('themePath', 'professionPath', 'workflowPath')
+            writes      = @()
+            defaultGenerationEligible = $true
         },
         [ordered]@{
             id          = 'image.ver5-dds-endpoint-recolor'
-            category    = 'image-processing'
-            mode        = 'workspace-write'
-            description = 'Apply Ver5 DDS BC1/BC3 endpoint recolor through the fixed local builder while preserving DDS headers, selectors, alpha, texture indices, atlas data, and frame geometry.'
-            parameters  = @('configPath', 'imagePacks2', 'texdiagPath')
+            category    = 'legacy-diagnostic'
+            mode        = 'workspace-write-explicit-opt-in-only'
+            description = 'Legacy diagnostic only. Applies Ver5 DDS BC1/BC3 endpoint recolor; forbidden for normal patch generation because it does not create model output, Aseprite layered projects, or runtime PNG evidence.'
+            parameters  = @('configPath', 'imagePacks2', 'texdiagPath', 'allowLegacyEndpointRecolor')
             writes      = @('componentNpkPath', 'buildSummaryPath')
+            defaultGenerationEligible = $false
+            requiresExplicitLegacyOptIn = $true
         },
         [ordered]@{
             id          = 'image.ver2-argb-recolor'
-            category    = 'image-processing'
-            mode        = 'workspace-write'
-            description = 'Apply Ver2 ARGB same-format recolor through the fixed local builder while preserving frame metadata and unauthorized pixels.'
-            parameters  = @('configPath', 'imagePacks2')
+            category    = 'legacy-diagnostic'
+            mode        = 'workspace-write-explicit-opt-in-only'
+            description = 'Legacy diagnostic only. Applies Ver2 ARGB same-format recolor; forbidden for normal patch generation because it does not create model output, Aseprite layered projects, or runtime PNG evidence.'
+            parameters  = @('configPath', 'imagePacks2', 'allowLegacyEndpointRecolor')
             writes      = @('componentNpkPath', 'buildSummaryPath')
+            defaultGenerationEligible = $false
+            requiresExplicitLegacyOptIn = $true
         },
         [ordered]@{
             id          = 'package.custom-npk'
             category    = 'packaging'
             mode        = 'workspace-write'
-            description = 'Package authorized IMG payloads from component NPKs into a custom NPK with payload equivalence summary.'
+            description = 'Package authorized IMG payloads from current workflow outputs into a custom NPK with payload equivalence summary.'
             parameters  = @('sourceNpk', 'includeImgPath', 'outputPath', 'summaryPath')
             writes      = @('outputPath', 'summaryPath')
+            defaultGenerationEligible = $true
         },
         [ordered]@{
             id          = 'validate.npk-index'
@@ -208,6 +224,9 @@ function Get-DnfModelToolCatalog {
             deployment                                = 'forbidden-without-current-user-authorization'
             imagePacks2Write                          = 'forbidden'
             sourceNpkAccess                           = 'read-only'
+            defaultGenerationWorkflow                 = 'official-source-frames-plus-model-prompt-package-plus-aseprite-layered-projects-plus-runtime-png-plus-registered-workflow-validation'
+            endpointRecolorDefault                    = 'forbidden-legacy-diagnostic-explicit-opt-in-only'
+            existingArtifactReuseForNewGeneration     = 'forbidden-except-baseline-or-evidence'
             executionRequiresSchemaAndManifestBinding = $true
         }
         tools         = @($tools | ForEach-Object { [pscustomobject]$_ })
@@ -361,7 +380,7 @@ function New-DnfModelStylePlan {
             arbitraryCodeAccepted = $false
         }
         availableTools = $catalog.tools
-        nextStep       = 'Bind this style plan to manifest-authorized resource sets before calling image, package, or validation tools.'
+        nextStep       = 'Bind this style plan to manifest-authorized source frames, then run the registered model and Aseprite workflow; endpoint recolor tools are legacy diagnostics and are not valid default generation outputs.'
         deployment     = 'not-authorized-not-performed'
     }
 

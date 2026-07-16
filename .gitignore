@@ -7,7 +7,7 @@
 # Build and validation outputs
 **/validation/
 **/npk/
-**/frames/preview/
+**/frames/
 **/*预览.png
 **/automation-runs/
 tools/workflow/fixtures/.runs/
