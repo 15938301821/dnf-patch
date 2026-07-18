@@ -247,6 +247,7 @@ internal static class BuildVergilIllusionSlashAseprite
         public RenderPromptBinding promptBinding { get; set; }
         public RenderAccounting accounting { get; set; }
         public RenderValidation validation { get; set; }
+        public RenderStyleApplication styleApplication { get; set; }
         public RenderFrame[] frames { get; set; }
         public RenderDeployment deployment { get; set; }
     }
@@ -279,7 +280,19 @@ internal static class BuildVergilIllusionSlashAseprite
         public string sourceAlphaPreservedByRenderer { get; set; }
         public string layeredProjectsReopened { get; set; }
         public string layeredProjectRuntimePixelEquality { get; set; }
-        public string promptStylePlanBound { get; set; }
+        public string modelStylePlanSchema { get; set; }
+        public string modelStylePlanEvidenceChain { get; set; }
+        public string modelStylePlanAppliedByRenderer { get; set; }
+    }
+
+    private sealed class RenderStyleApplication
+    {
+        public string planSha256 { get; set; }
+        public string model { get; set; }
+        public string provider { get; set; }
+        public string[] enabledOperations { get; set; }
+        public int appliedFrameCount { get; set; }
+        public int byteExactRecomputeCount { get; set; }
     }
 
     private sealed class RenderDeployment
@@ -483,6 +496,10 @@ internal static class BuildVergilIllusionSlashAseprite
         public string renderSummarySha256 { get; set; }
         public string modelRequestSha256 { get; set; }
         public string stylePlanSha256 { get; set; }
+        public string stylePlanModel { get; set; }
+        public string stylePlanProvider { get; set; }
+        public int stylePlanAppliedFrameCount { get; set; }
+        public int stylePlanByteExactRecomputeCount { get; set; }
         public string themeAgentSha256 { get; set; }
         public string professionPromptSha256 { get; set; }
         public string themePromptSha256 { get; set; }
@@ -566,9 +583,9 @@ internal static class BuildVergilIllusionSlashAseprite
 
     private static int Run(string[] args)
     {
-        if (args.Length != 7)
+        if (args.Length != 7 && args.Length != 9)
         {
-            Console.Error.WriteLine("Usage: <config.json> <source-npk> <render-summary.json> <runtime-directory> <texconv.exe> <texdiag.exe> <work-directory>");
+            Console.Error.WriteLine("Usage: <config.json> <source-npk> <render-summary.json> <runtime-directory> <texconv.exe> <texdiag.exe> <work-directory> [output-npk build-summary.json]");
             return 2;
         }
 
@@ -589,8 +606,12 @@ internal static class BuildVergilIllusionSlashAseprite
         BuildConfig config = LoadConfig(configFile);
         RenderSummary renderSummary = LoadRenderSummary(renderSummaryFile);
         string configDirectory = Path.GetDirectoryName(configFile);
-        string outputFile = ResolveConfiguredPath(configDirectory, config.output.componentNpkPath);
-        string summaryFile = ResolveConfiguredPath(configDirectory, config.output.buildSummaryPath);
+        string outputFile = args.Length == 9
+            ? Path.GetFullPath(args[7])
+            : ResolveConfiguredPath(configDirectory, config.output.componentNpkPath);
+        string summaryFile = args.Length == 9
+            ? Path.GetFullPath(args[8])
+            : ResolveConfiguredPath(configDirectory, config.output.buildSummaryPath);
         ValidateResolvedPaths(sourceFile, outputFile, summaryFile);
         if (File.Exists(outputFile))
             throw new IOException("Refusing to overwrite an existing component NPK: " + outputFile);
@@ -724,8 +745,18 @@ internal static class BuildVergilIllusionSlashAseprite
             !String.Equals(summary.validation.sourceAlphaPreservedByRenderer, "passed", StringComparison.Ordinal) ||
             !String.Equals(summary.validation.layeredProjectsReopened, "passed", StringComparison.Ordinal) ||
             !String.Equals(summary.validation.layeredProjectRuntimePixelEquality, "passed", StringComparison.Ordinal) ||
-            !String.Equals(summary.validation.promptStylePlanBound, "passed", StringComparison.Ordinal))
+            !String.Equals(summary.validation.modelStylePlanSchema, "passed-dnf-aseprite-pixel-style-plan-v1", StringComparison.Ordinal) ||
+            !String.Equals(summary.validation.modelStylePlanEvidenceChain, "passed-context-design-call-hash-bound", StringComparison.Ordinal) ||
+            !String.Equals(summary.validation.modelStylePlanAppliedByRenderer, "passed-byte-exact-recompute", StringComparison.Ordinal))
             throw new InvalidDataException("Render summary validation is incomplete.");
+        if (summary.styleApplication == null || !IsSha256(summary.styleApplication.planSha256) ||
+            !String.Equals(summary.styleApplication.planSha256, summary.promptBinding.stylePlan.sha256, StringComparison.OrdinalIgnoreCase) ||
+            !String.Equals(summary.styleApplication.provider, "openai", StringComparison.Ordinal) ||
+            String.IsNullOrWhiteSpace(summary.styleApplication.model) ||
+            summary.styleApplication.enabledOperations == null || summary.styleApplication.enabledOperations.Length == 0 ||
+            summary.styleApplication.appliedFrameCount != summary.accounting.expectedFrames ||
+            summary.styleApplication.byteExactRecomputeCount != summary.accounting.expectedFrames)
+            throw new InvalidDataException("Render summary model style application evidence is incomplete.");
         if (summary.deployment == null || summary.deployment.authorized || summary.deployment.performed ||
             summary.deployment.imagePacks2Write || summary.deployment.processOperation)
             throw new InvalidDataException("Render summary must not include deployment.");
@@ -1381,6 +1412,10 @@ internal static class BuildVergilIllusionSlashAseprite
         summary.renderEvidence.renderSummarySha256 = HashFile(renderSummaryFile);
         summary.renderEvidence.modelRequestSha256 = renderSummary.promptBinding.modelRequest.sha256;
         summary.renderEvidence.stylePlanSha256 = renderSummary.promptBinding.stylePlan.sha256;
+        summary.renderEvidence.stylePlanModel = renderSummary.styleApplication.model;
+        summary.renderEvidence.stylePlanProvider = renderSummary.styleApplication.provider;
+        summary.renderEvidence.stylePlanAppliedFrameCount = renderSummary.styleApplication.appliedFrameCount;
+        summary.renderEvidence.stylePlanByteExactRecomputeCount = renderSummary.styleApplication.byteExactRecomputeCount;
         summary.renderEvidence.themeAgentSha256 = renderSummary.promptBinding.themeAgent.sha256;
         summary.renderEvidence.professionPromptSha256 = renderSummary.promptBinding.professionPrompt.sha256;
         summary.renderEvidence.themePromptSha256 = renderSummary.promptBinding.themePrompt.sha256;

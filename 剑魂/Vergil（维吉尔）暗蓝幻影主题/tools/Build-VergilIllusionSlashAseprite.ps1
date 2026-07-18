@@ -19,7 +19,11 @@ param(
 
     [string]$TexdiagPath,
 
-    [string]$ValidationDirectory
+    [string]$ValidationDirectory,
+
+    [string]$OutputNpkPath,
+
+    [string]$BuildSummaryPath
 )
 
 Set-StrictMode -Version Latest
@@ -88,10 +92,10 @@ function Get-PublishedFileSnapshot {
 
     $snapshot = Get-DnfFileSnapshot -Path $CurrentPath
     return [pscustomobject]@{
-        path = [IO.Path]::GetFullPath($PublishedPath)
-        length = [long]$snapshot.length
+        path          = [IO.Path]::GetFullPath($PublishedPath)
+        length        = [long]$snapshot.length
         lastWriteTime = [string]$snapshot.lastWriteTime
-        sha256 = [string]$snapshot.sha256
+        sha256        = [string]$snapshot.sha256
     }
 }
 
@@ -136,8 +140,18 @@ if ([string]::IsNullOrWhiteSpace($ValidationDirectory)) {
 $runtimePath = (Resolve-Path -LiteralPath $RuntimeDirectory).Path
 $renderSummaryFile = (Resolve-Path -LiteralPath $RenderSummaryPath).Path
 $validationRoot = [IO.Path]::GetFullPath($ValidationDirectory)
-$outputPath = Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.output.componentNpkPath)
-$summaryPath = Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.output.buildSummaryPath)
+$outputPath = if ([string]::IsNullOrWhiteSpace($OutputNpkPath)) {
+    Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.output.componentNpkPath)
+}
+else {
+    [IO.Path]::GetFullPath($OutputNpkPath)
+}
+$summaryPath = if ([string]::IsNullOrWhiteSpace($BuildSummaryPath)) {
+    Resolve-ConfiguredPath -BaseDirectory $configDirectory -Value ([string]$config.output.buildSummaryPath)
+}
+else {
+    [IO.Path]::GetFullPath($BuildSummaryPath)
+}
 $themePath = (Resolve-Path -LiteralPath $themeRoot).Path
 foreach ($path in @($runtimePath, $renderSummaryFile, $validationRoot, $outputPath, $summaryPath)) {
     Assert-InsideRoot -Path $path -Root $themePath -Label 'Illusionslash build path'
@@ -146,17 +160,17 @@ foreach ($newPath in @($validationRoot, $outputPath, $summaryPath)) {
     if (Test-Path -LiteralPath $newPath) { throw "Refusing to overwrite existing build path: $newPath" }
 }
 foreach ($requiredFile in @(
-    (Join-Path $ExtractorDirectory 'ExtractorSharp.Core.dll'),
-    (Join-Path $ExtractorDirectory 'ExtractorSharp.Json.dll'),
-    (Join-Path $ExtractorDirectory 'zlib1.dll'),
-    $sourceNpk,
-    $TexconvPath,
-    $TexdiagPath,
-    $renderSummaryFile,
-    (Join-Path $repoRoot 'tools\Test-DnfNpkIndex.ps1'),
-    (Join-Path $repoRoot 'tools\Export-DnfNpkValidation.ps1'),
-    (Join-Path $repoRoot 'tools\Test-DnfNpkPixels.ps1')
-)) {
+        (Join-Path $ExtractorDirectory 'ExtractorSharp.Core.dll'),
+        (Join-Path $ExtractorDirectory 'ExtractorSharp.Json.dll'),
+        (Join-Path $ExtractorDirectory 'zlib1.dll'),
+        $sourceNpk,
+        $TexconvPath,
+        $TexdiagPath,
+        $renderSummaryFile,
+        (Join-Path $repoRoot 'tools\Test-DnfNpkIndex.ps1'),
+        (Join-Path $repoRoot 'tools\Export-DnfNpkValidation.ps1'),
+        (Join-Path $repoRoot 'tools\Test-DnfNpkPixels.ps1')
+    )) {
     if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
         throw "Required file was not found: $requiredFile"
     }
@@ -164,7 +178,13 @@ foreach ($requiredFile in @(
 
 $renderSummary = Get-Content -LiteralPath $renderSummaryFile -Raw -Encoding UTF8 | ConvertFrom-Json
 if ($renderSummary.schemaVersion -ne 1 -or $renderSummary.status -ne 'passed' -or $renderSummary.runId -ne $RunId -or
-    $renderSummary.fullSkillCoverageProven -ne $false -or $renderSummary.validation.promptStylePlanBound -ne 'passed') {
+    $renderSummary.fullSkillCoverageProven -ne $false -or
+    $renderSummary.validation.modelStylePlanSchema -ne 'passed-dnf-aseprite-pixel-style-plan-v1' -or
+    $renderSummary.validation.modelStylePlanEvidenceChain -ne 'passed-context-design-call-hash-bound' -or
+    $renderSummary.validation.modelStylePlanAppliedByRenderer -ne 'passed-byte-exact-recompute' -or
+    $renderSummary.styleApplication.provider -ne 'openai' -or
+    [int]$renderSummary.styleApplication.appliedFrameCount -ne [int]$renderSummary.accounting.expectedFrames -or
+    [int]$renderSummary.styleApplication.byteExactRecomputeCount -ne [int]$renderSummary.accounting.expectedFrames) {
     throw 'Render summary does not satisfy the illusionslash build contract.'
 }
 if ($renderSummary.deployment.authorized -ne $false -or $renderSummary.deployment.performed -ne $false -or
@@ -222,8 +242,8 @@ $workDirectory = Join-Path $buildRoot ('work-' + [Guid]::NewGuid().ToString('N')
 
 $publishedValidation = $false
 try {
-    & $builder $configPath $sourceNpk $renderSummaryFile $runtimePath $TexconvPath $TexdiagPath $workDirectory |
-        Tee-Object -LiteralPath $buildLog
+    & $builder $configPath $sourceNpk $renderSummaryFile $runtimePath $TexconvPath $TexdiagPath $workDirectory $outputPath $summaryPath |
+    Tee-Object -LiteralPath $buildLog
     if ($LASTEXITCODE -ne 0) { throw "Patch generation failed with exit code $LASTEXITCODE." }
     if (-not (Test-Path -LiteralPath $outputPath -PathType Leaf)) { throw 'Builder did not create the component NPK.' }
     if (-not (Test-Path -LiteralPath $summaryPath -PathType Leaf)) { throw 'Builder did not create build-summary.json.' }
@@ -267,9 +287,9 @@ try {
     }
     $pixelFailures = @($pixelState.Records | Where-Object { $_.FullyTransparent -or $_.AllVisiblePixelsBlack -or $_.FullCanvasOpaqueBlack })
     $unexpectedPixelFailures = @($pixelFailures | Where-Object {
-        $key = Get-DnfFrameKey -ImgPath ([string]$_.ImgPath) -FrameIndex ([int]$_.FrameIndex)
-        -not $excludedFrameKeys.ContainsKey($key)
-    })
+            $key = Get-DnfFrameKey -ImgPath ([string]$_.ImgPath) -FrameIndex ([int]$_.FrameIndex)
+            -not $excludedFrameKeys.ContainsKey($key)
+        })
     if ($unexpectedPixelFailures.Count -ne 0) {
         throw "Pixel-state validation failed outside configured excluded frames: $($unexpectedPixelFailures.Count)"
     }
@@ -277,37 +297,44 @@ try {
         throw "Pixel-state validator reported unexpected failure count: $($pixelFailures.Count)"
     }
     $allowedPixelFailures = @($pixelFailures | ForEach-Object {
-        [ordered]@{
-            frameKey = Get-DnfFrameKey -ImgPath ([string]$_.ImgPath) -FrameIndex ([int]$_.FrameIndex)
-            reason = if ($_.FullyTransparent) { 'configured-excluded-fully-transparent' } elseif ($_.AllVisiblePixelsBlack) { 'configured-excluded-all-visible-black' } else { 'configured-excluded-full-canvas-opaque-black' }
-        }
-    })
+            [ordered]@{
+                frameKey = Get-DnfFrameKey -ImgPath ([string]$_.ImgPath) -FrameIndex ([int]$_.FrameIndex)
+                reason   = if ($_.FullyTransparent) { 'configured-excluded-fully-transparent' } elseif ($_.AllVisiblePixelsBlack) { 'configured-excluded-all-visible-black' } else { 'configured-excluded-full-canvas-opaque-black' }
+            }
+        })
 
     $validationSummaryPath = Join-Path $stagingValidation 'build-validation-summary.json'
     $validationSummary = [ordered]@{
-        schemaVersion = 1
-        status = 'passed'
-        runId = $RunId
-        componentNpk = Get-DnfFileSnapshot -Path $outputPath
-        buildSummary = Get-DnfFileSnapshot -Path $summaryPath
-        renderSummary = Get-DnfFileSnapshot -Path $renderSummaryFile
-        index = Get-PublishedFileSnapshot -CurrentPath (Join-Path $stagingValidation 'npk-index.json') -PublishedPath (Join-Path $validationRoot 'npk-index.json')
-        fullFrameExport = [ordered]@{
-            directory = Join-Path $validationRoot 'full-frame-export'
+        schemaVersion         = 1
+        status                = 'passed'
+        runId                 = $RunId
+        componentNpk          = Get-DnfFileSnapshot -Path $outputPath
+        buildSummary          = Get-DnfFileSnapshot -Path $summaryPath
+        renderSummary         = Get-DnfFileSnapshot -Path $renderSummaryFile
+        modelStyleApplication = [ordered]@{
+            planSha256              = [string]$renderSummary.styleApplication.planSha256
+            model                   = [string]$renderSummary.styleApplication.model
+            provider                = [string]$renderSummary.styleApplication.provider
+            appliedFrameCount       = [int]$renderSummary.styleApplication.appliedFrameCount
+            byteExactRecomputeCount = [int]$renderSummary.styleApplication.byteExactRecomputeCount
+        }
+        index                 = Get-PublishedFileSnapshot -CurrentPath (Join-Path $stagingValidation 'npk-index.json') -PublishedPath (Join-Path $validationRoot 'npk-index.json')
+        fullFrameExport       = [ordered]@{
+            directory      = Join-Path $validationRoot 'full-frame-export'
             albumInventory = Get-PublishedFileSnapshot -CurrentPath (Join-Path $fullFrameOutput 'album-inventory.json') -PublishedPath (Join-Path (Join-Path $validationRoot 'full-frame-export') 'album-inventory.json')
             frameInventory = Get-PublishedFileSnapshot -CurrentPath (Join-Path $fullFrameOutput 'frame-inventory.csv') -PublishedPath (Join-Path (Join-Path $validationRoot 'full-frame-export') 'frame-inventory.csv')
         }
-        pixelState = Get-PublishedFileSnapshot -CurrentPath $pixelJsonPath -PublishedPath (Join-Path $validationRoot 'pixel-state.json')
-        pixelStatePolicy = [ordered]@{
-            status = 'passed'
-            checkedFrameCount = [int]$pixelState.CheckedFrameCount
-            failureCount = [int]$pixelState.FailureCount
+        pixelState            = Get-PublishedFileSnapshot -CurrentPath $pixelJsonPath -PublishedPath (Join-Path $validationRoot 'pixel-state.json')
+        pixelStatePolicy      = [ordered]@{
+            status                            = 'passed'
+            checkedFrameCount                 = [int]$pixelState.CheckedFrameCount
+            failureCount                      = [int]$pixelState.FailureCount
             allowedConfiguredExcludedFailures = $allowedPixelFailures
-            unexpectedFailureCount = $unexpectedPixelFailures.Count
+            unexpectedFailureCount            = $unexpectedPixelFailures.Count
         }
-        deployment = [ordered]@{
-            authorized = $false
-            performed = $false
+        deployment            = [ordered]@{
+            authorized       = $false
+            performed        = $false
             imagePacks2Write = $false
             processOperation = $false
         }

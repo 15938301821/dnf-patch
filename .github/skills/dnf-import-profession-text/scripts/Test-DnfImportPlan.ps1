@@ -12,6 +12,9 @@ param(
     [AllowEmptyCollection()]
     [string[]]$PromptName,
 
+    [AllowEmptyCollection()]
+    [string[]]$ThemePromptName = @(),
+
     [string]$RepoRoot
 )
 
@@ -31,8 +34,8 @@ function Add-Issue {
     )
 
     $issue = [pscustomobject]@{
-        code = $Code
-        path = $Path
+        code    = $Code
+        path    = $Path
         message = $Message
     }
     if ($Warning) {
@@ -159,11 +162,11 @@ function Add-Target {
 
     $repoPrefix = $RepoPath.TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
     $script:Targets.Add([pscustomobject]@{
-        kind = $Kind
-        path = $fullPath
-        relativePath = $fullPath.Substring($repoPrefix.Length).Replace('\', '/')
-        state = $state
-    })
+            kind         = $Kind
+            path         = $fullPath
+            relativePath = $fullPath.Substring($repoPrefix.Length).Replace('\', '/')
+            state        = $state
+        })
 }
 
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
@@ -207,7 +210,7 @@ else {
             }
 
             $sourceSummary = [ordered]@{
-                path = $sourceFullPath
+                path   = $sourceFullPath
                 sha256 = (Get-FileHash -LiteralPath $sourceFullPath -Algorithm SHA256).Hash
             }
         }
@@ -289,15 +292,57 @@ foreach ($displayName in $PromptName) {
 
     if ($valid) {
         $promptPlans.Add([pscustomobject]@{
-            displayName = $displayName
-            safeName = $safeName
-            fileName = $fileName
-        })
+                displayName = $displayName
+                safeName    = $safeName
+                fileName    = $fileName
+            })
     }
 }
 
 if ($PromptName.Count -eq 0) {
     Add-Issue -Code 'empty-prompt-plan' -Path $professionPath -Message '至少需要一个有明确文本证据的 Prompt 条目。'
+}
+
+$themePromptPlans = New-Object System.Collections.Generic.List[object]
+$themePromptKeys = @{}
+foreach ($displayName in $ThemePromptName) {
+    $matches = @($promptPlans | Where-Object { $_.displayName.Equals($displayName, [System.StringComparison]::Ordinal) })
+    if ($matches.Count -ne 1) {
+        Add-Issue -Code 'theme-prompt-not-in-profession-plan' -Path $professionPath -Message "主题 Prompt [$displayName] 不在职业 Prompt 完整计划中。"
+        continue
+    }
+
+    $prompt = $matches[0]
+    $key = $prompt.fileName.Normalize([System.Text.NormalizationForm]::FormC).ToLowerInvariant()
+    if ($themePromptKeys.ContainsKey($key)) {
+        Add-Issue -Code 'theme-prompt-name-collision' -Path $professionPath -Message "主题 Prompt 重复：[$displayName]。"
+        continue
+    }
+    $themePromptKeys[$key] = $true
+    $themePromptPlans.Add($prompt)
+}
+
+if ([string]::IsNullOrWhiteSpace($ThemeName) -and $ThemePromptName.Count -gt 0) {
+    Add-Issue -Code 'theme-prompt-without-theme' -Path $professionPath -Message '没有主题路由时不能提供主题 Prompt 计划。'
+}
+elseif (-not [string]::IsNullOrWhiteSpace($ThemeName) -and $ThemePromptName.Count -eq 0) {
+    Add-Issue -Code 'empty-theme-prompt-plan' -Path $themePath -Message '主题导入至少需要一个有明确来源证据的主题 Prompt 条目。'
+}
+
+$lastThemeProfessionIndex = -1
+foreach ($themePrompt in $themePromptPlans) {
+    $professionIndex = -1
+    for ($index = 0; $index -lt $promptPlans.Count; $index++) {
+        if ($promptPlans[$index].fileName.Equals($themePrompt.fileName, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $professionIndex = $index
+            break
+        }
+    }
+    if ($professionIndex -le $lastThemeProfessionIndex) {
+        Add-Issue -Code 'theme-prompt-order' -Path $themePath -Message '主题 Prompt 必须保持职业 Prompt 的相对顺序。'
+        break
+    }
+    $lastThemeProfessionIndex = $professionIndex
 }
 
 if ($professionNameValid -and $professionPathSafe) {
@@ -310,7 +355,7 @@ if ($professionNameValid -and $professionPathSafe) {
     if ($null -ne $themePath -and $themeNameValid) {
         Add-Target -Path (Join-Path -Path $themePath -ChildPath 'AGENTS.md') -BasePath $themePath -Kind 'theme-agents' -RepoPath $repoFullPath
         Add-Target -Path (Join-Path -Path $themePath -ChildPath 'prompts\README.md') -BasePath $themePath -Kind 'theme-index' -RepoPath $repoFullPath
-        foreach ($prompt in $promptPlans) {
+        foreach ($prompt in $themePromptPlans) {
             Add-Target -Path (Join-Path -Path $themePath -ChildPath ('prompts\' + $prompt.fileName)) -BasePath $themePath -Kind 'theme-prompt' -RepoPath $repoFullPath
         }
     }
@@ -347,11 +392,11 @@ try {
             }
             $sha256 = if ($exists) { (Get-FileHash -LiteralPath $fullChangedPath -Algorithm SHA256).Hash } else { $null }
             $baselineChanges.Add([pscustomobject]@{
-                status = $statusCode
-                relativePath = $relativeChangedPath
-                exists = $exists
-                sha256 = $sha256
-            })
+                    status       = $statusCode
+                    relativePath = $relativeChangedPath
+                    exists       = $exists
+                    sha256       = $sha256
+                })
         }
     }
 }
@@ -360,20 +405,21 @@ catch {
 }
 
 $result = [ordered]@{
-    schemaVersion = 1
-    status = if ($script:Errors.Count -eq 0) { 'passed' } else { 'failed' }
-    source = $sourceSummary
-    route = [ordered]@{
-        profession = $professionSafeName
+    schemaVersion   = 1
+    status          = if ($script:Errors.Count -eq 0) { 'passed' } else { 'failed' }
+    source          = $sourceSummary
+    route           = [ordered]@{
+        profession     = $professionSafeName
         professionPath = $professionPath
-        theme = $themeSafeName
-        themePath = $themePath
+        theme          = $themeSafeName
+        themePath      = $themePath
     }
-    prompts = @($promptPlans.ToArray())
-    targets = @($script:Targets.ToArray())
+    prompts         = @($promptPlans.ToArray())
+    themePrompts    = @($themePromptPlans.ToArray())
+    targets         = @($script:Targets.ToArray())
     baselineChanges = @($baselineChanges.ToArray())
-    errors = @($script:Errors.ToArray())
-    warnings = @($script:Warnings.ToArray())
+    errors          = @($script:Errors.ToArray())
+    warnings        = @($script:Warnings.ToArray())
 }
 
 $result | ConvertTo-Json -Depth 8

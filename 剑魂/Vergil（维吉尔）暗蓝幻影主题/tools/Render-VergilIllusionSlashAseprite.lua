@@ -1,5 +1,6 @@
 local mode = app.params["mode"] or "render"
 local renderPlan = app.params["renderPlan"]
+local stylePlanPath = app.params["stylePlan"]
 local projectDirectory = app.params["projectDirectory"]
 local runtimeDirectory = app.params["runtimeDirectory"]
 
@@ -85,37 +86,153 @@ local function readPlan(path)
   return rows
 end
 
+local function readAllText(path, label)
+  requireFile(path, label)
+  local file = io.open(path, "rb")
+  if not file then
+    error("Could not open " .. label .. ": " .. path)
+  end
+  local text = file:read("*all")
+  file:close()
+  if string.sub(text, 1, 3) == string.char(239, 187, 191) then
+    text = string.sub(text, 4)
+  end
+  return text
+end
+
+local function requireNumber(value, minimum, maximum, label)
+  if type(value) ~= "number" or value < minimum or value > maximum then
+    error(string.format("%s must be a number in [%s, %s].", label, tostring(minimum), tostring(maximum)))
+  end
+end
+
+local function requireRgb(value, label)
+  if type(value) ~= "table" or #value ~= 3 then
+    error(label .. " must contain exactly three RGB bytes.")
+  end
+  for index = 1, 3 do
+    requireNumber(value[index], 0, 255, label .. "[" .. tostring(index) .. "]")
+  end
+end
+
+local function readStylePlan(path)
+  local decoded = json.decode(readAllText(path, "style plan"))
+  if type(decoded) ~= "table" or decoded.schemaVersion ~= 1 or
+      decoded.kind ~= "dnf-aseprite-pixel-style-plan-v1" then
+    error("Style plan identity is invalid.")
+  end
+  if type(decoded.source) ~= "table" or decoded.source.provider ~= "openai" or
+      decoded.source.modelEvidenceEligible ~= true then
+    error("Style plan is not backed by eligible OpenAI model evidence.")
+  end
+  if decoded.geometryPolicy ~= "strict-preserve-source-frame-position-size" or
+      decoded.alphaPolicy ~= "preserve-source-alpha-byte-exact" then
+    error("Style plan geometry or alpha policy is invalid.")
+  end
+  if type(decoded.safety) ~= "table" or
+      decoded.safety.arbitraryCodeAccepted ~= false or
+      decoded.safety.resourceFactsFromModel ~= false or
+      decoded.safety.runtimeImageFromImageModel ~= false or
+      decoded.safety.fullSkillCoverageProven ~= false or
+      decoded.safety.deploymentAuthorized ~= false then
+    error("Style plan safety policy is invalid.")
+  end
+  if type(decoded.palette) ~= "table" then
+    error("Style plan palette is missing.")
+  end
+  requireRgb(decoded.palette.shadow, "palette.shadow")
+  requireRgb(decoded.palette.midtone, "palette.midtone")
+  requireRgb(decoded.palette.rim, "palette.rim")
+  requireRgb(decoded.palette.core, "palette.core")
+  if type(decoded.parameters) ~= "table" then
+    error("Style plan parameters are missing.")
+  end
+  requireNumber(decoded.parameters.sourceColorMix, 0, 1, "parameters.sourceColorMix")
+  requireNumber(decoded.parameters.coreThreshold, 0.5, 0.95, "parameters.coreThreshold")
+  requireNumber(decoded.parameters.coreIntensity, 0, 1, "parameters.coreIntensity")
+  requireNumber(decoded.parameters.rimThreshold, 0, 0.8, "parameters.rimThreshold")
+  requireNumber(decoded.parameters.rimIntensity, 0, 1, "parameters.rimIntensity")
+  requireNumber(decoded.parameters.phaseAmount, 0, 1, "parameters.phaseAmount")
+  requireNumber(decoded.parameters.crackDensity, 0, 0.25, "parameters.crackDensity")
+  requireNumber(decoded.parameters.crackIntensity, 0, 1, "parameters.crackIntensity")
+  if type(decoded.enabledOperations) ~= "table" or #decoded.enabledOperations == 0 then
+    error("Style plan enabledOperations is empty.")
+  end
+  local allowedOperations = {
+    ["palette-map"] = true,
+    ["rim-light"] = true,
+    ["particle-trail"] = true,
+    ["spatial-crack"] = true,
+    ["blade-core"] = true,
+    ["alpha-preserve"] = true
+  }
+  local enabled = {}
+  for _, operation in ipairs(decoded.enabledOperations) do
+    if not allowedOperations[operation] then
+      error("Unsupported style operation: " .. tostring(operation))
+    end
+    enabled[operation] = true
+  end
+  if not enabled["palette-map"] or not enabled["alpha-preserve"] then
+    error("Style plan must enable palette-map and alpha-preserve.")
+  end
+  decoded.enabled = enabled
+  return decoded
+end
+
 local function clampByte(value)
   if value < 0 then return 0 end
   if value > 255 then return 255 end
   return math.floor(value + 0.5)
 end
 
-local function mapVergilPixel(red, green, blue, alpha, frameIndex, x, y)
+local function clampUnit(value)
+  if value < 0 then return 0 end
+  if value > 1 then return 1 end
+  return value
+end
+
+local function mix(left, right, amount)
+  return left + (right - left) * clampUnit(amount)
+end
+
+local function mapStylePixel(red, green, blue, alpha, frameIndex, x, y, plan)
   if alpha == 0 then
-    return 0, 0, 0, 0
+    return 0, 0, 0, 0, false, false, false
   end
   local maxChannel = math.max(red, math.max(green, blue))
   local minChannel = math.min(red, math.min(green, blue))
   local intensity = maxChannel / 255.0
   local edge = (maxChannel - minChannel) / 255.0
   local phase = ((frameIndex * 37 + x * 3 + y * 5) % 29) / 28.0
-  local core = math.max(0.0, intensity - 0.62) / 0.38
-  local rim = math.max(0.0, edge - 0.10) / 0.90
-  local crack = ((x + y + frameIndex * 11) % 23 == 0) and 0.18 or 0.0
-  local cold = math.min(1.0, 0.34 + intensity * 0.66 + rim * 0.16 + crack)
-  local r = 10 + 20 * intensity + 225 * core
-  local g = 22 + 110 * intensity + 140 * core + 38 * phase
-  local b = 51 + 188 * cold + 18 * rim
-  if core > 0.75 then
-    r = 235 + 20 * core
-    g = 246 + 9 * core
-    b = 255
-  end
-  return clampByte(r), clampByte(g), clampByte(b), alpha
+  local parameters = plan.parameters
+  local palette = plan.palette
+  local baseR = mix(palette.shadow[1], palette.midtone[1], intensity)
+  local baseG = mix(palette.shadow[2], palette.midtone[2], intensity)
+  local baseB = mix(palette.shadow[3], palette.midtone[3], intensity)
+  local core = clampUnit((intensity - parameters.coreThreshold) / (1.0 - parameters.coreThreshold))
+  local rim = clampUnit((edge - parameters.rimThreshold) / (1.0 - parameters.rimThreshold))
+  local coreAmount = plan.enabled["blade-core"] and core * parameters.coreIntensity or 0
+  local rimAmount = plan.enabled["rim-light"] and rim * parameters.rimIntensity or 0
+  local phaseAmount = plan.enabled["particle-trail"] and phase * parameters.phaseAmount or 0
+  local crackBucket = (x * 17 + y * 31 + frameIndex * 11) % 10000
+  local crackActive = plan.enabled["spatial-crack"] and
+      crackBucket < math.floor(parameters.crackDensity * 10000 + 0.5)
+  local crackAmount = crackActive and parameters.crackIntensity or 0
+  local r = mix(baseR, red, parameters.sourceColorMix)
+  local g = mix(baseG, green, parameters.sourceColorMix)
+  local b = mix(baseB, blue, parameters.sourceColorMix)
+  r = mix(r, palette.rim[1], clampUnit(rimAmount + phaseAmount + crackAmount))
+  g = mix(g, palette.rim[2], clampUnit(rimAmount + phaseAmount + crackAmount))
+  b = mix(b, palette.rim[3], clampUnit(rimAmount + phaseAmount + crackAmount))
+  r = mix(r, palette.core[1], coreAmount)
+  g = mix(g, palette.core[2], coreAmount)
+  b = mix(b, palette.core[3], coreAmount)
+  return clampByte(r), clampByte(g), clampByte(b), alpha,
+      coreAmount > 0, rimAmount > 0, crackActive
 end
 
-local function recolorImage(source, row)
+local function recolorImage(source, row, plan)
   if source.width ~= row.textureWidthNumber or source.height ~= row.textureHeightNumber then
     error(string.format(
       "Source PNG geometry mismatch for %s: %dx%d expected %dx%d",
@@ -123,6 +240,7 @@ local function recolorImage(source, row)
   end
   local output = Image(source.width, source.height, ColorMode.RGB)
   output:clear()
+  local stats = { visible = 0, changed = 0, core = 0, rim = 0, crack = 0 }
   for y = 0, source.height - 1 do
     for x = 0, source.width - 1 do
       local pixel = source:getPixel(x, y)
@@ -130,11 +248,19 @@ local function recolorImage(source, row)
       local green = app.pixelColor.rgbaG(pixel)
       local blue = app.pixelColor.rgbaB(pixel)
       local alpha = app.pixelColor.rgbaA(pixel)
-      local nr, ng, nb, na = mapVergilPixel(red, green, blue, alpha, row.frameIndexNumber, x, y)
+      local nr, ng, nb, na, core, rim, crack =
+          mapStylePixel(red, green, blue, alpha, row.frameIndexNumber, x, y, plan)
       output:putPixel(x, y, app.pixelColor.rgba(nr, ng, nb, na))
+      if alpha ~= 0 then
+        stats.visible = stats.visible + 1
+        if nr ~= red or ng ~= green or nb ~= blue then stats.changed = stats.changed + 1 end
+        if core then stats.core = stats.core + 1 end
+        if rim then stats.rim = stats.rim + 1 end
+        if crack then stats.crack = stats.crack + 1 end
+      end
     end
   end
-  return output
+  return output, stats
 end
 
 local function ensureFrameDirectories(row)
@@ -145,7 +271,7 @@ local function ensureFrameDirectories(row)
   return projectAlbum, runtimeAlbum
 end
 
-local function renderRow(row)
+local function renderRow(row, plan)
   requireFile(row.sourcePng, "source PNG")
   local projectAlbum, runtimeAlbum = ensureFrameDirectories(row)
   local baseName = "frame-" .. string.format("%03d", row.frameIndexNumber)
@@ -159,7 +285,7 @@ local function renderRow(row)
   if not source then
     error("Aseprite could not open source PNG: " .. row.sourcePng)
   end
-  local final = recolorImage(source, row)
+  local final, stats = recolorImage(source, row, plan)
   local sprite = Sprite(source.width, source.height, ColorMode.RGB)
   local sourceLayer = sprite.layers[1]
   sourceLayer.name = "hidden source alpha reference"
@@ -172,13 +298,15 @@ local function renderRow(row)
   finalLayer.blendMode = BlendMode.NORMAL
   sprite:newCel(finalLayer, 1, final, Point(0, 0))
   local auditLayer = sprite:newLayer()
-  auditLayer.name = "hidden prompt style audit marker"
+  auditLayer.name = "hidden compiled model style audit marker"
   auditLayer.isVisible = false
   auditLayer.opacity = 0
   sprite:saveCopyAs(projectPath)
   sprite:saveCopyAs(runtimePath)
   sprite:close()
   print("RenderedFrame=" .. row.frameKey)
+  print(string.format("StyleAppliedFrame=%s;visible=%d;changed=%d;core=%d;rim=%d;crack=%d",
+    row.frameKey, stats.visible, stats.changed, stats.core, stats.rim, stats.crack))
 end
 
 local function findLayer(sprite, name)
@@ -190,7 +318,7 @@ local function findLayer(sprite, name)
   return nil
 end
 
-local function validateRow(row)
+local function validateRow(row, plan)
   local projectAlbum, runtimeAlbum = ensureFrameDirectories(row)
   local baseName = "frame-" .. string.format("%03d", row.frameIndexNumber)
   local projectPath = app.fs.joinPath(projectAlbum, baseName .. ".aseprite")
@@ -241,6 +369,20 @@ local function validateRow(row)
         end
         if sa ~= 0 then
           visible = visible + 1
+          local expectedRed, expectedGreen, expectedBlue, expectedAlpha = mapStylePixel(
+            app.pixelColor.rgbaR(sp),
+            app.pixelColor.rgbaG(sp),
+            app.pixelColor.rgbaB(sp),
+            sa,
+            row.frameIndexNumber,
+            x,
+            y,
+            plan)
+          if expectedAlpha ~= ra or expectedRed ~= app.pixelColor.rgbaR(rp) or
+             expectedGreen ~= app.pixelColor.rgbaG(rp) or
+             expectedBlue ~= app.pixelColor.rgbaB(rp) then
+            error("Runtime pixel does not match compiled style plan: " .. row.frameKey)
+          end
           if app.pixelColor.rgbaR(sp) ~= app.pixelColor.rgbaR(rp) or
              app.pixelColor.rgbaG(sp) ~= app.pixelColor.rgbaG(rp) or
              app.pixelColor.rgbaB(sp) ~= app.pixelColor.rgbaB(rp) then
@@ -258,25 +400,30 @@ local function validateRow(row)
     error(failure)
   end
   print("ValidatedFrame=" .. row.frameKey)
+  print("StyleRecomputedFrame=" .. row.frameKey)
 end
 
 requireFile(renderPlan, "render plan")
+requireFile(stylePlanPath, "style plan")
 requireDirectory(projectDirectory, "project")
 requireDirectory(runtimeDirectory, "runtime")
 local rows = readPlan(renderPlan)
+local stylePlan = readStylePlan(stylePlanPath)
 
 if mode == "render" then
   for _, row in ipairs(rows) do
-    renderRow(row)
+    renderRow(row, stylePlan)
   end
   print("IllusionSlashAsepriteRender=passed")
   print("FrameCount=" .. tostring(#rows))
+  print("StylePlanAppliedFrames=" .. tostring(#rows))
 elseif mode == "validate" then
   for _, row in ipairs(rows) do
-    validateRow(row)
+    validateRow(row, stylePlan)
   end
   print("IllusionSlashAsepriteValidation=passed")
   print("FrameCount=" .. tostring(#rows))
+  print("StylePlanRecomputedFrames=" .. tostring(#rows))
 else
   error("Unsupported mode: " .. tostring(mode))
 end

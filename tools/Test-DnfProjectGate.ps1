@@ -308,7 +308,83 @@ Assert-Condition -Condition ($releaseRollbackFixtureGate.failureObserved -eq $tr
     $releaseRollbackFixtureGate.concurrentManifestCasPassed -eq $true) `
     -Message 'Release metadata fixture did not prove rollback, recovery, idempotency, and manifest CAS.'
 
-$jsonFiles = @(Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File -Filter '*.json' | Sort-Object FullName)
+$desktopRoot = Join-Path $repositoryRoot 'apps\desktop'
+$desktopPackagePath = Join-Path $desktopRoot 'package.json'
+Assert-Condition -Condition (Test-Path -LiteralPath $desktopPackagePath -PathType Leaf) `
+    -Message "Desktop package was not found: $desktopPackagePath"
+Assert-NoReparsePointPath -Path $desktopRoot -RepositoryRoot $repositoryRoot `
+    -Label 'Desktop project'
+$desktopPackage = Get-Content -LiteralPath $desktopPackagePath -Raw -Encoding UTF8 |
+ConvertFrom-Json
+Assert-Condition -Condition (Test-ObjectProperty -Object $desktopPackage -Name 'scripts' -and
+    Test-ObjectProperty -Object $desktopPackage.scripts -Name 'gate:static') `
+    -Message 'Desktop package does not declare gate:static.'
+$desktopStaticGateScript = [string]$desktopPackage.scripts.'gate:static'
+foreach ($requiredDesktopScript in @(
+        'npm run typecheck',
+        'npm run lint',
+        'npm run test:unit',
+        'npm run validate:project')) {
+    Assert-Condition -Condition ($desktopStaticGateScript.Contains($requiredDesktopScript)) `
+        -Message "Desktop gate:static omits $requiredDesktopScript."
+}
+Assert-Condition -Condition ($desktopStaticGateScript -notmatch '(?i)test:e2e|\bbuild\b|gate:project') `
+    -Message 'Desktop gate:static must remain non-building and non-recursive.'
+$npmCommand = Get-Command 'npm.cmd' -ErrorAction SilentlyContinue
+if ($null -eq $npmCommand) {
+    $npmCommand = Get-Command 'npm' -ErrorAction SilentlyContinue
+}
+Assert-Condition -Condition ($null -ne $npmCommand) `
+    -Message 'npm was not found for the desktop static gate.'
+$previousErrorActionPreference = $ErrorActionPreference
+$previousNpmOffline = $env:npm_config_offline
+try {
+    $ErrorActionPreference = 'Continue'
+    $env:npm_config_offline = 'true'
+    $desktopGateOutput = & $npmCommand.Source --prefix $desktopRoot run gate:static 2>&1 |
+    Out-String
+    $desktopGateExitCode = $LASTEXITCODE
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+    if ($null -eq $previousNpmOffline) {
+        Remove-Item Env:\npm_config_offline -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:npm_config_offline = $previousNpmOffline
+    }
+}
+Assert-Condition -Condition ($desktopGateExitCode -eq 0) `
+    -Message "Desktop static gate failed: $desktopGateOutput"
+$desktopGate = [pscustomobject]@{
+    status               = 'passed'
+    mode                 = 'offline static validation; no build, E2E, network, or deployment'
+    packagePath          = 'apps/desktop/package.json'
+    typecheck            = 'passed'
+    lint                 = 'passed'
+    unitTests            = 'passed'
+    projectContract      = 'passed'
+    deploymentAuthorized = $false
+    deploymentPerformed  = $false
+}
+
+$generatedDirectoryNames = @(
+    'node_modules',
+    '.runs',
+    'out',
+    'dist',
+    'build',
+    'test-results',
+    'playwright-report',
+    'coverage'
+)
+$jsonFiles = @(Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File -Filter '*.json' |
+    Where-Object {
+        $relativePath = $_.FullName.Substring($repositoryRoot.Length + 1)
+        $segments = @($relativePath -split '[\\/]')
+        @($segments | Where-Object { $_ -in $generatedDirectoryNames }).Count -eq 0 -and
+        -not $relativePath.StartsWith('tools\bin\', [StringComparison]::OrdinalIgnoreCase)
+    } | Sort-Object FullName)
 foreach ($jsonFile in $jsonFiles) {
     try {
         $null = Get-Content -LiteralPath $jsonFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -590,7 +666,17 @@ foreach ($directoryRecord in @($quarantine.directories)) {
     }
 }
 
-$infrastructureDirectories = @('.agents', '.codex', '.git', '.github', 'docs', 'tools', 'validation')
+$infrastructureDirectories = @(
+    '.agents',
+    '.codex',
+    '.git',
+    '.github',
+    'apps',
+    'build',
+    'docs',
+    'tools',
+    'validation'
+)
 $professionDirectorySet = New-Object 'Collections.Generic.HashSet[string]' `
 ([StringComparer]::OrdinalIgnoreCase)
 foreach ($profession in $professionDirectories) {
@@ -644,7 +730,7 @@ $copilotSkillMirrorArray = $copilotSkillMirrorResults.ToArray()
 $result = [pscustomobject]@{
     schemaVersion                      = 1
     status                             = 'passed'
-    mode                               = 'read-only project gate; no build, deployment, or process operation'
+    mode                               = 'read-only project gate; no build, deployment, network, or game process operation'
     repositoryRoot                     = $repositoryRoot
     jsonFileCount                      = $jsonFiles.Count
     skillCount                         = $skillArray.Count
@@ -654,6 +740,7 @@ $result = [pscustomobject]@{
     powershell                         = $powerShellGate
     workflowFixtureGate                = $workflowFixtureGate
     releaseMetadataRollbackFixtureGate = $releaseRollbackFixtureGate
+    desktopGate                        = $desktopGate
     professionCount                    = $professionDirectories.Count
     promptTreeGateCount                = $promptArray.Count
     promptTrees                        = $promptArray

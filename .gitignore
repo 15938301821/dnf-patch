@@ -10,6 +10,14 @@
 **/frames/
 **/*预览.png
 **/automation-runs/
+build/
+**/node_modules/
+apps/desktop/.runs/
+apps/desktop/out/
+apps/desktop/dist/
+apps/desktop/test-results/
+apps/desktop/playwright-report/
+apps/desktop/coverage/
 tools/workflow/fixtures/.runs/
 tools/workflow/fixtures/.test-*/
 tools/workflow/fixtures/.metadata-*/

@@ -65,12 +65,28 @@ $strictUtf8 = New-Object System.Text.UTF8Encoding($false, $true)
 $issues = New-Object System.Collections.Generic.List[object]
 
 $item = Get-Item -LiteralPath $scanRoot
+$generatedDirectoryNames = @(
+    'node_modules',
+    '.runs',
+    'out',
+    'dist',
+    'build',
+    'test-results',
+    'playwright-report',
+    'coverage'
+)
 $files = @(if ($item -is [IO.FileInfo]) {
     $item
 }
 else {
     Get-ChildItem -LiteralPath $scanRoot -Recurse -File | Where-Object {
-        $_.Extension -in @('.ps1', '.psm1', '.psd1')
+        $relativePath = $_.FullName.Substring($item.FullName.Length).TrimStart(
+            [IO.Path]::DirectorySeparatorChar,
+            [IO.Path]::AltDirectorySeparatorChar)
+        $segments = @($relativePath -split '[\\/]')
+        $_.Extension -in @('.ps1', '.psm1', '.psd1') -and
+        @($segments | Where-Object { $_ -in $generatedDirectoryNames }).Count -eq 0 -and
+        -not $relativePath.StartsWith('tools\bin\', [StringComparison]::OrdinalIgnoreCase)
     } | Sort-Object FullName
 })
 

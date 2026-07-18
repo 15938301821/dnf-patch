@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {
+      "id": "weaponmaster.vergil.illusionslash.agentic-v1",
+      "path": "tools/profiles/weaponmaster.vergil.illusionslash.agentic-v1.json",
+      "enabled": true
+    }
+  ]
+}

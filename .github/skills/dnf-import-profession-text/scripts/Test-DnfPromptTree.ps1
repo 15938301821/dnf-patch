@@ -13,6 +13,9 @@ param(
     [string[]]$ExpectedPromptFileName = @(),
 
     [AllowEmptyCollection()]
+    [string[]]$ExpectedThemePromptFileName = @(),
+
+    [AllowEmptyCollection()]
     [string[]]$AllowedChangedRelativePath = @(),
 
     [AllowEmptyCollection()]
@@ -836,13 +839,16 @@ if (-not [string]::IsNullOrWhiteSpace($ThemePath)) {
 }
 
 if ($themeIndexNames.Count -gt 0) {
-    if ($ExpectedPromptFileName.Count -gt 0) {
-        Test-Sequence -Actual $themeIndexNames -Expected $ExpectedPromptFileName -Path $themeFullPath -Code 'theme-source-order' -Label '主题 Prompt 索引'
+    if ($ExpectedThemePromptFileName.Count -gt 0) {
+        Test-Sequence -Actual $themeIndexNames -Expected $ExpectedThemePromptFileName -Path $themeFullPath -Code 'theme-source-order' -Label '主题 Prompt 索引'
     }
     else {
         $professionThemeOrder = @($professionIndexNames | Where-Object { $_ -in $themeIndexNames })
         Test-Sequence -Actual $themeIndexNames -Expected $professionThemeOrder -Path $themeFullPath -Code 'theme-profession-order' -Label '主题与职业 Prompt 相对顺序'
     }
+}
+elseif ($ExpectedThemePromptFileName.Count -gt 0) {
+    Add-Issue -Code 'theme-source-order' -Path $themeFullPath -Message '主题 Prompt 索引为空，但计划要求存在主题 Prompt。'
 }
 
 $sourceSummary = $null

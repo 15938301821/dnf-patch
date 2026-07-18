@@ -13,6 +13,12 @@ if not app.apiVersion or app.apiVersion < minimumApiVersion then
     tostring(app.apiVersion), minimumApiVersion))
 end
 
+local jsonProbe = json.decode('{"status":"passed","values":[1,2,3]}')
+if not jsonProbe or jsonProbe.status ~= "passed" or
+    not jsonProbe.values or #jsonProbe.values ~= 3 or jsonProbe.values[3] ~= 3 then
+  error("json.decode is unavailable or returned invalid data.")
+end
+
 local requiredBlendModes = {
   NORMAL = BlendMode.NORMAL,
   SCREEN = BlendMode.SCREEN,
@@ -119,4 +125,4 @@ end
 print("AsepriteApiProbe=passed")
 print("AsepriteApiVersion=" .. tostring(app.apiVersion))
 print("AsepriteMinimumApiVersion=" .. tostring(minimumApiVersion))
-print("AsepriteProbeFeatures=Image.context,path-fill,crop,resize,drawImage,layers,blend-modes,project-save,png-save,reopen,pixel-equality")
+print("AsepriteProbeFeatures=json.decode,Image.context,path-fill,crop,resize,drawImage,layers,blend-modes,project-save,png-save,reopen,pixel-equality")
