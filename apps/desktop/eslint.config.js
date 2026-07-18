@@ -25,11 +25,25 @@ export default tseslint.config(
       },
     },
     rules: {
+      // 物理行直接反映文件维护成本；注释和空行同样计入职责规模。
+      "max-lines": [
+        "error",
+        { max: 500, skipBlankLines: false, skipComments: false },
+      ],
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-confusing-void-expression": "off",
       "@typescript-eslint/no-misused-promises": [
         "error",
         { checksVoidReturn: false },
+      ],
+    },
+  },
+  {
+    files: ["**/*.js"],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 500, skipBlankLines: false, skipComments: false },
       ],
     },
   },

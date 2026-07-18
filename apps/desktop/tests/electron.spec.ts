@@ -1,7 +1,11 @@
-import type { ChildProcess } from "node:child_process";
 import { mkdir, readFile, rename } from "node:fs/promises";
 import { resolve } from "node:path";
-import { _electron as electron, expect, test } from "@playwright/test";
+import {
+  _electron as electron,
+  expect,
+  test,
+  type ElectronApplication,
+} from "@playwright/test";
 
 const desktopRoot = resolve(import.meta.dirname, "..");
 const repositoryRoot = resolve(desktopRoot, "..", "..");
@@ -10,23 +14,33 @@ async function readJson(path: string): Promise<unknown> {
   return JSON.parse(await readFile(path, "utf8")) as unknown;
 }
 
-let applicationProcess: ChildProcess | undefined;
+let application: ElectronApplication | undefined;
 let createdRunDirectory: string | undefined;
+
+/** 限定测试清理等待时间，避免 Electron 退出异常遮蔽原始断言失败。 */
+async function closeApplication(
+  launchedApplication: ElectronApplication,
+): Promise<void> {
+  const childProcess = launchedApplication.process();
+  const gracefulClose = launchedApplication.close().catch(() => undefined);
+  const timeout = new Promise<"timeout">((resolveTimeout) => {
+    setTimeout(() => resolveTimeout("timeout"), 5_000);
+  });
+  if ((await Promise.race([gracefulClose, timeout])) === "timeout") {
+    childProcess.kill();
+  }
+}
 
 test.afterEach(async ({ browserName }, testInfo) => {
   void browserName;
-  const childProcess = applicationProcess;
-  applicationProcess = undefined;
-  if (childProcess !== undefined) {
-    if (childProcess.exitCode === null && childProcess.signalCode === null) {
-      const exitPromise = new Promise<void>((resolveExit) => {
-        childProcess.once("exit", () => resolveExit());
-      });
-      childProcess.kill();
-      await exitPromise;
-    }
+  const launchedApplication = application;
+  application = undefined;
+  if (launchedApplication !== undefined) {
+    await closeApplication(launchedApplication);
   }
   if (createdRunDirectory !== undefined) {
+    // Worker 只做同卷原子搬运，不在 Electron 刚退出时递归删除文件树。成功与
+    // 失败 Run 都保留在被忽略的唯一结果目录中，避免 Windows 文件锁阻塞门禁。
     const evidenceDirectory = testInfo.outputPath("mock-run-evidence");
     await mkdir(resolve(evidenceDirectory, ".."), { recursive: true });
     await rename(createdRunDirectory, evidenceDirectory);
@@ -46,7 +60,7 @@ test("boots the isolated production control plane", async () => {
     },
   });
   const electronProcess = launchedApplication.process();
-  applicationProcess = electronProcess;
+  application = launchedApplication;
 
   const window = await launchedApplication.firstWindow();
   await expect(window).toHaveTitle("DNF Patch Studio");
@@ -180,5 +194,5 @@ test("boots the isolated production control plane", async () => {
 
   await window.close();
   await expect.poll(() => electronProcess.exitCode).toBe(0);
-  applicationProcess = undefined;
+  application = undefined;
 });

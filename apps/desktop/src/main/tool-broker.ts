@@ -1,6 +1,5 @@
-import { spawn } from "node:child_process";
 import { lstat, readdir, stat } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import {
   toolInvocationSchema,
   toolResultSchema,
@@ -12,6 +11,7 @@ import type { ToolCatalog, ToolCatalogEntry } from "../shared/tool-catalog.js";
 import {
   assertNoSymlinkChain,
   fileExists,
+  isPathInside,
   normalizeRelativePath,
   resolveInside,
   sha256Text,
@@ -19,10 +19,15 @@ import {
   stableStringify,
 } from "./lib/filesystem.js";
 import type { RunStore } from "./run-store.js";
+import {
+  MAX_TOOL_OUTPUT_BYTES,
+  powershellPath,
+  runBoundedProcess,
+  type ProcessResult,
+} from "./tool-broker/process-runner.js";
 
 const HOST_SCRIPT = "tools/Invoke-DnfCatalogTool.ps1";
 const DEFAULT_TIMEOUT_MS = 45 * 60 * 1_000;
-const SECRET_ENVIRONMENT_NAME = /(api.?key|token|secret|password|credential)/iu;
 
 export interface BrokerCall {
   invocation: ToolInvocation;
@@ -40,85 +45,8 @@ interface PreparedCall {
   expectedOutputs: string[];
 }
 
-interface ProcessResult {
-  exitCode: number | null;
-  stdout: string;
-  stderr: string;
-  timedOut: boolean;
-}
-
-function isInside(root: string, candidate: string): boolean {
-  const route = relative(resolve(root), resolve(candidate));
-  return (
-    route === "" ||
-    (!route.startsWith(`..${sep}`) && route !== ".." && !isAbsolute(route))
-  );
-}
-
 function sameJson(left: unknown, right: unknown): boolean {
   return stableStringify(left) === stableStringify(right);
-}
-
-function processEnvironment(): NodeJS.ProcessEnv {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(
-      ([name, value]) =>
-        value !== undefined && !SECRET_ENVIRONMENT_NAME.test(name),
-    ),
-  );
-}
-
-function powershellPath(host: ToolCatalogEntry["host"]): string {
-  const windows = process.env.SystemRoot ?? process.env.WINDIR ?? "C:\\Windows";
-  const architectureDirectory =
-    host === "windows-powershell-x86" ? "SysWOW64" : "System32";
-  return resolve(
-    windows,
-    architectureDirectory,
-    "WindowsPowerShell",
-    "v1.0",
-    "powershell.exe",
-  );
-}
-
-async function runProcess(
-  executable: string,
-  args: string[],
-  cwd: string,
-  timeoutMs: number,
-): Promise<ProcessResult> {
-  return new Promise((resolveResult, reject) => {
-    const child = spawn(executable, args, {
-      cwd,
-      windowsHide: true,
-      shell: false,
-      env: processEnvironment(),
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    let timedOut = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
-      child.kill();
-    }, timeoutMs);
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk: string) => {
-      stderr += chunk;
-    });
-    child.once("error", (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    child.once("close", (exitCode) => {
-      clearTimeout(timer);
-      resolveResult({ exitCode, stdout, stderr, timedOut });
-    });
-  });
 }
 
 async function listOutputFiles(path: string): Promise<string[]> {
@@ -210,11 +138,11 @@ export class ToolBroker {
     label: string,
   ): Promise<string> {
     const absolutePath = resolveArgumentPath(this.repositoryRoot, value);
-    if (!isInside(this.repositoryRoot, absolutePath)) {
+    if (!isPathInside(this.repositoryRoot, absolutePath)) {
       throw new Error(`${label} must stay inside the repository.`);
     }
     const allowed = tool.allowedWriteRoots.some((root) =>
-      isInside(resolveInside(this.repositoryRoot, root), absolutePath),
+      isPathInside(resolveInside(this.repositoryRoot, root), absolutePath),
     );
     if (!allowed) {
       throw new Error(`${label} is outside the catalog write roots: ${value}`);
@@ -282,7 +210,7 @@ export class ToolBroker {
       const absolutePath = tool.writePathParameters.includes(name)
         ? await this.#resolveWritePath(tool, value, `Parameter ${name}`)
         : resolveArgumentPath(this.repositoryRoot, value);
-      if (isInside(this.repositoryRoot, absolutePath)) {
+      if (isPathInside(this.repositoryRoot, absolutePath)) {
         await assertNoSymlinkChain(this.repositoryRoot, absolutePath);
       }
       argumentsValue[name] = absolutePath;
@@ -427,7 +355,7 @@ export class ToolBroker {
           deploymentAuthorized: false,
         },
       );
-      processResult = await runProcess(
+      processResult = await runBoundedProcess(
         powershellPath(prepared.tool.host),
         [
           "-NoLogo",
@@ -442,9 +370,15 @@ export class ToolBroker {
         ],
         this.repositoryRoot,
         call.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+        MAX_TOOL_OUTPUT_BYTES,
       );
       if (processResult.timedOut) {
         throw new Error(`Tool timed out: ${prepared.tool.id}`);
+      }
+      if (processResult.outputLimitExceeded) {
+        throw new Error(
+          `Tool ${processResult.outputLimitExceeded} exceeded ${String(MAX_TOOL_OUTPUT_BYTES)} bytes: ${prepared.tool.id}`,
+        );
       }
       if (processResult.exitCode !== 0) {
         throw new Error(

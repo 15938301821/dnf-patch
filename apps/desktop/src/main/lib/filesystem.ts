@@ -10,7 +10,6 @@ import {
   rename,
   rm,
   stat,
-  unlink,
   writeFile,
 } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
@@ -46,6 +45,15 @@ export function resolveInside(repositoryRoot: string, value: string): string {
     throw new Error(`Path must stay inside the repository: ${candidate}`);
   }
   return candidate;
+}
+
+/** 判断候选路径是否位于父目录内（含父目录本身），支持跨盘符拒绝。 */
+export function isPathInside(parent: string, candidate: string): boolean {
+  const route = relative(resolve(parent), resolve(candidate));
+  return (
+    route === "" ||
+    (route !== ".." && !route.startsWith(`..${sep}`) && !isAbsolute(route))
+  );
 }
 
 export async function assertNoSymlinkChain(
@@ -224,31 +232,6 @@ export async function writeJsonAtomic(
   const text = `${JSON.stringify(value, null, 2)}\n`;
   JSON.parse(text) as unknown;
   await writeFileAtomic(path, text);
-}
-
-export async function removeFilesAndEmptyParents(
-  paths: string[],
-  stopAt: string,
-): Promise<void> {
-  for (const path of [...paths].reverse()) {
-    await rm(path, { force: true, recursive: true });
-    let parent = dirname(path);
-    while (
-      relative(stopAt, parent) !== "" &&
-      !relative(stopAt, parent).startsWith(`..${sep}`)
-    ) {
-      try {
-        await unlink(parent);
-      } catch {
-        try {
-          await rm(parent, { recursive: false });
-        } catch {
-          break;
-        }
-      }
-      parent = dirname(parent);
-    }
-  }
 }
 
 export function isMissingFileError(

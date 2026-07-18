@@ -84,7 +84,7 @@ function Assert-Snapshot {
     Assert-Condition ($hash -eq $expectedHash) `
         "$Label SHA-256 changed: actual=$hash expected=$expectedHash"
     return [pscustomobject]@{
-        path = $path
+        path   = $path
         length = [long]$item.Length
         sha256 = $hash
     }
@@ -99,7 +99,7 @@ function New-StringSet {
         Assert-Condition (-not [string]::IsNullOrWhiteSpace($text)) "$Label contains an empty value."
         Assert-Condition $set.Add($text) "$Label contains a duplicate value: $text"
     }
-    return ,$set
+    return , $set
 }
 
 function Assert-NoDeployment {
@@ -144,7 +144,7 @@ Assert-NoDeployment -Deployment $plan.deployment -Label 'Resource plan'
 
 $migrationValidator = Join-Path $script:RepositoryRoot 'tools\Test-VergilAsepriteMigrationPlan.ps1'
 $migrationText = (& $migrationValidator -ResourcePlanPath $planPath `
-    -RepoRoot $script:RepositoryRoot -AsJson | Out-String).Trim()
+        -RepoRoot $script:RepositoryRoot -AsJson | Out-String).Trim()
 Assert-Condition (-not [string]::IsNullOrWhiteSpace($migrationText)) `
     'Migration readiness gate returned no JSON.'
 $migration = $migrationText | ConvertFrom-Json
@@ -201,10 +201,10 @@ foreach ($component in $selectedComponents) {
             "More than one component owns IMG path: $imgPath"
     }
     $componentReports.Add([pscustomobject]@{
-        id = $componentId
-        selectedImgCount = $componentPaths.Count
-        sourceNpk = $componentSnapshot
-    })
+            id               = $componentId
+            selectedImgCount = $componentPaths.Count
+            sourceNpk        = $componentSnapshot
+        })
 }
 Assert-Condition ($componentSources.Count -eq 31 -and $selectedImgPaths.Count -eq 417) `
     "Component aggregation totals changed: sources=$($componentSources.Count) imgs=$($selectedImgPaths.Count)"
@@ -240,8 +240,8 @@ Assert-Condition ([IO.Path]::GetExtension($outputPath) -ieq '.NPK') `
 Assert-Condition ([IO.Path]::GetExtension($summaryPath) -ieq '.json') `
     'Aseprite package summary must use the .json extension.'
 foreach ($record in @(
-    [pscustomobject]@{ name = [IO.Path]::GetFileName($outputPath); label = 'Final NPK' },
-    [pscustomobject]@{ name = [IO.Path]::GetFileName($summaryPath); label = 'Package summary' })) {
+        [pscustomobject]@{ name = [IO.Path]::GetFileName($outputPath); label = 'Final NPK' },
+        [pscustomobject]@{ name = [IO.Path]::GetFileName($summaryPath); label = 'Package summary' })) {
     Assert-Condition ($record.name -match '(?i)aseprite') `
         "$($record.label) name must identify the Aseprite activity: $($record.name)"
     Assert-Condition ($record.name -match '(?i)(?:^|[-_])v[0-9]+(?:[-_.]|$)') `
@@ -256,7 +256,7 @@ $sourcePaths = @($componentSources.ToArray()) + @($cutinSnapshot.path)
 $includePaths = @($selectedImgPaths | Sort-Object)
 $packagerPath = Join-Path $script:RepositoryRoot 'tools\New-DnfCustomNpk.ps1'
 $packageText = (& $packagerPath -SourceNpk $sourcePaths -IncludeImgPath $includePaths `
-    -OutputPath $outputPath -SummaryPath $summaryPath | Out-String).Trim()
+        -OutputPath $outputPath -SummaryPath $summaryPath | Out-String).Trim()
 Assert-Condition (-not [string]::IsNullOrWhiteSpace($packageText)) 'Packager returned no JSON.'
 $package = $packageText | ConvertFrom-Json
 Assert-Condition ([int]$package.schemaVersion -eq 1 -and [int]$package.entryCount -eq 418) `
@@ -277,40 +277,40 @@ Assert-Condition ($outputItem.Length -eq [long]$package.length -and
     'Published NPK differs from the packager result.'
 
 $result = [pscustomobject]@{
-    schemaVersion = 1
-    status = 'passed'
-    state = 'aggregated-awaiting-final-validation'
-    resourcePlan = $planPath
-    planId = [string]$plan.planId
-    readiness = [pscustomobject]@{
-        status = 'passed'
-        readyForAggregation = $true
+    schemaVersion  = 1
+    status         = 'passed'
+    state          = 'aggregated-awaiting-final-validation'
+    resourcePlan   = $planPath
+    planId         = [string]$plan.planId
+    readiness      = [pscustomobject]@{
+        status                  = 'passed'
+        readyForAggregation     = $true
         fullSkillCoverageProven = $false
     }
-    artifact = [pscustomobject]@{
-        path = $outputPath
-        length = [long]$outputItem.Length
-        sha256 = $outputHash
+    artifact       = [pscustomobject]@{
+        path     = $outputPath
+        length   = [long]$outputItem.Length
+        sha256   = $outputHash
         imgCount = 418
     }
     packageSummary = [pscustomobject]@{
-        path = $summaryPath
-        length = [long]$summaryItem.Length
-        sha256 = $summaryHash
-        entryCount = 418
+        path           = $summaryPath
+        length         = [long]$summaryItem.Length
+        sha256         = $summaryHash
+        entryCount     = 418
         sourceNpkCount = 32
     }
-    counts = [pscustomobject]@{
-        componentCount = 31
-        componentImgCount = 417
+    counts         = [pscustomobject]@{
+        componentCount      = 31
+        componentImgCount   = 417
         activeCutinImgCount = 1
-        finalImgCount = 418
-        sourceNpkCount = 32
+        finalImgCount       = 418
+        sourceNpkCount      = 32
     }
-    components = $componentReports.ToArray()
-    deployment = [pscustomobject]@{
-        authorized = $false
-        performed = $false
+    components     = $componentReports.ToArray()
+    deployment     = [pscustomobject]@{
+        authorized       = $false
+        performed        = $false
         imagePacks2Write = $false
         processOperation = $false
     }

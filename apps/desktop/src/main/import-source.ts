@@ -1,10 +1,11 @@
 import { mkdir, readFile, rm, rmdir, stat } from "node:fs/promises";
-import { dirname, extname, relative, resolve, sep } from "node:path";
+import { dirname, extname } from "node:path";
 import type { RunRequest } from "../shared/contracts.js";
-import type { ImportSource } from "./import-orchestrator.js";
+import type { ImportSource } from "./import-orchestrator/types.js";
 import {
   assertNoSymlinkChain,
   fileExists,
+  isPathInside,
   normalizeRelativePath,
   resolveInside,
   sha256Buffer,
@@ -23,14 +24,6 @@ const RESERVED_PROFESSION_ROUTES = new Set([
   "tools",
   "validation",
 ]);
-
-function isInside(parent: string, child: string): boolean {
-  const route = relative(resolve(parent), resolve(child));
-  return (
-    route === "" ||
-    (!route.startsWith(`..${sep}`) && route !== ".." && !route.includes(":"))
-  );
-}
 
 export interface PreparedImportSource extends ImportSource {
   professionDirectoryCreated: boolean;
@@ -65,7 +58,7 @@ export async function prepareImportSource(
     const relativePath = normalizeRelativePath(request.sourceDesignPath);
     const absolutePath = resolveInside(repositoryRoot, relativePath);
     if (
-      !isInside(professionPath, absolutePath) ||
+      !isPathInside(professionPath, absolutePath) ||
       absolutePath === professionPath
     ) {
       throw new Error(

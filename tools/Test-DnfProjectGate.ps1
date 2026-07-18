@@ -316,8 +316,10 @@ Assert-NoReparsePointPath -Path $desktopRoot -RepositoryRoot $repositoryRoot `
     -Label 'Desktop project'
 $desktopPackage = Get-Content -LiteralPath $desktopPackagePath -Raw -Encoding UTF8 |
 ConvertFrom-Json
-Assert-Condition -Condition (Test-ObjectProperty -Object $desktopPackage -Name 'scripts' -and
-    Test-ObjectProperty -Object $desktopPackage.scripts -Name 'gate:static') `
+$hasDesktopScripts = Test-ObjectProperty -Object $desktopPackage -Name 'scripts'
+$hasDesktopStaticGate = $hasDesktopScripts -and
+(Test-ObjectProperty -Object $desktopPackage.scripts -Name 'gate:static')
+Assert-Condition -Condition $hasDesktopStaticGate `
     -Message 'Desktop package does not declare gate:static.'
 $desktopStaticGateScript = [string]$desktopPackage.scripts.'gate:static'
 foreach ($requiredDesktopScript in @(
@@ -385,9 +387,14 @@ $jsonFiles = @(Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File -Filter
         @($segments | Where-Object { $_ -in $generatedDirectoryNames }).Count -eq 0 -and
         -not $relativePath.StartsWith('tools\bin\', [StringComparison]::OrdinalIgnoreCase)
     } | Sort-Object FullName)
+Add-Type -AssemblyName System.Web.Extensions
+$jsonSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+$jsonSerializer.MaxJsonLength = [int]::MaxValue
+$jsonSerializer.RecursionLimit = 512
 foreach ($jsonFile in $jsonFiles) {
     try {
-        $null = Get-Content -LiteralPath $jsonFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+        $jsonText = Get-Content -LiteralPath $jsonFile.FullName -Raw -Encoding UTF8
+        $null = $jsonSerializer.DeserializeObject($jsonText)
     }
     catch {
         throw "Invalid JSON: $($jsonFile.FullName): $($_.Exception.Message)"

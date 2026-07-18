@@ -1,10 +1,10 @@
 import { readFile, stat } from "node:fs/promises";
-import { dirname, relative, resolve, sep } from "node:path";
+import { dirname, resolve } from "node:path";
 import {
   executionProfileIndexSchema,
   type ExecutionProfile,
 } from "../src/shared/profile.js";
-import type { RunRequest } from "../src/shared/contracts.js";
+import type { RunRequest } from "../src/shared/contracts/run.js";
 import { MODEL_IDS } from "../src/shared/models.js";
 import type {
   ToolCatalog,
@@ -20,6 +20,7 @@ import { findRepositoryRoot } from "../src/main/repository.js";
 import {
   assertNoSymlinkChain,
   fileExists,
+  isPathInside,
   resolveInside,
   sha256Buffer,
 } from "../src/main/lib/filesystem.js";
@@ -82,15 +83,6 @@ function assertUnique(values: readonly string[], label: string): void {
   }
 }
 
-function isInside(parent: string, candidate: string): boolean {
-  const route = relative(parent, candidate);
-  return (
-    route === "" ||
-    (!(route === ".." || route.startsWith(`..${sep}`)) &&
-      !resolve(route).startsWith(`${sep}${sep}`))
-  );
-}
-
 async function assertFile(
   repositoryRoot: string,
   relativePath: string,
@@ -113,7 +105,10 @@ async function assertPathWithinRepository(
 ): Promise<string> {
   const path = resolveInside(repositoryRoot, relativePath);
   await assertNoSymlinkChain(repositoryRoot, path);
-  assert(isInside(repositoryRoot, path), `${label} escapes the repository.`);
+  assert(
+    isPathInside(repositoryRoot, path),
+    `${label} escapes the repository.`,
+  );
   return path;
 }
 
@@ -218,7 +213,7 @@ async function assertExpandedWriteBoundaries(
         `Profile ${profile.id} output`,
       );
       assert(
-        allowedRoots.some((root) => isInside(root, outputPath)),
+        allowedRoots.some((root) => isPathInside(root, outputPath)),
         `Profile output is outside tool ${tool.id} write roots: ${output}`,
       );
     }
@@ -237,7 +232,7 @@ async function assertExpandedWriteBoundaries(
         `Profile ${profile.id} write parameter`,
       );
       assert(
-        allowedRoots.some((root) => isInside(root, valuePath)),
+        allowedRoots.some((root) => isPathInside(root, valuePath)),
         `Write parameter ${step.id}/${parameter} is outside catalog roots.`,
       );
     }
