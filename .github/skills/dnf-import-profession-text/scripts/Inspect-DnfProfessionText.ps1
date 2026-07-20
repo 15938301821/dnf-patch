@@ -122,18 +122,14 @@ if ($extension -notin @('.md', '.txt')) {
 
 $relativePath = $sourceFullPath.Substring($repoPrefix.Length).Replace('\', '/')
 $segments = @($relativePath.Split('/') | Where-Object { $_.Length -gt 0 })
-$professionHint = if ($segments.Count -ge 2) { $segments[0] } else { $null }
+$professionHint = if ($segments.Count -ge 3 -and $segments[0].Equals('jobs', [System.StringComparison]::OrdinalIgnoreCase)) { $segments[1] } else { $null }
 $warnings = New-Object System.Collections.Generic.List[string]
 
-if ($segments.Count -lt 2) {
-    $warnings.Add('源文件不在仓库根的职业子目录内，无法从路径确定职业候选。')
+if ($null -eq $professionHint) {
+    $warnings.Add('源文件不在 jobs 下的职业子目录内，无法从路径确定职业候选。')
 }
-elseif ($segments.Count -gt 2) {
-    $warnings.Add('源文件不是职业目录的直属文件；职业候选仍取仓库根下一层目录，需检查显式职业声明。')
-}
-
-if ($professionHint -in @('.codex', '.git', 'docs', 'tools')) {
-    throw "基础设施目录不能作为职业目录：$professionHint"
+elseif ($segments.Count -gt 3) {
+    $warnings.Add('源文件不是职业目录的直属文件；职业候选仍取 jobs 下一层目录，需检查显式职业声明。')
 }
 
 $text = Get-Utf8Text -Path $sourceFullPath

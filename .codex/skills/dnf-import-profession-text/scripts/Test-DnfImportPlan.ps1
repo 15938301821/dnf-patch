@@ -218,7 +218,8 @@ else {
 }
 
 $professionSafeName = Convert-ToSafeName -Value $ProfessionName
-$professionPath = Join-Path -Path $repoFullPath -ChildPath $professionSafeName
+$jobsPath = Join-Path -Path $repoFullPath -ChildPath 'jobs'
+$professionPath = Join-Path -Path $jobsPath -ChildPath $professionSafeName
 $professionNameValid = Test-SafeLeafName -Value $professionSafeName -Path $professionPath -Code 'profession-name'
 $professionPathSafe = $false
 if ($professionSafeName -in @('.codex', '.git', 'docs', 'tools')) {
@@ -239,8 +240,10 @@ elseif ($professionNameValid) {
 if ($null -ne $sourceFullPath -and $sourceFullPath.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
     $sourceRelative = $sourceFullPath.Substring($repoPrefix.Length).Replace('\', '/')
     $sourceSegments = @($sourceRelative.Split('/') | Where-Object { $_.Length -gt 0 })
-    if ($sourceSegments.Count -lt 2 -or -not $sourceSegments[0].Equals($professionSafeName, [System.StringComparison]::OrdinalIgnoreCase)) {
-        Add-Issue -Code 'source-profession-route' -Path $sourceFullPath -Message '源文件的仓库根下一层目录与目标职业不一致。'
+    if ($sourceSegments.Count -lt 3 -or
+        -not $sourceSegments[0].Equals('jobs', [System.StringComparison]::OrdinalIgnoreCase) -or
+        -not $sourceSegments[1].Equals($professionSafeName, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Add-Issue -Code 'source-profession-route' -Path $sourceFullPath -Message '源文件必须位于 jobs 下的目标职业目录内。'
     }
 }
 
@@ -371,7 +374,8 @@ if ($null -ne $sourceFullPath) {
 
 $baselineChanges = New-Object System.Collections.Generic.List[object]
 try {
-    $gitOutput = @(& git --literal-pathspecs -C $repoFullPath -c core.quotepath=false status --porcelain=v1 --untracked-files=all -- $professionSafeName 2>&1)
+    $professionGitPath = 'jobs/' + $professionSafeName
+    $gitOutput = @(& git --literal-pathspecs -C $repoFullPath -c core.quotepath=false status --porcelain=v1 --untracked-files=all -- $professionGitPath 2>&1)
     if ($LASTEXITCODE -ne 0) {
         throw ($gitOutput -join "`n")
     }

@@ -12,12 +12,13 @@
 **/automation-runs/
 build/
 **/node_modules/
-apps/desktop/.runs/
-apps/desktop/out/
-apps/desktop/dist/
-apps/desktop/test-results/
-apps/desktop/playwright-report/
-apps/desktop/coverage/
+userData/runs/
+userData/legacy-runs/
+out/
+dist/
+test-results/
+playwright-report/
+coverage/
 tools/workflow/fixtures/.runs/
 tools/workflow/fixtures/.test-*/
 tools/workflow/fixtures/.metadata-*/
@@ -27,6 +28,11 @@ tools/bin/
 
 # Machine-local source and toolchain settings
 .dnf-patch.local.json
+
+# Machine-local model credentials
+.env
+.env.*
+!.env.example
 
 # Editor and OS noise
 .vs/

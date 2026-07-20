@@ -1,0 +1,117 @@
+/* 宽屏到移动端的布局降级；断点顺序与基础样式级联保持固定。 */
+@media (max-width: 1120px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 34px;
+  }
+
+  .model-rail {
+    grid-template-columns: repeat(3, 1fr);
+    padding-left: 0;
+  }
+
+  .model-rail::before {
+    display: none;
+  }
+
+  .action-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .evidence-panel {
+    min-height: 430px;
+  }
+
+  .project-layout,
+  .monitor-layout,
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    padding: 0 20px;
+  }
+
+  .safety-chip {
+    display: none;
+  }
+
+  .app-navigation {
+    top: 72px;
+    padding: 0 10px;
+  }
+
+  .navigation-items {
+    width: 100%;
+  }
+
+  .navigation-items button {
+    min-width: 0;
+    flex: 1;
+    padding: 0 8px;
+  }
+
+  .navigation-items button span,
+  .server-indicator {
+    display: none;
+  }
+
+  main {
+    width: min(100% - 28px, 1480px);
+    padding-top: 45px;
+  }
+
+  .model-rail,
+  .action-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wide {
+    grid-column: auto;
+  }
+
+  .run-panel {
+    padding: 20px;
+  }
+
+  .submit-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .summary-band {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .summary-band > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .summary-band > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .frame-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .log-stream > div {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .log-stream > div span {
+    grid-column: 1 / -1;
+  }
+}

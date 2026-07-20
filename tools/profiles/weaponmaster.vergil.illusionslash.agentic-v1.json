@@ -10,18 +10,18 @@
   "promptBindings": [
     {
       "displayName": "幻影剑舞",
-      "professionPromptPath": "剑魂/prompts/幻影剑舞.md",
-      "themePromptPath": "剑魂/Vergil（维吉尔）暗蓝幻影主题/prompts/幻影剑舞.md"
+      "professionPromptPath": "jobs/剑魂/prompts/幻影剑舞.md",
+      "themePromptPath": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/prompts/幻影剑舞.md"
     }
   ],
-  "themeAgentPath": "剑魂/Vergil（维吉尔）暗蓝幻影主题/AGENTS.md",
+  "themeAgentPath": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/AGENTS.md",
   "fallbackPalette": ["#0A1633", "#1A8FFF", "#00D4FF", "#FFFFFF"],
   "control": {
-    "baseConfigPath": "剑魂/Vergil（维吉尔）暗蓝幻影主题/configs/illusionslash-aseprite-v1c/illusionslash.json",
-    "materializedConfigPath": "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/control/illusionslash-config.json",
-    "stylePlanPath": "apps/desktop/.runs/{{runId}}/models/aseprite-style-plan.json",
-    "outputNpkPath": "剑魂/Vergil（维吉尔）暗蓝幻影主题/npk/agentic/{{runId}}/a_weaponmaster-vergil-dark-blue-illusionslash-v{{version}}.NPK",
-    "buildSummaryPath": "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/components/illusionslash/build-summary.json"
+    "baseConfigPath": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/configs/illusionslash-aseprite-v1c/illusionslash.json",
+    "materializedConfigPath": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/control/illusionslash-config.json",
+    "stylePlanPath": "userData/runs/{{runId}}/models/aseprite-style-plan.json",
+    "outputNpkPath": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/npk/agentic/{{runId}}/a_weaponmaster-vergil-dark-blue-illusionslash-v{{version}}.NPK",
+    "buildSummaryPath": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/components/illusionslash/build-summary.json"
   },
   "steps": [
     {
@@ -47,11 +47,11 @@
       "arguments": {
         "ConfigFile": "{{configPath}}",
         "RunId": "{{runId}}",
-        "OutputDirectory": "剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/source/{{runId}}/illusionslash"
+        "OutputDirectory": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/source/{{runId}}/illusionslash"
       },
       "expectedOutputs": [
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/source/{{runId}}/illusionslash/source-summary.json",
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/source/{{runId}}/illusionslash/frame-inventory.json"
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/source/{{runId}}/illusionslash/source-summary.json",
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/source/{{runId}}/illusionslash/frame-inventory.json"
       ],
       "successPredicates": [
         "SourceSha256 is present",
@@ -68,12 +68,12 @@
       "arguments": {
         "RunId": "{{runId}}",
         "StylePlanPath": "{{stylePlanPath}}",
-        "ValidationDirectory": "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/redraw"
+        "ValidationDirectory": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/redraw"
       },
       "expectedOutputs": [
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/redraw/render-summary.json",
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/edited/{{runId}}/illusionslash",
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/runtime/{{runId}}/illusionslash"
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/redraw/render-summary.json",
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/edited/{{runId}}/illusionslash",
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/runtime/{{runId}}/illusionslash"
       ],
       "successPredicates": [
         "FrameCount>0",
@@ -92,12 +92,12 @@
         "RunId": "{{runId}}",
         "OutputNpkPath": "{{outputNpkPath}}",
         "BuildSummaryPath": "{{buildSummaryPath}}",
-        "ValidationDirectory": "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/build-illusionslash"
+        "ValidationDirectory": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/build-illusionslash"
       },
       "expectedOutputs": [
         "{{outputNpkPath}}",
         "{{buildSummaryPath}}",
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/build-illusionslash/build-validation-summary.json"
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/build-illusionslash/build-validation-summary.json"
       ],
       "successPredicates": [
         "OutputSha256 is present",
@@ -108,15 +108,15 @@
   ],
   "delivery": {
     "npkPath": "{{outputNpkPath}}",
-    "validationSummaryPath": "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/build-illusionslash/build-validation-summary.json",
+    "validationSummaryPath": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/build-illusionslash/build-validation-summary.json",
     "evidencePaths": [
-      "apps/desktop/.runs/{{runId}}/context/context-bundle.json",
-      "apps/desktop/.runs/{{runId}}/models/sol-task-graph.json",
-      "apps/desktop/.runs/{{runId}}/models/engineering-brief.json",
-      "apps/desktop/.runs/{{runId}}/plans/engineering-plan.json",
-      "apps/desktop/.runs/{{runId}}/models/aseprite-style-plan.json",
-      "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/redraw/render-summary.json",
-      "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/build-illusionslash/build-validation-summary.json"
+      "userData/runs/{{runId}}/context/context-bundle.json",
+      "userData/runs/{{runId}}/models/sol-task-graph.json",
+      "userData/runs/{{runId}}/models/engineering-brief.json",
+      "userData/runs/{{runId}}/plans/engineering-plan.json",
+      "userData/runs/{{runId}}/models/aseprite-style-plan.json",
+      "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/redraw/render-summary.json",
+      "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation/{{runId}}/build-illusionslash/build-validation-summary.json"
     ],
     "clientCompatibilityProven": false,
     "deploymentAuthorized": false

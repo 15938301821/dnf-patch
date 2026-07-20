@@ -202,7 +202,7 @@
       "scope": "profession-specific",
       "visibility": "private",
       "professionId": "weaponmaster",
-      "script": "剑魂/Vergil（维吉尔）暗蓝幻影主题/tools/Export-VergilIllusionSlashSource.ps1",
+      "script": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/tools/Export-VergilIllusionSlashSource.ps1",
       "host": "windows-powershell-x86",
       "mode": "workspace-write",
       "network": "forbidden",
@@ -223,7 +223,9 @@
       ],
       "writePathParameters": ["OutputDirectory"],
       "forcedParameters": {},
-      "allowedWriteRoots": ["剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/source"],
+      "allowedWriteRoots": [
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/source"
+      ],
       "modelRoles": ["orchestrator", "engineer"],
       "defaultGenerationEligible": true,
       "brokerExecutable": true
@@ -242,7 +244,7 @@
       "scope": "profession-specific",
       "visibility": "private",
       "professionId": "weaponmaster",
-      "script": "剑魂/Vergil（维吉尔）暗蓝幻影主题/tools/Render-VergilIllusionSlashAseprite.ps1",
+      "script": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/tools/Render-VergilIllusionSlashAseprite.ps1",
       "host": "windows-powershell-x64",
       "mode": "workspace-write",
       "network": "forbidden",
@@ -274,9 +276,9 @@
       ],
       "forcedParameters": {},
       "allowedWriteRoots": [
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/edited",
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/runtime",
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation"
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/edited",
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/frames/runtime",
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation"
       ],
       "modelRoles": ["orchestrator", "engineer"],
       "defaultGenerationEligible": true,
@@ -296,7 +298,7 @@
       "scope": "profession-specific",
       "visibility": "private",
       "professionId": "weaponmaster",
-      "script": "剑魂/Vergil（维吉尔）暗蓝幻影主题/tools/Build-VergilIllusionSlashAseprite.ps1",
+      "script": "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/tools/Build-VergilIllusionSlashAseprite.ps1",
       "host": "windows-powershell-x64",
       "mode": "workspace-write",
       "network": "forbidden",
@@ -339,8 +341,8 @@
       ],
       "forcedParameters": {},
       "allowedWriteRoots": [
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/npk",
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/validation",
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/npk",
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/validation",
         "tools/bin"
       ],
       "modelRoles": ["orchestrator", "engineer"],
@@ -403,7 +405,7 @@
       "writePathParameters": [],
       "forcedParameters": { "AsJson": true },
       "allowedWriteRoots": [
-        "剑魂/Vergil（维吉尔）暗蓝幻影主题/automation-runs"
+        "jobs/剑魂/Vergil（维吉尔）暗蓝幻影主题/automation-runs"
       ],
       "modelRoles": ["orchestrator", "engineer"],
       "defaultGenerationEligible": false,

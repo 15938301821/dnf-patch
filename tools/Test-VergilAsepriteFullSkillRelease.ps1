@@ -22,6 +22,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$script:RepositoryRoot = $null
+$script:LegacySourcePrefix = $null
+$script:LegacyTargetPrefix = $null
+$script:HistoricalPathRelocationCount = 0
 
 function Assert-Condition {
     param([bool]$Condition, [string]$Message)
@@ -50,11 +54,43 @@ function Resolve-PathValue {
     param([string]$Value, [string]$BaseDirectory, [string]$Label)
 
     Assert-Condition (-not [string]::IsNullOrWhiteSpace($Value)) "$Label path is empty."
-    $native = $Value.Replace('/', [IO.Path]::DirectorySeparatorChar)
+    $normalized = $Value.Replace('\', '/')
+    $resolutionBase = $BaseDirectory
+    if (-not [IO.Path]::IsPathRooted($Value) -and
+        -not [string]::IsNullOrWhiteSpace($script:LegacySourcePrefix) -and
+        $normalized.StartsWith($script:LegacySourcePrefix, [StringComparison]::Ordinal)) {
+        $normalized = $script:LegacyTargetPrefix +
+        $normalized.Substring($script:LegacySourcePrefix.Length)
+        $resolutionBase = $script:RepositoryRoot
+        $script:HistoricalPathRelocationCount++
+    }
+    $native = $normalized.Replace('/', [IO.Path]::DirectorySeparatorChar)
     if (-not [IO.Path]::IsPathRooted($native)) {
-        $native = Join-Path $BaseDirectory $native
+        $native = Join-Path $resolutionBase $native
     }
     return [IO.Path]::GetFullPath($native)
+}
+
+function Initialize-HistoricalPathRelocation {
+    param([object]$Plan)
+
+    Assert-Condition (Test-ObjectProperty -Object $Plan -Name 'historicalPathRelocation') `
+        'Historical path relocation policy is missing.'
+    $policy = $Plan.historicalPathRelocation
+    $professionManifestRelative = ([string]$Plan.professionManifestPath).Replace('\', '/')
+    Assert-Condition ($professionManifestRelative -match '^jobs/([^/]+)/manifest\.json$') `
+        'Profession manifest must use the current jobs route.'
+    $professionName = $Matches[1]
+    $expectedSourcePrefix = $professionName + '/'
+    $expectedTargetPrefix = 'jobs/' + $professionName + '/'
+    Assert-Condition ([string]$policy.mode -eq 'exact-repository-relative-prefix' -and
+        [string]$policy.sourcePrefix -eq $expectedSourcePrefix -and
+        [string]$policy.targetPrefix -eq $expectedTargetPrefix -and
+        [string]$policy.absolutePaths -eq 'not-relocated' -and
+        [string]$policy.otherPrefixes -eq 'not-relocated') `
+        'Historical path relocation policy changed.'
+    $script:LegacySourcePrefix = $expectedSourcePrefix
+    $script:LegacyTargetPrefix = $expectedTargetPrefix
 }
 
 function Assert-PathInsideRepository {
@@ -373,6 +409,7 @@ $repositoryRoot = if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
 else {
     (Resolve-Path -LiteralPath $RepoRoot).Path
 }
+$script:RepositoryRoot = $repositoryRoot
 Import-Module (Join-Path $repositoryRoot 'tools\DnfPatch.Toolchain.psm1') -Force
 
 $planPath = Resolve-ExistingFile -Value $ResourcePlanPath -BaseDirectory $repositoryRoot `
@@ -422,6 +459,7 @@ $plan = Get-Content -LiteralPath $planPath -Raw -Encoding UTF8 | ConvertFrom-Jso
 Assert-Condition ([int]$plan.schemaVersion -eq 1) 'Unsupported migration resource-plan schemaVersion.'
 Assert-Condition ([string]$plan.planId -eq [string]$migration.planId) `
     'Migration plan identity differs from the readiness gate.'
+Initialize-HistoricalPathRelocation -Plan $plan
 Assert-Condition ($plan.coverage.fullSkillCoverageProven -eq $false) `
     'Migration resource plan must start with coverage=false.'
 Assert-NoDeployment -Deployment $plan.deployment -Label 'Migration resource plan'
@@ -861,7 +899,7 @@ Assert-Condition (-not (Test-Path -LiteralPath $stagingPath)) `
 New-Item -ItemType Directory -Path $stagingPath | Out-Null
 $published = $false
 try {
-    $validatedPlanPath = Join-Path $stagingPath 'validated-resource-plan-v4.json'
+    $validatedPlanPath = Join-Path $stagingPath 'validated-resource-plan-v5.json'
     [IO.File]::Copy($planPath, $validatedPlanPath, $false)
     $migrationGatePath = Join-Path $stagingPath 'activity-migration-gate.json'
     $migrationText | Set-Content -LiteralPath $migrationGatePath -Encoding UTF8
@@ -1043,6 +1081,12 @@ try {
             sourceMigration = $sourceMigrationSnapshot
             postBuildFrameAccounting = $frameAccounting
             activityMigrationGate = $migrationGateSnapshot
+            historicalPathRelocation = [ordered]@{
+                mode = [string]$plan.historicalPathRelocation.mode
+                sourcePrefix = $script:LegacySourcePrefix
+                targetPrefix = $script:LegacyTargetPrefix
+                resolutionCount = $script:HistoricalPathRelocationCount
+            }
             selectedComponentIds = @($componentArray | ForEach-Object { $_.id })
             activeCutinId = [string]$plan.activeCutin.id
             totals = [ordered]@{
@@ -1187,7 +1231,8 @@ try {
     $publishedSummary = Get-Content -LiteralPath $summaryPath -Raw -Encoding UTF8 | ConvertFrom-Json
     Assert-Condition ([string]$publishedSummary.finalArtifact.sha256 -eq $finalHash -and
         [int]$publishedSummary.finalArtifact.imgCount -eq 418 -and
-        [int]$publishedSummary.finalArtifact.frameCount -eq 3822) `
+        [int]$publishedSummary.finalArtifact.frameCount -eq 3822 -and
+        [int]$publishedSummary.resourcePlan.historicalPathRelocation.resolutionCount -gt 0) `
         'Published final validation summary changed after atomic publication.'
     foreach ($publishedSnapshot in @(
         $publishedSummary.resourcePlan.activityMigrationGate,
@@ -1220,6 +1265,7 @@ try {
         frameCount = $expectedFrameCount
         sourceNpkCount = $expectedSources.Count
         summary = $summaryPath
+        historicalPathRelocationCount = $script:HistoricalPathRelocationCount
         eligibleForReleaseMetadata = $true
         fullSkillCoverageProven = $false
         deployed = $false

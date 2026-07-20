@@ -9,6 +9,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$script:RepositoryRoot = $null
+$script:LegacySourcePrefix = $null
+$script:LegacyTargetPrefix = $null
+$script:HistoricalPathRelocationCount = 0
 
 function Assert-Condition {
     param([bool]$Condition, [string]$Message)
@@ -21,9 +25,19 @@ function Assert-Condition {
 function Resolve-RepoPath {
     param([string]$RepositoryRoot, [string]$Value)
 
-    $native = $Value.Replace('/', [IO.Path]::DirectorySeparatorChar)
+    $normalized = $Value.Replace('\', '/')
+    $baseDirectory = $RepositoryRoot
+    if (-not [IO.Path]::IsPathRooted($Value) -and
+        -not [string]::IsNullOrWhiteSpace($script:LegacySourcePrefix) -and
+        $normalized.StartsWith($script:LegacySourcePrefix, [StringComparison]::Ordinal)) {
+        $normalized = $script:LegacyTargetPrefix +
+        $normalized.Substring($script:LegacySourcePrefix.Length)
+        $baseDirectory = $script:RepositoryRoot
+        $script:HistoricalPathRelocationCount++
+    }
+    $native = $normalized.Replace('/', [IO.Path]::DirectorySeparatorChar)
     if (-not [IO.Path]::IsPathRooted($native)) {
-        $native = Join-Path $RepositoryRoot $native
+        $native = Join-Path $baseDirectory $native
     }
     return [IO.Path]::GetFullPath($native)
 }
@@ -268,16 +282,17 @@ $repositoryRoot = if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
 else {
     (Resolve-Path -LiteralPath $RepoRoot).Path
 }
+$script:RepositoryRoot = $repositoryRoot
 if ([string]::IsNullOrWhiteSpace($ResourcePlanPath)) {
-    $matches = @(Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File -Filter 'resource-plan-v4.json')
-    Assert-Condition ($matches.Count -eq 1) "Expected one resource-plan-v4.json, found $($matches.Count)."
+    $matches = @(Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File -Filter 'resource-plan-v5.json')
+    Assert-Condition ($matches.Count -eq 1) "Expected one resource-plan-v5.json, found $($matches.Count)."
     $ResourcePlanPath = $matches[0].FullName
 }
 
 $planPath = (Resolve-Path -LiteralPath $ResourcePlanPath).Path
 $plan = Get-Content -LiteralPath $planPath -Raw -Encoding UTF8 | ConvertFrom-Json
 Assert-Condition ([int]$plan.schemaVersion -eq 1) 'Unsupported migration plan schemaVersion.'
-Assert-Condition ([string]$plan.planId -eq 'weaponmaster-vergil-dark-blue-aseprite-migration-v4') `
+Assert-Condition ([string]$plan.planId -eq 'weaponmaster-vergil-dark-blue-aseprite-migration-v5') `
     "Unexpected migration plan identity: $($plan.planId)"
 Assert-Condition ([string]$plan.themeId -eq 'weaponmaster-vergil-dark-blue') 'Unexpected migration plan themeId.'
 Assert-Condition ([string]$plan.status -eq 'migration-evidence-pending') 'Unexpected migration plan status.'
@@ -288,6 +303,20 @@ Assert-Condition ($plan.deployment.imagePacks2Write -eq $false) 'Migration plan 
 Assert-Condition ($plan.deployment.processOperation -eq $false) 'Migration plan cannot record a process operation.'
 Assert-Condition ([string]$plan.readinessPolicy.historicalCutinReuse -eq 'forbidden') `
     'Historical Cut-in reuse must remain forbidden.'
+$professionManifestRelative = ([string]$plan.professionManifestPath).Replace('\', '/')
+Assert-Condition ($professionManifestRelative -match '^jobs/([^/]+)/manifest\.json$') `
+    'Profession manifest must use the current jobs route.'
+$professionName = $Matches[1]
+$expectedLegacyPrefix = $professionName + '/'
+$expectedCurrentPrefix = 'jobs/' + $professionName + '/'
+Assert-Condition ([string]$plan.historicalPathRelocation.mode -eq 'exact-repository-relative-prefix' -and
+    [string]$plan.historicalPathRelocation.sourcePrefix -eq $expectedLegacyPrefix -and
+    [string]$plan.historicalPathRelocation.targetPrefix -eq $expectedCurrentPrefix -and
+    [string]$plan.historicalPathRelocation.absolutePaths -eq 'not-relocated' -and
+    [string]$plan.historicalPathRelocation.otherPrefixes -eq 'not-relocated') `
+    'Historical path relocation policy changed.'
+$script:LegacySourcePrefix = $expectedLegacyPrefix
+$script:LegacyTargetPrefix = $expectedCurrentPrefix
 Assert-Condition ([string]$plan.readinessPolicy.componentSnapshotsAndIndependentIndexes -eq 'required') `
     'Component artifact and independent-index readiness policy changed.'
 Assert-Condition ([string]$plan.readinessPolicy.componentConfigPlanSummarySelections -eq 'required') `
@@ -892,6 +921,12 @@ $result = [pscustomobject]@{
     mode                    = 'validation only; no build, aggregation, deployment, or process operation'
     planId                  = [string]$plan.planId
     resourcePlanPath        = $planPath
+    historicalPathRelocation = [pscustomobject]@{
+        mode            = [string]$plan.historicalPathRelocation.mode
+        sourcePrefix    = $script:LegacySourcePrefix
+        targetPrefix    = $script:LegacyTargetPrefix
+        resolutionCount = $script:HistoricalPathRelocationCount
+    }
     sourceMigration         = [pscustomobject]@{
         status       = 'passed'
         matched      = 53

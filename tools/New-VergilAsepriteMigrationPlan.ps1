@@ -68,6 +68,9 @@ Assert-Condition ([int]$migration.counts.contentDrift -eq 0 -and [int]$migration
 
 $themeRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $baselinePath))
 $professionRoot = Split-Path -Parent $themeRoot
+$professionName = Split-Path -Leaf $professionRoot
+$legacyProfessionPrefix = $professionName + '/'
+$currentProfessionPrefix = 'jobs/' + $professionName + '/'
 $baselineSnapshot = New-Snapshot -RepositoryRoot $repoRoot -Path $baselinePath
 $migrationSnapshot = New-Snapshot -RepositoryRoot $repoRoot -Path $migrationPath
 $selectedIds = @($selected | ForEach-Object { [string]$_.id } | Sort-Object)
@@ -75,11 +78,19 @@ $selectedImgCount = [int](@($selected | ForEach-Object { @($_.selectedImgPaths).
 
 $plan = [ordered]@{
     schemaVersion = 1
-    planId = 'weaponmaster-vergil-dark-blue-aseprite-migration-v4'
+    planId = 'weaponmaster-vergil-dark-blue-aseprite-migration-v5'
     themeId = 'weaponmaster-vergil-dark-blue'
     generatedAt = (Get-Date).ToString('o')
     status = 'migration-evidence-pending'
     mode = 'immutable migration overlay; no build, aggregation, deployment, or process operation'
+    historicalPathRelocation = [ordered]@{
+        mode = 'exact-repository-relative-prefix'
+        sourcePrefix = $legacyProfessionPrefix
+        targetPrefix = $currentProfessionPrefix
+        absolutePaths = 'not-relocated'
+        otherPrefixes = 'not-relocated'
+        purpose = 'resolve immutable pre-jobs repository-relative evidence without rewriting historical files'
+    }
     professionManifestPath = Get-RepoRelativePath -RepositoryRoot $repoRoot -Path (Join-Path $professionRoot 'manifest.json')
     baselinePlan = [ordered]@{
         path = $baselineSnapshot.path
@@ -176,7 +187,11 @@ $temporary = Join-Path $parent ('.' + [IO.Path]::GetFileName($outputFile) + '.tm
 try {
     $plan | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $temporary -Encoding UTF8
     $check = Get-Content -LiteralPath $temporary -Raw -Encoding UTF8 | ConvertFrom-Json
-    Assert-Condition ([string]$check.planId -eq 'weaponmaster-vergil-dark-blue-aseprite-migration-v4') 'Generated plan identity changed.'
+    Assert-Condition ([string]$check.planId -eq 'weaponmaster-vergil-dark-blue-aseprite-migration-v5') 'Generated plan identity changed.'
+    Assert-Condition ([string]$check.historicalPathRelocation.sourcePrefix -eq $legacyProfessionPrefix -and
+        [string]$check.historicalPathRelocation.targetPrefix -eq $currentProfessionPrefix -and
+        [string]$check.historicalPathRelocation.absolutePaths -eq 'not-relocated') `
+        'Generated plan historical path relocation policy changed.'
     Assert-Condition ($check.coverage.fullSkillCoverageProven -eq $false) 'Generated plan coverage must remain false.'
     Assert-Condition ($check.deployment.performed -eq $false) 'Generated plan cannot record deployment.'
     [IO.File]::Move($temporary, $outputFile)

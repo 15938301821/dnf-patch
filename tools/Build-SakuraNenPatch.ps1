@@ -15,7 +15,7 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $PSScriptRoot 'DnfPatch.Toolchain.psm1') -Force
 $imagePacksPath = Resolve-DnfImagePacks2 -Path $ImagePacks2 -RepositoryRoot $projectRoot
 $extractorDir = Resolve-DnfExtractorDirectory -Path $ExtractorDirectory -RepositoryRoot $projectRoot
-$themeRoot = Join-Path $projectRoot '气功师（女）\樱花主题'
+$themeRoot = Join-Path $projectRoot 'jobs\气功师（女）\樱花主题'
 $binDir = Join-Path $PSScriptRoot (Join-Path 'bin' ('sakura-nen-patch-build-' + $RunId))
 $sourceFile = Join-Path $PSScriptRoot 'Build-SakuraNenPatch.cs'
 $builder = Join-Path $binDir 'Build-SakuraNenPatch.exe'

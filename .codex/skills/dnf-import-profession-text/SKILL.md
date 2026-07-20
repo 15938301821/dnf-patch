@@ -23,7 +23,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .codex/skills/dnf-import-pro
 
 ## 二、确定职业与主题路由
 
-1. 以“仓库根下一层目录名”作为职业候选；只用源文档中的明确职业声明做一致性检查。
+1. 以 `jobs/` 下一层目录名作为职业候选；`jobs` 只属于物理路由，不进入职业显示名，只用源文档中的明确职业声明做一致性检查。
 2. 路径职业与文档职业不一致时停止写入并报告冲突；不得从英文译名、技能名或 NPK 名反推职业。
 3. 只从文档明确标题、主题定位或用户指令确定主题。优先采用文档中完整、可区分且以“主题”结尾的显式中文标签；保留其中区分色彩、材质或造型的词，不得只缩写成品牌、人物或系列名。
 4. 文档没有主题时只生成职业层；不得为了满足目录形态虚构主题。
@@ -42,7 +42,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .codex/skills/dnf-import-pro
 
 ## 四、生成职业层
 
-1. 新职业只创建当前任务实际使用的 `AGENTS.md`、`prompts/README.md` 和逐技能 Prompt；不创建空 manifest、构建 README、frames、npk 或 validation 目录。
+1. 新职业只在 `jobs/<职业>/` 创建当前任务实际使用的 `AGENTS.md`、`prompts/README.md` 和逐技能 Prompt；不创建空 manifest、构建 README、frames、npk 或 validation 目录。
 2. 在职业 `AGENTS.md` 中定义职业边界、资源事实门禁、Prompt 分层、人物/特效/武器/Cut-in 边界、职业验收和未证明的覆盖状态；不复制主题色、主题材质或通用 NPK 流程。
 3. 为每个有明确文本证据的技能或 Cut-in 建立同名职业 Prompt。严格使用 `prompt-contract.md` 的四段结构。
 4. 从逐技能文本中移除主题专名、颜色、材质、品牌角色、主题招式映射和主题负面词，只保留明确出现的稳定动作与阶段语义。

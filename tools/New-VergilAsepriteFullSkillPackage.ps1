@@ -17,6 +17,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$script:RepositoryRoot = $null
+$script:LegacySourcePrefix = $null
+$script:LegacyTargetPrefix = $null
+$script:HistoricalPathRelocationCount = 0
 
 function Assert-Condition {
     param([bool]$Condition, [string]$Message)
@@ -36,11 +40,43 @@ function Resolve-PathValue {
     param([string]$Value, [string]$BaseDirectory, [string]$Label)
 
     Assert-Condition (-not [string]::IsNullOrWhiteSpace($Value)) "$Label path is empty."
-    $native = $Value.Replace('/', [IO.Path]::DirectorySeparatorChar)
+    $normalized = $Value.Replace('\', '/')
+    $resolutionBase = $BaseDirectory
+    if (-not [IO.Path]::IsPathRooted($Value) -and
+        -not [string]::IsNullOrWhiteSpace($script:LegacySourcePrefix) -and
+        $normalized.StartsWith($script:LegacySourcePrefix, [StringComparison]::Ordinal)) {
+        $normalized = $script:LegacyTargetPrefix +
+        $normalized.Substring($script:LegacySourcePrefix.Length)
+        $resolutionBase = $script:RepositoryRoot
+        $script:HistoricalPathRelocationCount++
+    }
+    $native = $normalized.Replace('/', [IO.Path]::DirectorySeparatorChar)
     if (-not [IO.Path]::IsPathRooted($native)) {
-        $native = Join-Path $BaseDirectory $native
+        $native = Join-Path $resolutionBase $native
     }
     return [IO.Path]::GetFullPath($native)
+}
+
+function Initialize-HistoricalPathRelocation {
+    param([object]$Plan)
+
+    Assert-Condition (Test-Property -Object $Plan -Name 'historicalPathRelocation') `
+        'Historical path relocation policy is missing.'
+    $policy = $Plan.historicalPathRelocation
+    $professionManifestRelative = ([string]$Plan.professionManifestPath).Replace('\', '/')
+    Assert-Condition ($professionManifestRelative -match '^jobs/([^/]+)/manifest\.json$') `
+        'Profession manifest must use the current jobs route.'
+    $professionName = $Matches[1]
+    $expectedSourcePrefix = $professionName + '/'
+    $expectedTargetPrefix = 'jobs/' + $professionName + '/'
+    Assert-Condition ([string]$policy.mode -eq 'exact-repository-relative-prefix' -and
+        [string]$policy.sourcePrefix -eq $expectedSourcePrefix -and
+        [string]$policy.targetPrefix -eq $expectedTargetPrefix -and
+        [string]$policy.absolutePaths -eq 'not-relocated' -and
+        [string]$policy.otherPrefixes -eq 'not-relocated') `
+        'Historical path relocation policy changed.'
+    $script:LegacySourcePrefix = $expectedSourcePrefix
+    $script:LegacyTargetPrefix = $expectedTargetPrefix
 }
 
 function Assert-PathInside {
@@ -138,6 +174,7 @@ $plan = Get-Content -LiteralPath $planPath -Raw -Encoding UTF8 | ConvertFrom-Jso
 Assert-Condition ([int]$plan.schemaVersion -eq 1) 'Unsupported resource-plan schemaVersion.'
 Assert-Condition ([string]$plan.themeId -eq 'weaponmaster-vergil-dark-blue') `
     'Unexpected resource-plan theme identity.'
+Initialize-HistoricalPathRelocation -Plan $plan
 Assert-Condition ($plan.coverage.fullSkillCoverageProven -eq $false) `
     'Resource plan must remain pre-release.'
 Assert-NoDeployment -Deployment $plan.deployment -Label 'Resource plan'
@@ -277,38 +314,44 @@ Assert-Condition ($outputItem.Length -eq [long]$package.length -and
     'Published NPK differs from the packager result.'
 
 $result = [pscustomobject]@{
-    schemaVersion  = 1
-    status         = 'passed'
-    state          = 'aggregated-awaiting-final-validation'
-    resourcePlan   = $planPath
-    planId         = [string]$plan.planId
-    readiness      = [pscustomobject]@{
+    schemaVersion            = 1
+    status                   = 'passed'
+    state                    = 'aggregated-awaiting-final-validation'
+    resourcePlan             = $planPath
+    planId                   = [string]$plan.planId
+    historicalPathRelocation = [pscustomobject]@{
+        mode            = [string]$plan.historicalPathRelocation.mode
+        sourcePrefix    = $script:LegacySourcePrefix
+        targetPrefix    = $script:LegacyTargetPrefix
+        resolutionCount = $script:HistoricalPathRelocationCount
+    }
+    readiness                = [pscustomobject]@{
         status                  = 'passed'
         readyForAggregation     = $true
         fullSkillCoverageProven = $false
     }
-    artifact       = [pscustomobject]@{
+    artifact                 = [pscustomobject]@{
         path     = $outputPath
         length   = [long]$outputItem.Length
         sha256   = $outputHash
         imgCount = 418
     }
-    packageSummary = [pscustomobject]@{
+    packageSummary           = [pscustomobject]@{
         path           = $summaryPath
         length         = [long]$summaryItem.Length
         sha256         = $summaryHash
         entryCount     = 418
         sourceNpkCount = 32
     }
-    counts         = [pscustomobject]@{
+    counts                   = [pscustomobject]@{
         componentCount      = 31
         componentImgCount   = 417
         activeCutinImgCount = 1
         finalImgCount       = 418
         sourceNpkCount      = 32
     }
-    components     = $componentReports.ToArray()
-    deployment     = [pscustomobject]@{
+    components               = $componentReports.ToArray()
+    deployment               = [pscustomobject]@{
         authorized       = $false
         performed        = $false
         imagePacks2Write = $false

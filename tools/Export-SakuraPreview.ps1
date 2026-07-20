@@ -17,7 +17,7 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module (Join-Path $PSScriptRoot 'DnfPatch.Toolchain.psm1') -Force
 $repoRoot = Get-DnfPatchRepositoryRoot
-$themeRoot = Join-Path $repoRoot '气功师（女）\樱花主题'
+$themeRoot = Join-Path $repoRoot 'jobs\气功师（女）\樱花主题'
 $scriptPath = Join-Path $PSScriptRoot 'Export-SakuraPreview.lua'
 if ([string]::IsNullOrWhiteSpace($SourceFile)) {
     $SourceFile = Join-Path $themeRoot 'frames\preview\全技能联系表.png'

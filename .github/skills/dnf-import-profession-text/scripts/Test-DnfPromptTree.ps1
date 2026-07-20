@@ -153,33 +153,41 @@ function Get-HeadFileText {
     }
 
     $relativePath = $fullPath.Substring($rootPrefix.Length).Replace('\', '/')
-    $objectSpec = 'HEAD:' + $relativePath
-    $previousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'SilentlyContinue'
-    try {
-        $blobId = @(& git -C $script:RepoRootPath rev-parse --verify $objectSpec 2>$null)
-        $revisionExitCode = $LASTEXITCODE
-    }
-    finally {
-        $ErrorActionPreference = $previousErrorActionPreference
-    }
-    if ($revisionExitCode -ne 0 -or $blobId.Count -ne 1) {
-        return ''
+    $candidateRelativePaths = New-Object System.Collections.Generic.List[string]
+    $candidateRelativePaths.Add($relativePath)
+    if ($relativePath.StartsWith('jobs/', [System.StringComparison]::Ordinal)) {
+        $candidateRelativePaths.Add($relativePath.Substring('jobs/'.Length))
     }
 
-    $previousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'SilentlyContinue'
-    try {
-        $content = @(& git -C $script:RepoRootPath cat-file blob $blobId[0] 2>$null)
-        $catFileExitCode = $LASTEXITCODE
+    foreach ($candidateRelativePath in $candidateRelativePaths) {
+        $objectSpec = 'HEAD:' + $candidateRelativePath
+        $previousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = 'SilentlyContinue'
+        try {
+            $blobId = @(& git -C $script:RepoRootPath rev-parse --verify $objectSpec 2>$null)
+            $revisionExitCode = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+        if ($revisionExitCode -ne 0 -or $blobId.Count -ne 1) {
+            continue
+        }
+
+        $previousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = 'SilentlyContinue'
+        try {
+            $content = @(& git -C $script:RepoRootPath cat-file blob $blobId[0] 2>$null)
+            $catFileExitCode = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+        if ($catFileExitCode -eq 0) {
+            return ($content -join "`n")
+        }
     }
-    finally {
-        $ErrorActionPreference = $previousErrorActionPreference
-    }
-    if ($catFileExitCode -ne 0) {
-        return ''
-    }
-    return ($content -join "`n")
+    return ''
 }
 
 function Get-NormalizedIndexHeading {
@@ -688,11 +696,12 @@ if (-not (Test-Path -LiteralPath $professionFullPath -PathType Container)) {
 $professionItem = Get-Item -LiteralPath $professionFullPath -Force
 $professionPathSafe = Test-ReparsePointChain -Path $professionFullPath -RootPath $repoFullPath -Code 'profession-reparse-point'
 
-$professionRelative = $professionFullPath.Substring($repoPrefix.Length).Replace('\', '/')
-if ($professionRelative.Contains('/')) {
-    Add-Issue -Code 'profession-route' -Path $professionFullPath -Message '职业目录必须是仓库根的直属子目录。'
+$jobsFullPath = [System.IO.Path]::GetFullPath((Join-Path -Path $repoFullPath -ChildPath 'jobs')).TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+$professionParentPath = $professionItem.Parent.FullName.TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+if (-not $professionParentPath.Equals($jobsFullPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Add-Issue -Code 'profession-route' -Path $professionFullPath -Message '职业目录必须是仓库 jobs 目录的直属子目录。'
 }
-if ($professionRelative -in @('.codex', '.git', 'docs', 'tools')) {
+if ($professionItem.Name -in @('.codex', '.git', 'docs', 'tools')) {
     Add-Issue -Code 'reserved-profession-route' -Path $professionFullPath -Message '基础设施目录不能作为职业目录。'
 }
 

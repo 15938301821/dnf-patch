@@ -308,7 +308,15 @@ Assert-Condition -Condition ($releaseRollbackFixtureGate.failureObserved -eq $tr
     $releaseRollbackFixtureGate.concurrentManifestCasPassed -eq $true) `
     -Message 'Release metadata fixture did not prove rollback, recovery, idempotency, and manifest CAS.'
 
-$desktopRoot = Join-Path $repositoryRoot 'apps\desktop'
+$legacyDesktopRoots = @(
+    (Join-Path $repositoryRoot 'apps\desktop'),
+    (Join-Path $repositoryRoot 'desktop')
+)
+foreach ($legacyDesktopRoot in $legacyDesktopRoots) {
+    Assert-Condition -Condition (-not (Test-Path -LiteralPath $legacyDesktopRoot)) `
+        -Message "Legacy desktop path must not exist: $legacyDesktopRoot"
+}
+$desktopRoot = $repositoryRoot
 $desktopPackagePath = Join-Path $desktopRoot 'package.json'
 Assert-Condition -Condition (Test-Path -LiteralPath $desktopPackagePath -PathType Leaf) `
     -Message "Desktop package was not found: $desktopPackagePath"
@@ -323,6 +331,7 @@ Assert-Condition -Condition $hasDesktopStaticGate `
     -Message 'Desktop package does not declare gate:static.'
 $desktopStaticGateScript = [string]$desktopPackage.scripts.'gate:static'
 foreach ($requiredDesktopScript in @(
+        'npm run check:credentials',
         'npm run typecheck',
         'npm run lint',
         'npm run test:unit',
@@ -332,6 +341,12 @@ foreach ($requiredDesktopScript in @(
 }
 Assert-Condition -Condition ($desktopStaticGateScript -notmatch '(?i)test:e2e|\bbuild\b|gate:project') `
     -Message 'Desktop gate:static must remain non-building and non-recursive.'
+$desktopPrebuildScript = [string]$desktopPackage.scripts.prebuild
+$desktopBuildScript = [string]$desktopPackage.scripts.build
+Assert-Condition -Condition ($desktopPrebuildScript -eq 'npm run check:credentials') `
+    -Message 'Desktop prebuild must scan source credentials before bundling.'
+Assert-Condition -Condition ($desktopBuildScript.Contains('npm run check:credentials:build')) `
+    -Message 'Desktop build must scan generated bundles for embedded credentials.'
 $npmCommand = Get-Command 'npm.cmd' -ErrorAction SilentlyContinue
 if ($null -eq $npmCommand) {
     $npmCommand = Get-Command 'npm' -ErrorAction SilentlyContinue
@@ -361,7 +376,8 @@ Assert-Condition -Condition ($desktopGateExitCode -eq 0) `
 $desktopGate = [pscustomobject]@{
     status               = 'passed'
     mode                 = 'offline static validation; no build, E2E, network, or deployment'
-    packagePath          = 'apps/desktop/package.json'
+    packagePath          = 'package.json'
+    credentials          = 'passed'
     typecheck            = 'passed'
     lint                 = 'passed'
     unitTests            = 'passed'
@@ -385,6 +401,12 @@ $jsonFiles = @(Get-ChildItem -LiteralPath $repositoryRoot -Recurse -File -Filter
         $relativePath = $_.FullName.Substring($repositoryRoot.Length + 1)
         $segments = @($relativePath -split '[\\/]')
         @($segments | Where-Object { $_ -in $generatedDirectoryNames }).Count -eq 0 -and
+        -not $relativePath.StartsWith(
+            'userData\runs\',
+            [StringComparison]::OrdinalIgnoreCase) -and
+        -not $relativePath.StartsWith(
+            'userData\legacy-runs\',
+            [StringComparison]::OrdinalIgnoreCase) -and
         -not $relativePath.StartsWith('tools\bin\', [StringComparison]::OrdinalIgnoreCase)
     } | Sort-Object FullName)
 Add-Type -AssemblyName System.Web.Extensions
@@ -409,10 +431,17 @@ $historicalReleaseResults = New-Object System.Collections.Generic.List[object]
 $activityMigrationResults = New-Object System.Collections.Generic.List[object]
 $generationWorkflowPolicyResults = New-Object System.Collections.Generic.List[object]
 $workflowResults = New-Object System.Collections.Generic.List[object]
-$professionDirectories = @(Get-ChildItem -LiteralPath $repositoryRoot -Directory | Where-Object {
+$jobsRoot = Join-Path $repositoryRoot 'jobs'
+Assert-Condition -Condition (Test-Path -LiteralPath $jobsRoot -PathType Container) `
+    -Message "Jobs root was not found: $jobsRoot"
+Assert-NoReparsePointPath -Path $jobsRoot -RepositoryRoot $repositoryRoot `
+    -Label 'Jobs root'
+$professionDirectories = @(Get-ChildItem -LiteralPath $jobsRoot -Directory -Force | Where-Object {
         (Test-Path -LiteralPath (Join-Path $_.FullName 'AGENTS.md') -PathType Leaf) -and
         (Test-Path -LiteralPath (Join-Path $_.FullName 'prompts\README.md') -PathType Leaf)
     } | Sort-Object FullName)
+Assert-Condition -Condition ($professionDirectories.Count -gt 0) `
+    -Message "No profession directories were discovered under $jobsRoot"
 
 foreach ($profession in $professionDirectories) {
     $professionResult = Invoke-JsonValidator -ScriptPath $promptValidator -Arguments @{
@@ -632,8 +661,8 @@ foreach ($directoryRecord in @($quarantine.directories)) {
         -Label 'Legacy quarantine directory'
     Assert-Condition -Condition (Test-Path -LiteralPath $directoryPath -PathType Container) `
         -Message "Legacy quarantine directory was not found: $directoryPath"
-    Assert-Condition -Condition ((Split-Path -Parent $directoryPath) -ieq $repositoryRoot) `
-        -Message "Legacy quarantine directory must be top-level: $directoryPath"
+    Assert-Condition -Condition ((Split-Path -Parent $directoryPath) -ieq $jobsRoot) `
+        -Message "Legacy quarantine directory must be directly under jobs: $directoryPath"
     Assert-Condition -Condition ($quarantineDirectorySet.Add($directoryPath)) `
         -Message "Duplicate legacy quarantine directory: $directoryPath"
     $expectedFiles = New-Object 'Collections.Generic.HashSet[string]' `
@@ -678,10 +707,23 @@ $infrastructureDirectories = @(
     '.codex',
     '.git',
     '.github',
-    'apps',
     'build',
+    'coverage',
+    'dist',
     'docs',
+    'electron',
+    'jobs',
+    'node_modules',
+    'out',
+    'playwright-report',
+    'renderer',
+    'resources',
+    'scripts',
+    'server',
+    'test-results',
+    'tests',
     'tools',
+    'userData',
     'validation'
 )
 $professionDirectorySet = New-Object 'Collections.Generic.HashSet[string]' `
@@ -689,11 +731,25 @@ $professionDirectorySet = New-Object 'Collections.Generic.HashSet[string]' `
 foreach ($profession in $professionDirectories) {
     $null = $professionDirectorySet.Add($profession.FullName)
 }
-$unmanagedTopLevelDirectories = @(
-    Get-ChildItem -LiteralPath $repositoryRoot -Directory -Force | Where-Object {
-        $_.Name -notin $infrastructureDirectories -and
+$unmanagedJobsDirectories = @(
+    Get-ChildItem -LiteralPath $jobsRoot -Directory -Force | Where-Object {
         -not $professionDirectorySet.Contains($_.FullName) -and
         -not $quarantineDirectorySet.Contains($_.FullName)
+    })
+$unmanagedJobsDirectoryNames = @($unmanagedJobsDirectories | ForEach-Object {
+        $_.FullName
+    })
+Assert-Condition -Condition ($unmanagedJobsDirectories.Count -eq 0) `
+    -Message "Unmanaged jobs directories: $($unmanagedJobsDirectoryNames -join ', ')"
+$unmanagedJobsFiles = @(Get-ChildItem -LiteralPath $jobsRoot -File -Force)
+$unmanagedJobsFileNames = @($unmanagedJobsFiles | ForEach-Object {
+        $_.FullName
+    })
+Assert-Condition -Condition ($unmanagedJobsFiles.Count -eq 0) `
+    -Message "Unmanaged files exist directly under jobs: $($unmanagedJobsFileNames -join ', ')"
+$unmanagedTopLevelDirectories = @(
+    Get-ChildItem -LiteralPath $repositoryRoot -Directory -Force | Where-Object {
+        $_.Name -notin $infrastructureDirectories
     })
 $unmanagedTopLevelDirectoryNames = @($unmanagedTopLevelDirectories | ForEach-Object {
         $_.FullName
@@ -764,6 +820,8 @@ $result = [pscustomobject]@{
     legacyQuarantineDirectoryCount     = $quarantineDirectorySet.Count
     legacyQuarantineAssetCount         = $quarantineAssetArray.Count
     legacyQuarantineAssets             = $quarantineAssetArray
+    unmanagedJobsDirectoryCount        = $unmanagedJobsDirectories.Count
+    unmanagedJobsFileCount             = $unmanagedJobsFiles.Count
     unmanagedTopLevelDirectoryCount    = $unmanagedTopLevelDirectories.Count
     unmanagedTopLevelFileCount         = $unmanagedTopLevelFiles.Count
     gitDiffCheck                       = $gitDiffCheck

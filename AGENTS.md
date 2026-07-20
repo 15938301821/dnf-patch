@@ -5,8 +5,8 @@
 ## 规则层级
 
 1. 仓库根 `AGENTS.md`：所有职业通用的 NPK/IMG 制作、验证、交付规则。
-2. `<职业>/AGENTS.md`：该职业真实资源映射、技能阶段、人物层边界和职业验收规则。
-3. `<职业>/<主题>/AGENTS.md`：该主题的色板、材质、Prompt、允许变化和主题验收规则。
+2. `jobs/<职业>/AGENTS.md`：该职业真实资源映射、技能阶段、人物层边界和职业验收规则。
+3. `jobs/<职业>/<主题>/AGENTS.md`：该主题的色板、材质、Prompt、允许变化和主题验收规则。
 4. `README.md`：构建命令、当前版本、产物和回滚说明，不代替规则或 manifest。
 
 更具体的规则只在其目录树内生效。职业名、技能名、主题色、历史补丁名和机器绝对路径不得写入项目级通用 skill 的通用机制。
@@ -24,26 +24,35 @@
 ```text
 DnfPatch/
 ├─ AGENTS.md
+├─ package.json                     # 根级 Electron 客户端与本地可审计流水线入口
+├─ electron/                        # Electron 主进程、preload 与受控进程入口
+├─ renderer/                        # React Renderer
+├─ server/                          # 本地流水线、共享契约、CLI 与后端客户端
+├─ resources/                       # 只读打包资源边界
+├─ userData/                        # 本地 Run 证据；活动与历史证据分目录保存
+├─ scripts/                         # 桌面项目开发门禁
+├─ tests/                           # 桌面项目单元测试与 Electron E2E
+├─ jobs/                            # 唯一职业资产容器；不进入职业显示身份
+│  └─ <职业>/
+│     ├─ AGENTS.md
+│     ├─ manifest.json              # 建议：经实包核验的职业资源事实源
+│     ├─ prompts/                   # 职业通用运动、轮廓、阶段和边界提示
+│     └─ <主题>/
+│        ├─ AGENTS.md
+│        ├─ README.md
+│        ├─ prompts/                # 具体主题相对职业 Prompt 的视觉增量
+│        ├─ frames/
+│        │  ├─ reference/
+│        │  └─ preview/
+│        └─ npk/
 ├─ .codex/
 │  └─ skills/
 │     └─ dnf-patch-maker/          # 所有职业共用的项目级 NPK/IMG 工作流
 ├─ docs/
-├─ tools/
-└─ <职业>/
-   ├─ AGENTS.md
-   ├─ manifest.json                 # 建议：经实包核验的职业资源事实源
-   ├─ prompts/                      # 职业通用运动、轮廓、阶段和边界提示
-   └─ <主题>/
-      ├─ AGENTS.md
-      ├─ README.md
-      ├─ prompts/                   # 具体主题相对职业 Prompt 的视觉增量
-      ├─ frames/
-      │  ├─ reference/
-      │  └─ preview/
-      └─ npk/
+└─ tools/
 ```
 
-新增目录时优先沿用以上结构。只有实际需要并已被构建或验证流程使用时，才增加 `frames/source`、`frames/edited`、`frames/runtime`、`validation`、`release.json` 等目录或文件。
+仓库根同时是 Electron 包根与 DNF 事实源根；`jobs/<职业>` 是唯一职业物理路由，`jobs` 前缀不得写入职业显示值、manifest 的 `profession` 字段、API 身份或 BPK 的 `profession` 字段。不得重新创建 `desktop/`、`apps/desktop/` 或根级职业目录。新增目录时优先沿用以上结构。只有实际需要并已被构建或验证流程使用时，才增加 `frames/source`、`frames/edited`、`frames/runtime`、`validation`、`release.json` 等目录或文件。
 
 项目根 `.codex/skills/` 只注册跨职业通用 skill，不放单职业或单主题 skill。通用 skill 必须按“根规则 -> 职业规则/manifest/Prompt -> 主题规则/Prompt”加载上下文；职业与主题常量留在各自目录。
 
@@ -59,7 +68,7 @@ DnfPatch/
 - ExtractorSharp、图像生成服务、MCP 或其他外部适配器都不是默认可信事实源。使用前必须固定入口、参数、版本或 SHA-256、读写边界、超时和网络需求，并把原始响应转换为工作区内可复核的结构化证据。
 - 外部适配器默认只读官方源，只能向当前主题工作区的新路径写入；不得把密钥、令牌、个人模型端点或机器绝对路径提交到通用 skill、manifest 或共享配置。网络默认关闭，确需联网时必须由当前任务明确需要并限制目标。
 - 自动化控制面必须使用 manifest 注册的 JSON DAG 与固定适配器白名单。默认调用只做静态验证；写步骤需要显式执行开关、新 `RunId`、声明输出和成功谓词，恢复还必须绑定 workflow、registry、runner、脚本、参数与输入输出哈希。发布事务的 release/receipt 输出只能通过 `resume-reconcile` 在同一 Run 恢复时对账既有文件；普通 `create-new` 输出不得覆盖。人工审核不可由自动化生成通过状态。
-- 没有职业规则、manifest、来源 inventory 和验证证据的顶层 NPK 只能进入哈希冻结的遗留隔离清单；不得被职业发现、构建、发布或部署流程自动提升。
+- `jobs` 下没有职业规则、manifest、来源 inventory 和验证证据的 NPK 只能进入哈希冻结的遗留隔离清单；不得被职业发现、构建、发布或部署流程自动提升。
 - 修改 PowerShell 后运行 `tools/Test-DnfPowerShellSource.ps1`；工程交付前运行只读总门禁 `tools/Test-DnfProjectGate.ps1`。
 
 ## 修改边界
