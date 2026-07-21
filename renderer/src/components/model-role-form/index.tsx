@@ -1,19 +1,17 @@
 import { Form, Input, Tag } from "antd";
-import { KeyRound } from "lucide-react";
 import type {
-  ModelConfiguration,
+  ModelRoleConfiguration,
   SaveModelConfigurationInput,
 } from "../../api/contracts.js";
 import styles from "./index.module.scss";
 
-type ModelRole = keyof ModelConfiguration;
+type ModelRole = keyof SaveModelConfigurationInput;
 
 interface ModelRoleFormProps {
-  configuration: ModelConfiguration[ModelRole] | undefined;
+  configuration: ModelRoleConfiguration | undefined;
   description: string;
   icon: React.ReactNode;
-  modelPlaceholder: string;
-  name: keyof SaveModelConfigurationInput;
+  role: ModelRole;
   sequence: string;
   tags: readonly string[];
   title: string;
@@ -23,14 +21,13 @@ export function ModelRoleForm({
   configuration,
   description,
   icon,
-  modelPlaceholder,
-  name,
+  role,
   sequence,
   tags,
   title,
 }: ModelRoleFormProps): React.JSX.Element {
   return (
-    <section className={styles.role} data-role={name}>
+    <section className={styles.role} data-role={role}>
       <div className={styles.heading}>
         <div className={styles.icon}>{icon}</div>
         <div className={styles.copy}>
@@ -46,54 +43,52 @@ export function ModelRoleForm({
           ))}
         </div>
       </div>
-
       <div className={styles.fields}>
         <Form.Item
-          className={styles.field ?? ""}
           label="API 地址"
-          name={[name, "endpoint"]}
+          name={[role, "endpoint"]}
           rules={[
-            { required: true, message: "请输入 API 地址" },
-            { type: "url", message: "请输入完整 URL" },
+            { required: true, message: "请输入 HTTPS 模型 API 地址" },
+            { type: "url", message: "请输入有效的模型 API 地址" },
           ]}
         >
-          <Input placeholder="https://api.example.com/v1" />
+          <Input maxLength={500} placeholder="https://provider.example/v1" />
         </Form.Item>
         <Form.Item
-          className={styles.field ?? ""}
-          label="模型名称"
-          name={[name, "model"]}
-          rules={[{ required: true, message: "请输入模型名称" }]}
+          label="模型"
+          name={[role, "model"]}
+          rules={[{ required: true, message: "请输入模型 ID" }]}
         >
-          <Input placeholder={modelPlaceholder} />
+          <Input maxLength={120} />
         </Form.Item>
         <Form.Item
-          className={styles.field ?? ""}
           extra={
             configuration?.keyConfigured
-              ? "留空保留已保存的 Key"
+              ? "留空则保留当前 Key"
               : "首次配置必须填写"
           }
           label="API Key"
-          name={[name, "apiKey"]}
+          name={[role, "apiKey"]}
           rules={[
             {
               validator: (_, value: unknown) => {
                 if (
-                  !configuration?.keyConfigured &&
-                  (typeof value !== "string" || !value.trim())
+                  configuration?.keyConfigured ||
+                  (typeof value === "string" && value.trim().length > 0)
                 ) {
-                  return Promise.reject(new Error("请输入 API Key"));
+                  return Promise.resolve();
                 }
-                return Promise.resolve();
+                return Promise.reject(new Error("请输入 API Key"));
               },
             },
           ]}
         >
           <Input.Password
             autoComplete="new-password"
-            placeholder={configuration?.keyConfigured ? "已配置" : "输入 Key"}
-            prefix={<KeyRound aria-hidden="true" size={16} />}
+            maxLength={4_096}
+            placeholder={
+              configuration?.keyConfigured ? "已配置，留空保留" : "输入 API Key"
+            }
           />
         </Form.Item>
       </div>

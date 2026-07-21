@@ -28,6 +28,16 @@ function authorizationHeader(token: string): string {
   return `Bearer ${token}`;
 }
 
+export function shouldRefreshAccessToken(
+  status: number | undefined,
+  url: string | undefined,
+  retriedAfterRefresh: boolean | undefined,
+): boolean {
+  return (
+    status === 401 && url !== "/auth/login" && retriedAfterRefresh !== true
+  );
+}
+
 async function refreshAccessToken(): Promise<string> {
   refreshRequest ??= refreshClient
     .post<ApiEnvelope<AuthSession>>("/auth/refresh")
@@ -54,9 +64,12 @@ server.interceptors.response.use(undefined, async (error: AxiosError) => {
     | (InternalAxiosRequestConfig & { retriedAfterRefresh?: boolean })
     | undefined;
   if (
-    error.response?.status !== 401 ||
     !request ||
-    request.retriedAfterRefresh
+    !shouldRefreshAccessToken(
+      error.response?.status,
+      request.url,
+      request.retriedAfterRefresh,
+    )
   ) {
     throw error;
   }

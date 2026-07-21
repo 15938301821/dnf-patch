@@ -18,13 +18,6 @@ export interface ModelRoleConfiguration {
   endpoint: string;
   model: string;
   keyConfigured: boolean;
-  keyPreview?: string;
-}
-
-export interface SaveModelRoleConfigurationInput {
-  endpoint: string;
-  model: string;
-  apiKey?: string;
 }
 
 export interface ModelConfiguration {
@@ -33,10 +26,37 @@ export interface ModelConfiguration {
   referenceGenerator: ModelRoleConfiguration;
 }
 
+export interface SaveModelRoleConfigurationInput {
+  endpoint: string;
+  model: string;
+  apiKey?: string;
+}
+
 export interface SaveModelConfigurationInput {
   orchestrator: SaveModelRoleConfigurationInput;
   spriteProcessor: SaveModelRoleConfigurationInput;
   referenceGenerator: SaveModelRoleConfigurationInput;
+}
+
+export type ResourceImportMode = "server-mirror" | "uploaded-manifest";
+export type ResourceImportStatus =
+  "not-configured" | "idle" | "queued" | "running" | "failed";
+
+export interface ResourceImportOverview {
+  mode: ResourceImportMode;
+  status: ResourceImportStatus;
+  resourceVersion?: string;
+  resourceRootConfigured: boolean;
+  lastImportedAt?: string;
+  lastJobId?: string;
+  message: string;
+}
+
+export interface ResourceImportJob {
+  id: string;
+  mode: ResourceImportMode;
+  status: Exclude<ResourceImportStatus, "not-configured" | "idle">;
+  createdAt: string;
 }
 
 export type PublishStatus = "private" | "pending" | "published" | "rejected";
@@ -90,7 +110,8 @@ export interface SaveProfessionStyleInput {
 
 export type CreateProfessionStyleInput = SaveProfessionStyleInput;
 
-export type PatchTaskStatus = "queued" | "running" | "passed" | "failed";
+export type PatchTaskStatus =
+  "queued" | "running" | "passed" | "failed" | "blocked";
 
 export interface PatchTask {
   id: string;
@@ -100,7 +121,15 @@ export interface PatchTask {
   progress: number;
   createdAt: string;
   artifactName?: string;
-  downloadUrl?: string;
+  artifactAvailable: boolean;
+}
+
+export interface PatchTaskArtifact {
+  artifactName: string;
+  storageKey: string;
+  mediaType: string;
+  byteLength: number;
+  sha256: string;
 }
 
 export interface CreatePatchTaskInput {

@@ -29,7 +29,9 @@
 - `renderer/src/api/` 使用 Axios 和类型化 DTO；不得从服务端实现复制执行逻辑。
 - `VITE_API_MODE=remote` 时连接 `VITE_API_BASE_URL`；其他情况使用同契约 Mock。
 - Access Token 只保存在内存中；Refresh Token 由后端使用 HttpOnly Cookie 管理。
-- 模型 API Key 只能作为 HTTPS 请求字段提交给后端，前端不得持久化或回显明文。
+- 模型 API Key 只能在用户主动保存或轮换时，作为受认证专用 HTTPS 配置请求的字段提交给后端；前端只在表单内短暂持有，提交后必须清空，不得持久化、回显或从读取接口恢复明文。
+- 前端不得直接调用模型 Provider，也不得提供通用 Prompt、任意模型或模型代理入口。业务任务请求只能提交后端定义的声明式参数，不能携带 API Key、临时 endpoint 或绕过用户固定角色配置。
+- 模型配置读取 DTO 只能包含固定角色、endpoint、模型 ID、配置版本和 `keyConfigured` 等脱敏元数据；不得包含密钥、密文、nonce、认证标签或 Secret Manager 引用。
 - 不在源码、环境示例、日志、测试、URL、Local Storage 或 Session Storage 中保存凭据。
 - 后端返回的职业、技能和稳定 ID 是业务事实；AI 只能生成草稿，不能发明技能或推断
   NPK/IMG 资源映射。

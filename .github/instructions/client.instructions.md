@@ -1,15 +1,7 @@
 ---
 name: "DNF Patch Browser And Desktop Client"
 description: "Use when editing the React renderer, browser state, typed HTTP API, Electron shell, CSS Modules, or frontend tests in DNF Patch Studio."
-applyTo:
-  [
-    "renderer/**/*.{ts,tsx,css,scss,html}",
-    "electron/**/*.ts",
-    "tests/**/*.{ts,tsx}",
-    "vite.config.ts",
-    "electron.vite.config.ts",
-    "playwright.config.ts",
-  ]
+applyTo: "renderer/**/*.{ts,tsx,css,scss,html}, electron/**/*.ts, tests/**/*.{ts,tsx}, vite.config.ts, electron.vite.config.ts, playwright.config.ts"
 ---
 
 # 浏览器与桌面客户端规范
@@ -43,7 +35,9 @@ applyTo:
   XMLHttpRequest，只调用 `api/` 导出的类型化函数。
 - `api/` 不导入 Node、Electron、文件系统、后端实现、数据库 SDK 或模型 SDK。
 - Access Token 仅保存在模块内存；Refresh Token 由后端通过 HttpOnly Cookie 管理。
-- API Key 只随保存请求发给后端，不进入 Store、浏览器存储、URL、日志或返回 DTO。
+- API Key 只在用户主动保存或轮换时随受认证的专用 HTTPS 配置请求发给后端；提交后清空表单值，不进入 Store、浏览器存储、URL、日志、Mock 快照或返回 DTO。
+- 客户端不导入模型 SDK、不直接调用模型 Provider，也不暴露通用 Prompt 或模型代理界面。业务任务请求不得携带 API Key、临时 endpoint 或任意模型 ID，只引用后端固定角色配置。
+- 模型配置读取与保存响应只能消费 endpoint、固定角色模型 ID、配置版本和 `keyConfigured` 等脱敏字段，不得声明或处理密钥、密文、nonce、认证标签和 Secret Manager 引用。
 - 远程 API 基址只来自 `VITE_API_BASE_URL`，不得在组件中读取或展示服务凭据。
 - Mock 使用与正式 API 相同的函数、DTO、错误码和执行门禁，不形成第二套页面逻辑。
 

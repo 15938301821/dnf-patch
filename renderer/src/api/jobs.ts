@@ -1,6 +1,9 @@
-import type { CreatePatchTaskInput, PatchTask } from "./contracts.js";
+import type {
+  CreatePatchTaskInput,
+  PatchTask,
+  PatchTaskArtifact,
+} from "./contracts.js";
 import { requestData } from "./server.js";
-import { server } from "./server.js";
 
 export function getJobsList(): Promise<PatchTask[]> {
   return requestData<PatchTask[]>({ method: "GET", url: "/jobs" });
@@ -8,17 +11,21 @@ export function getJobsList(): Promise<PatchTask[]> {
 
 export function createPatchTask(
   input: CreatePatchTaskInput,
+  idempotencyKey = `patch.${crypto.randomUUID()}`,
 ): Promise<PatchTask> {
   return requestData<PatchTask>({
     method: "POST",
     url: "/jobs",
     data: input,
+    headers: { "Idempotency-Key": idempotencyKey },
   });
 }
 
-export async function downloadJobArtifact(jobId: string): Promise<Blob> {
-  const response = await server.get<Blob>(`/jobs/${jobId}/artifact`, {
-    responseType: "blob",
+export function getJobArtifactMetadata(
+  jobId: string,
+): Promise<PatchTaskArtifact> {
+  return requestData<PatchTaskArtifact>({
+    method: "GET",
+    url: `/jobs/${jobId}/artifact`,
   });
-  return response.data;
 }

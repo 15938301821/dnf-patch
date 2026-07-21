@@ -22,10 +22,9 @@
   gap: 14px;
 }
 
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 16px;
+.save-models {
+  justify-self: end;
+  min-width: 170px;
 }
 
 .policy {
@@ -39,6 +38,63 @@
   gap: 4px;
   padding: 12px 0;
   border-bottom: 1px solid #e8ece8;
+}
+
+.resource-import {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #dce6dd;
+  border-radius: 7px;
+  background: #f7faf6;
+}
+
+.resource-import-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.resource-import-head div {
+  display: grid;
+  gap: 4px;
+}
+
+.resource-import-tag {
+  margin-inline-end: 0 !important;
+  white-space: nowrap;
+}
+
+.resource-import-meta {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.resource-import-meta div {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.resource-import-meta dt,
+.resource-import-meta dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 11px;
+}
+
+.resource-import-meta dt {
+  color: #879188;
+}
+
+.resource-import-meta dd {
+  overflow-wrap: anywhere;
+  color: #2d3931;
+  font-weight: 700;
+  text-align: right;
 }
 
 .policy span {

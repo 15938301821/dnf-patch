@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
-import { Button, Empty, Progress, Skeleton, Table, Tag, message } from "antd";
-import { Download, RefreshCw } from "lucide-react";
 import {
-  downloadJobArtifact,
+  Button,
+  Descriptions,
+  Empty,
+  Modal,
+  Progress,
+  Skeleton,
+  Table,
+  Tag,
+  message,
+} from "antd";
+import { FileSearch, RefreshCw } from "lucide-react";
+import {
+  getJobArtifactMetadata,
   getJobsList,
   type PatchTask,
+  type PatchTaskArtifact,
   type PatchTaskStatus,
 } from "../../api/index.js";
 import { PageHeading } from "../../components/page-heading/index.js";
@@ -16,21 +27,14 @@ const statusView: Record<PatchTaskStatus, { color: string; label: string }> = {
   running: { color: "processing", label: "制作中" },
   passed: { color: "success", label: "已完成" },
   failed: { color: "error", label: "失败" },
+  blocked: { color: "warning", label: "已阻断" },
 };
-
-function triggerDownload(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
 
 export function JobsPage(): React.JSX.Element {
   const [jobs, setJobs] = useState<PatchTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [downloadingId, setDownloadingId] = useState("");
+  const [loadingArtifactId, setLoadingArtifactId] = useState("");
+  const [artifact, setArtifact] = useState<PatchTaskArtifact>();
 
   const load = async (): Promise<void> => {
     setLoading(true);
@@ -47,18 +51,14 @@ export function JobsPage(): React.JSX.Element {
     void load();
   }, []);
 
-  const download = async (job: PatchTask): Promise<void> => {
-    setDownloadingId(job.id);
+  const inspectArtifact = async (job: PatchTask): Promise<void> => {
+    setLoadingArtifactId(job.id);
     try {
-      triggerDownload(
-        await downloadJobArtifact(job.id),
-        job.artifactName ?? `${job.id}.bin`,
-      );
-      void message.success("下载已开始");
+      setArtifact(await getJobArtifactMetadata(job.id));
     } catch (error) {
       void message.error(apiErrorMessage(error));
     } finally {
-      setDownloadingId("");
+      setLoadingArtifactId("");
     }
   };
 
@@ -70,7 +70,7 @@ export function JobsPage(): React.JSX.Element {
             刷新
           </Button>
         }
-        description="查看服务端制作进度并下载已完成产物；当前阶段由 mock API 返回模拟任务。"
+        description="查看服务端制作进度与已验证产物引用；实际字节由受控存储通道提供。"
         title="制作任务"
       />
 
@@ -86,8 +86,8 @@ export function JobsPage(): React.JSX.Element {
           </strong>
         </div>
         <div>
-          <span>可下载</span>
-          <strong>{jobs.filter((job) => job.downloadUrl).length}</strong>
+          <span>有产物记录</span>
+          <strong>{jobs.filter((job) => job.artifactAvailable).length}</strong>
         </div>
       </section>
 
@@ -142,13 +142,13 @@ export function JobsPage(): React.JSX.Element {
                 align: "right",
                 render: (_, job) => (
                   <Button
-                    disabled={!job.downloadUrl}
-                    icon={<Download size={16} />}
-                    loading={downloadingId === job.id}
-                    onClick={() => void download(job)}
+                    disabled={!job.artifactAvailable}
+                    icon={<FileSearch size={16} />}
+                    loading={loadingArtifactId === job.id}
+                    onClick={() => void inspectArtifact(job)}
                     type="link"
                   >
-                    下载
+                    查看元数据
                   </Button>
                 ),
               },
@@ -161,6 +161,32 @@ export function JobsPage(): React.JSX.Element {
           />
         )}
       </section>
+      <Modal
+        footer={null}
+        onCancel={() => setArtifact(undefined)}
+        open={artifact !== undefined}
+        title="产物元数据"
+      >
+        {artifact ? (
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="名称">
+              {artifact.artifactName}
+            </Descriptions.Item>
+            <Descriptions.Item label="媒体类型">
+              {artifact.mediaType}
+            </Descriptions.Item>
+            <Descriptions.Item label="字节数">
+              {artifact.byteLength.toLocaleString("zh-CN")}
+            </Descriptions.Item>
+            <Descriptions.Item label="SHA-256">
+              <span className={styles.hash}>{artifact.sha256}</span>
+            </Descriptions.Item>
+            <Descriptions.Item label="存储引用">
+              <span className={styles.hash}>{artifact.storageKey}</span>
+            </Descriptions.Item>
+          </Descriptions>
+        ) : null}
+      </Modal>
     </div>
   );
 }

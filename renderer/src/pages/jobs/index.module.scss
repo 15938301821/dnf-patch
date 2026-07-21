@@ -59,6 +59,12 @@
   font-size: 11px;
 }
 
+.hash {
+  overflow-wrap: anywhere;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+}
+
 @media (max-width: 620px) {
   .summary {
     grid-template-columns: 1fr;

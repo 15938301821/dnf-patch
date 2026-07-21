@@ -1,4 +1,5 @@
 import MockAdapter from "axios-mock-adapter";
+import { AxiosHeaders } from "axios";
 import type {
   ApiEnvelope,
   AuthSession,
@@ -11,14 +12,13 @@ import type {
   ProfessionSkillSummary,
   ProfessionStyle,
   ProfessionSummary,
+  ResourceImportJob,
+  ResourceImportOverview,
   SaveModelConfigurationInput,
   SaveProfessionStyleInput,
   SessionUser,
 } from "./contracts.js";
-import {
-  initialMockModelConfiguration,
-  saveMockModelConfiguration,
-} from "./mock-model-configuration.js";
+import { initialMockModelConfiguration } from "./mock-model-configuration.js";
 import {
   areSelectedSkillsValid,
   mockProfessionSkills,
@@ -33,6 +33,7 @@ interface MockState {
   styles: ProfessionStyle[];
   jobs: PatchTask[];
   modelConfiguration: ModelConfiguration;
+  resourceImport: ResourceImportOverview;
 }
 
 const user: SessionUser = {
@@ -104,11 +105,21 @@ const initialState: MockState = {
       status: "passed",
       progress: 100,
       createdAt: "2026-07-20T07:40:00.000Z",
-      artifactName: "mock-sakura-preview.txt",
-      downloadUrl: "/jobs/job-demo-complete/artifact",
+      artifactName: "mock-sakura-preview.bpk",
+      artifactAvailable: true,
     },
   ],
   modelConfiguration: initialMockModelConfiguration,
+  resourceImport: {
+    mode: "server-mirror",
+    status: "idle",
+    resourceVersion: "mock-2026-07-20",
+    resourceRootConfigured: true,
+    lastImportedAt: "2026-07-20T06:30:00.000Z",
+    lastJobId: "resource-import-demo",
+    message:
+      "Mock 后端已配置只读资源镜像；真实环境由 Worker 读取 GAME_RESOURCE_ROOT 并解析入库。",
+  },
 };
 
 let state: MockState = structuredClone(initialState);
@@ -185,11 +196,60 @@ export function configureMockApi(): void {
     const input = parseBody(
       config.data as string | undefined,
     ) as SaveModelConfigurationInput;
-    state.modelConfiguration = saveMockModelConfiguration(
-      input,
-      state.modelConfiguration,
-    );
+    const roles = [
+      "orchestrator",
+      "spriteProcessor",
+      "referenceGenerator",
+    ] as const;
+    if (
+      roles.some(
+        (role) =>
+          !state.modelConfiguration[role].keyConfigured && !input[role].apiKey,
+      )
+    ) {
+      return [
+        400,
+        {
+          code: "MODEL_API_KEY_REQUIRED",
+          message: "首次配置每个模型角色时都必须填写 API Key。",
+        },
+      ];
+    }
+    state.modelConfiguration = {
+      orchestrator: mockSavedRole("orchestrator", input),
+      spriteProcessor: mockSavedRole("spriteProcessor", input),
+      referenceGenerator: mockSavedRole("referenceGenerator", input),
+    };
     return [200, envelope(state.modelConfiguration)];
+  });
+
+  mock
+    .onGet("/resource-imports/overview")
+    .reply(() => [200, envelope(state.resourceImport)]);
+  mock.onPost("/resource-imports/jobs").reply(() => {
+    if (!state.resourceImport.resourceRootConfigured) {
+      return [
+        409,
+        {
+          code: "RESOURCE_ROOT_NOT_CONFIGURED",
+          message: "后端尚未配置只读游戏资源根目录。",
+        },
+      ];
+    }
+    const job: ResourceImportJob = {
+      id: id("resource-import"),
+      mode: state.resourceImport.mode,
+      status: "queued",
+      createdAt: now(),
+    };
+    state.resourceImport = {
+      ...state.resourceImport,
+      status: "queued",
+      lastJobId: job.id,
+      message:
+        "资源导入任务已排队；真实环境将由后端 Worker 解析并写入技能事实源。",
+    };
+    return [201, envelope(job)];
   });
 
   mock.onGet("/professions").reply(() => [200, envelope(state.professions)]);
@@ -302,6 +362,22 @@ export function configureMockApi(): void {
 
   mock.onGet("/jobs").reply(() => [200, envelope(state.jobs)]);
   mock.onPost("/jobs").reply((config) => {
+    const idempotencyKey =
+      config.headers instanceof AxiosHeaders
+        ? config.headers.get("Idempotency-Key")
+        : undefined;
+    if (
+      typeof idempotencyKey !== "string" ||
+      !/^[A-Za-z0-9]+(?:[._:-][A-Za-z0-9]+)*$/u.test(idempotencyKey)
+    ) {
+      return [
+        400,
+        {
+          code: "IDEMPOTENCY_KEY_INVALID",
+          message: "Idempotency-Key 请求头缺失或格式无效。",
+        },
+      ];
+    }
     const input = parseBody(
       config.data as string | undefined,
     ) as CreatePatchTaskInput;
@@ -335,10 +411,9 @@ export function configureMockApi(): void {
       status: "passed",
       progress: 100,
       createdAt: now(),
-      artifactName: `mock-${profession.slug}-${style.id}.txt`,
-      downloadUrl: "pending",
+      artifactName: `mock-${profession.slug}-${style.id}.bpk`,
+      artifactAvailable: true,
     };
-    job.downloadUrl = `/jobs/${job.id}/artifact`;
     state.jobs.unshift(job);
     return [201, envelope(job)];
   });
@@ -348,14 +423,16 @@ export function configureMockApi(): void {
     if (!job) {
       return [404, "Not found"];
     }
-    const content = [
-      "DNF Patch Studio mock artifact",
-      `job=${job.id}`,
-      `profession=${job.professionName}`,
-      `style=${job.styleName}`,
-      "This file proves only the frontend download flow.",
-    ].join("\n");
-    return [200, new Blob([content], { type: "text/plain;charset=utf-8" })];
+    return [
+      200,
+      envelope({
+        artifactName: job.artifactName ?? `${job.id}.bpk`,
+        storageKey: `mock-artifacts/${job.id}/${job.artifactName ?? `${job.id}.bpk`}`,
+        mediaType: "application/octet-stream",
+        byteLength: 512,
+        sha256: "A".repeat(64),
+      }),
+    ];
   });
 
   mock.onPost("/__mock/reset").reply(() => {
@@ -363,4 +440,17 @@ export function configureMockApi(): void {
     sessionActive = false;
     return [200, envelope(null)];
   });
+}
+
+function mockSavedRole(
+  role: keyof ModelConfiguration,
+  input: SaveModelConfigurationInput,
+): ModelConfiguration[keyof ModelConfiguration] {
+  return {
+    endpoint: input[role].endpoint,
+    model: input[role].model,
+    keyConfigured:
+      state.modelConfiguration[role].keyConfigured ||
+      Boolean(input[role].apiKey),
+  };
 }
