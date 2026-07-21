@@ -1,0 +1,41 @@
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+
+.heading h1 {
+  margin: 0 0 7px;
+  color: #172019;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.heading p {
+  max-width: 720px;
+  margin: 0;
+  color: #748078;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.action {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .action > * {
+    flex: 1;
+  }
+}

@@ -1,7 +1,0 @@
-/* 样式入口只固定级联顺序；具体职责分布在 styles 子目录。 */
-@import "./styles/base.css";
-@import "./styles/shell.css";
-@import "./styles/workspace.css";
-@import "./styles/audit.css";
-@import "./styles/control-plane.css";
-@import "./styles/responsive.css";

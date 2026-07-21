@@ -1,0 +1,145 @@
+.shell {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.sider {
+  position: fixed !important;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  border-right: 1px solid #dfe5df;
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 74px;
+  padding: 0 22px;
+  border-bottom: 1px solid #e7ebe7;
+}
+
+.brand div {
+  display: grid;
+  gap: 1px;
+}
+
+.brand strong {
+  color: #172019;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  font-size: 15px;
+}
+
+.brand div span {
+  color: #758078;
+  font-size: 12px;
+}
+
+.mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 6px;
+  background: #163f31;
+  color: #ffffff;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.menu {
+  padding: 14px 10px;
+  border-inline-end: 0 !important;
+}
+
+.sider-foot {
+  position: absolute;
+  right: 18px;
+  bottom: 20px;
+  left: 18px;
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid #dfe5df;
+  border-radius: 6px;
+  background: #f5f7f4;
+}
+
+.sider-foot span {
+  color: #7c867e;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.sider-foot strong {
+  color: #36423a;
+  font-size: 13px;
+}
+
+.workspace {
+  min-width: 0;
+  margin-left: 232px;
+  background: transparent;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  height: 64px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 28px;
+  border-bottom: 1px solid rgba(209, 216, 209, 0.9);
+  background: rgba(247, 249, 246, 0.92) !important;
+  backdrop-filter: blur(14px);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #344039;
+  font-size: 13px;
+}
+
+.avatar {
+  background: #dce9df !important;
+  color: #163f31 !important;
+  font-weight: 700;
+}
+
+.menu-button {
+  display: none;
+  margin-right: auto;
+}
+
+.content {
+  min-width: 0;
+  padding: 30px;
+}
+
+@media (max-width: 860px) {
+  .sider {
+    display: none;
+  }
+
+  .workspace {
+    margin-left: 0;
+  }
+
+  .menu-button {
+    display: inline-flex;
+  }
+
+  .header {
+    padding: 0 16px;
+  }
+
+  .content {
+    padding: 20px 16px;
+  }
+}

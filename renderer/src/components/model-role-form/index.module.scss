@@ -1,0 +1,119 @@
+.role {
+  padding: 20px;
+  border: 1px solid #dce3dc;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.heading {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 6px;
+  background: #e8f1ec;
+  color: #176448;
+}
+
+.role[data-role="spriteProcessor"] .icon {
+  background: #f8eee6;
+  color: #a55d2e;
+}
+
+.role[data-role="referenceGenerator"] .icon {
+  background: #e9eff7;
+  color: #466b96;
+}
+
+.copy {
+  min-width: 0;
+}
+
+.copy > span {
+  display: block;
+  margin-bottom: 2px;
+  color: #89938b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.copy strong {
+  color: #2c3931;
+  font-size: 14px;
+}
+
+.copy p {
+  margin: 5px 0 0;
+  color: #77827a;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.tags {
+  display: flex;
+  max-width: 270px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.tag {
+  margin: 0;
+  border-color: #dce3dc;
+  background: #f5f7f4;
+  color: #59655d;
+  font-size: 10px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.35fr) minmax(150px, 0.7fr) minmax(
+      190px,
+      0.85fr
+    );
+  align-items: start;
+  gap: 14px;
+}
+
+.field {
+  margin-bottom: 0;
+}
+
+@media (max-width: 960px) {
+  .heading {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .tags {
+    grid-column: 2;
+    max-width: none;
+    justify-content: flex-start;
+  }
+
+  .fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .role {
+    padding: 16px;
+  }
+
+  .heading {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .icon {
+    width: 34px;
+    height: 34px;
+  }
+}

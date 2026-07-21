@@ -1,0 +1,130 @@
+.page {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: minmax(360px, 500px) minmax(0, 1fr);
+  background:
+    linear-gradient(rgba(22, 63, 49, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 63, 49, 0.04) 1px, transparent 1px), #f5f7f4;
+  background-size: 28px 28px;
+}
+
+.panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(32px, 7vw, 84px);
+  border-right: 1px solid #dbe1db;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.panel h1 {
+  margin: 54px 0 28px !important;
+  color: #172019 !important;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  font-size: 30px !important;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand > span {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 6px;
+  background: #163f31;
+  color: #ffffff;
+  font-family: Bahnschrift, sans-serif;
+  font-weight: 700;
+}
+
+.brand div {
+  display: grid;
+  gap: 2px;
+}
+
+.brand strong {
+  color: #172019;
+  font-size: 15px;
+}
+
+.brand small {
+  color: #768078;
+}
+
+.hint {
+  margin: 18px 0 0;
+  color: #879087;
+  font-size: 12px;
+  text-align: center;
+}
+
+.context {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(40px, 7vw, 100px);
+  background:
+    linear-gradient(135deg, rgba(22, 63, 49, 0.97), rgba(29, 53, 43, 0.92)),
+    #163f31;
+  color: #ffffff;
+}
+
+.context > span {
+  color: #b9d3c1;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 12px;
+}
+
+.context h2 {
+  max-width: 700px;
+  margin: 20px 0 54px;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  font-size: clamp(30px, 4vw, 54px);
+  font-weight: 500;
+  line-height: 1.22;
+}
+
+.metrics {
+  display: grid;
+  max-width: 680px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.metrics div {
+  display: grid;
+  gap: 5px;
+  padding: 20px 16px 0 0;
+}
+
+.metrics strong {
+  color: #f1b36e;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 14px;
+}
+
+.metrics span {
+  color: #dbe6de;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    border-right: 0;
+  }
+
+  .context {
+    display: none;
+  }
+}

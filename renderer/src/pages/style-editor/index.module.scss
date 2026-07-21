@@ -1,0 +1,66 @@
+.page {
+  width: min(1380px, 100%);
+  margin: 0 auto;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.editor {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #dbe2db;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -2px 0 22px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e5e9e5;
+}
+
+.editor-head span {
+  color: #2f3b33;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.editor-head small {
+  color: #879189;
+  font-size: 11px;
+}
+
+.code {
+  font-family: "Cascadia Code", Consolas, monospace !important;
+  font-size: 12px !important;
+  line-height: 1.65 !important;
+}
+
+.skill-gate {
+  margin-top: 4px;
+}
+
+@media (max-width: 1040px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .workspace {
+    display: block;
+  }
+
+  .editor {
+    margin-bottom: 18px;
+    padding: 16px;
+  }
+}

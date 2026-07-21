@@ -1,38 +1,16 @@
-# Generated patch artifacts
-*.NPK
-*.npk
-*.NPK.disabled
-*.npk.disabled
-
-# Build and validation outputs
-**/validation/
-**/npk/
-**/frames/
-**/*预览.png
-**/automation-runs/
-build/
-**/node_modules/
-userData/runs/
-userData/legacy-runs/
+# Dependencies and generated output
+node_modules/
+dist-web/
 out/
-dist/
 test-results/
 playwright-report/
 coverage/
-tools/workflow/fixtures/.runs/
-tools/workflow/fixtures/.test-*/
-tools/workflow/fixtures/.metadata-*/
 
-# Local compiled tool outputs
-tools/bin/
-
-# Machine-local source and toolchain settings
-.dnf-patch.local.json
-
-# Machine-local model credentials
+# Environment and credentials
 .env
 .env.*
 !.env.example
+*.local
 
 # Editor and OS noise
 .vs/

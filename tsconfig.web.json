@@ -14,5 +14,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["renderer/**/*.ts", "renderer/**/*.tsx", "shared/**/*.ts"]
+  "include": ["renderer/**/*.ts", "renderer/**/*.tsx"]
 }

@@ -1,16 +1,25 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "./app.js";
-import "./styles.css";
+import "antd/dist/reset.css";
+import "./global.css";
 
-// 入口只负责验证宿主节点并挂载页面，业务逻辑由 App 与 hooks 管理。
-const root = document.getElementById("root");
-if (root === null) {
-  throw new Error("Renderer root element is missing.");
+async function bootstrap(): Promise<void> {
+  if (import.meta.env.VITE_API_MODE !== "remote") {
+    const { configureMockApi } = await import("./api/mock-server.js");
+    configureMockApi();
+  }
+  const [{ App }, root] = await Promise.all([
+    import("./app/index.js"),
+    Promise.resolve(document.getElementById("root")),
+  ]);
+  if (root === null) {
+    throw new Error("Renderer root element is missing.");
+  }
+  createRoot(root).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
 }
 
-createRoot(root).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+void bootstrap();

@@ -1,0 +1,13 @@
+.boot {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: #f5f7f4;
+}
+
+.placeholder {
+  display: grid;
+  min-height: calc(100vh - 124px);
+  place-items: center;
+  color: #758078;
+}

@@ -1,0 +1,72 @@
+.page {
+  width: min(1050px, 100%);
+  margin: 0 auto;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  align-items: start;
+  gap: 18px;
+}
+
+.policy {
+  border: 1px solid #dce3dc;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.workspace,
+.roles {
+  display: grid;
+  gap: 14px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+}
+
+.policy {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.role-status {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e8ece8;
+}
+
+.policy span {
+  color: #879188;
+  font-size: 11px;
+}
+
+.policy strong {
+  overflow-wrap: anywhere;
+  color: #2d3931;
+  font-size: 13px;
+}
+
+.policy small {
+  color: #176448;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.policy p {
+  margin: 2px 0 0;
+  color: #79847c;
+  font-size: 11px;
+  line-height: 1.75;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

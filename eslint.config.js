@@ -4,12 +4,11 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   {
     ignores: [
+      "dist-web/**",
       "out/**",
-      "dist/**",
       "node_modules/**",
-      "userData/legacy-runs/**",
-      "userData/runs/**",
       "test-results/**",
+      "playwright-report/**",
     ],
   },
   eslint.configs.recommended,
@@ -45,6 +44,48 @@ export default tseslint.config(
       "max-lines": [
         "error",
         { max: 500, skipBlankLines: false, skipComments: false },
+      ],
+    },
+  },
+  {
+    files: ["renderer/src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["node:*", "electron", "openai", "socket.io-client"],
+              message:
+                "The browser frontend must use its typed HTTP API instead of Node or backend implementations.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["renderer/src/**/*.{ts,tsx}"],
+    ignores: ["renderer/src/api/**"],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "fetch",
+          message: "Use the typed modules in renderer/src/api instead.",
+        },
+        {
+          name: "XMLHttpRequest",
+          message: "Use the typed modules in renderer/src/api instead.",
+        },
+        {
+          name: "WebSocket",
+          message: "Network transports belong in renderer/src/api.",
+        },
+        {
+          name: "EventSource",
+          message: "Network transports belong in renderer/src/api.",
+        },
       ],
     },
   },

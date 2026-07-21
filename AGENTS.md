@@ -1,201 +1,57 @@
-# DNF 视觉补丁项目全局规则
+# DNF Patch Studio 仓库规则
 
-本文件适用于仓库内所有职业和主题。职业目录与主题目录可以补充更具体的范围、视觉和验收规则，但不得放宽本文件中的二进制完整性、来源追踪、验证和安全边界。
+## 项目定位
 
-## 规则层级
+本仓库只包含 DNF Patch Studio 的浏览器前端和 Electron 桌面壳。职业、技能、风格、
+模型配置、任务、产物生成和下载地址均由后端 API 提供；本地 Mock 只用于前端开发和
+演示。浏览器与桌面端加载同一套 `renderer/`，桌面壳不复制业务逻辑。
 
-1. 仓库根 `AGENTS.md`：所有职业通用的 NPK/IMG 制作、验证、交付规则。
-2. `jobs/<职业>/AGENTS.md`：该职业真实资源映射、技能阶段、人物层边界和职业验收规则。
-3. `jobs/<职业>/<主题>/AGENTS.md`：该主题的色板、材质、Prompt、允许变化和主题验收规则。
-4. `README.md`：构建命令、当前版本、产物和回滚说明，不代替规则或 manifest。
+不得在本仓库重新引入本地后端、Worker、CLI、NPK/IMG 处理、职业事实源、补丁工具链、
+运行证据或部署能力。前端和 Electron 壳都不得读取游戏目录、执行本机工具、解析补丁
+文件或宣称资源映射、产物兼容性、覆盖率和部署状态。
 
-更具体的规则只在其目录树内生效。职业名、技能名、主题色、历史补丁名和机器绝对路径不得写入项目级通用 skill 的通用机制。
+## 目录边界
 
-## 新线程自举
+- `renderer/`：React 应用、页面、组件、状态、HTTP API 与 Mock API。
+- `electron/`：最小桌面容器、窗口安全和无业务 Preload。
+- `tests/`：纯函数、状态、浏览器用户流程和桌面壳安全测试。
+- `vite.config.ts`：浏览器开发与生产构建入口。
+- `electron.vite.config.ts`：桌面主进程、Preload 与同一 Renderer 的构建入口。
+- `.github/instructions/`：当前工程规则。
 
-- 每个新线程都从当前工作区重新读取根 `AGENTS.md`、目标职业 `AGENTS.md`/`manifest.json`/`prompts/`，以及目标主题 `AGENTS.md`/`prompts/`。
-- 不把聊天记忆、旧线程摘要、历史 handoff、上次命令输出或旧绝对路径当作当前事实源。
-- 源包、基线、工具、产物和部署目录的存在性、大小、时间、SHA-256 与冲突必须在当前线程现场复核。
-- 所有执行所需的稳定规则、职业映射、Prompt 路由和主题细节必须存放在仓库文件中；缺失时中止依赖该事实的操作，不从对话猜测补全。
-- `docs/thread-handoff-*.md` 只保存历史证据和决策过程，不是构建、验证或部署的必读前置。
+禁止创建 `server/`、`jobs/`、`tools/`、`resources/`、`userData/`、`apps/desktop/`、
+`desktop/` 或根级 `src/`。构建输出只允许出现在被忽略的 `dist-web/` 与 `out/`，
+测试输出只允许出现在被忽略的 `test-results/` 与 `playwright-report/`。
 
-## 项目结构
+## 前端边界
 
-```text
-DnfPatch/
-├─ AGENTS.md
-├─ package.json                     # 根级 Electron 客户端与本地可审计流水线入口
-├─ electron/                        # Electron 主进程、preload 与受控进程入口
-├─ renderer/                        # React Renderer
-├─ server/                          # 本地流水线、共享契约、CLI 与后端客户端
-├─ resources/                       # 只读打包资源边界
-├─ userData/                        # 本地 Run 证据；活动与历史证据分目录保存
-├─ scripts/                         # 桌面项目开发门禁
-├─ tests/                           # 桌面项目单元测试与 Electron E2E
-├─ jobs/                            # 唯一职业资产容器；不进入职业显示身份
-│  └─ <职业>/
-│     ├─ AGENTS.md
-│     ├─ manifest.json              # 建议：经实包核验的职业资源事实源
-│     ├─ prompts/                   # 职业通用运动、轮廓、阶段和边界提示
-│     └─ <主题>/
-│        ├─ AGENTS.md
-│        ├─ README.md
-│        ├─ prompts/                # 具体主题相对职业 Prompt 的视觉增量
-│        ├─ frames/
-│        │  ├─ reference/
-│        │  └─ preview/
-│        └─ npk/
-├─ .codex/
-│  └─ skills/
-│     └─ dnf-patch-maker/          # 所有职业共用的项目级 NPK/IMG 工作流
-├─ docs/
-└─ tools/
-```
+- 页面、组件、Hook 和 Store 只能通过 `renderer/src/api/` 调用后端。
+- `renderer/src/api/` 使用 Axios 和类型化 DTO；不得从服务端实现复制执行逻辑。
+- `VITE_API_MODE=remote` 时连接 `VITE_API_BASE_URL`；其他情况使用同契约 Mock。
+- Access Token 只保存在内存中；Refresh Token 由后端使用 HttpOnly Cookie 管理。
+- 模型 API Key 只能作为 HTTPS 请求字段提交给后端，前端不得持久化或回显明文。
+- 不在源码、环境示例、日志、测试、URL、Local Storage 或 Session Storage 中保存凭据。
+- 后端返回的职业、技能和稳定 ID 是业务事实；AI 只能生成草稿，不能发明技能或推断
+  NPK/IMG 资源映射。
+- 任务创建必须尊重后端返回的资源核验与可执行状态；Mock 也必须执行同样门禁。
+- Electron 必须保持 `contextIsolation`、`sandbox`、`nodeIntegration: false` 和
+  `webSecurity`；Preload 只做环境断言，不暴露通用 IPC 或业务桥接对象。
+- Electron 主进程拒绝未授权的新窗口、外部导航、WebView 与权限请求。
 
-仓库根同时是 Electron 包根与 DNF 事实源根；`jobs/<职业>` 是唯一职业物理路由，`jobs` 前缀不得写入职业显示值、manifest 的 `profession` 字段、API 身份或 BPK 的 `profession` 字段。不得重新创建 `desktop/`、`apps/desktop/` 或根级职业目录。新增目录时优先沿用以上结构。只有实际需要并已被构建或验证流程使用时，才增加 `frames/source`、`frames/edited`、`frames/runtime`、`validation`、`release.json` 等目录或文件。
+## 工程规则
 
-项目根 `.codex/skills/` 只注册跨职业通用 skill，不放单职业或单主题 skill。通用 skill 必须按“根规则 -> 职业规则/manifest/Prompt -> 主题规则/Prompt”加载上下文；职业与主题常量留在各自目录。
+- 单个 TypeScript、TSX、JavaScript 或样式文件不得超过 500 个物理行；达到 400 行
+  时先拆分职责。复杂组件达到 300 行时优先拆分组件、Hook 或纯函数。
+- 新目录和源码文件使用 kebab-case；React 组件和类型使用 PascalCase；函数、变量和
+  Hook 使用 camelCase，Hook 以 `use` 开头。
+- 组件样式使用同目录同名 `*.module.scss`；`renderer/src/global.css` 只保存全局令牌、
+  reset 和可访问性基础规则。
+- 不覆盖或回退用户未提交的无关修改，不提交构建输出、测试输出或凭据。
+- 修改行为时补充与风险相称的测试；保持正式 API 与 Mock API 的 DTO 和状态语义一致。
 
-项目 skill、职业 Prompt 和主题 Prompt 使用稳定中文章节结构。英文只保留在需要直接交给图像模型或工具的代码块中；新增文件必须复用项目级 `$dnf-patch-maker` 的 `references/prompt-contract.md`，不得为同类内容另造结构。
+## 验证
 
-## 工具与脚本约束
-
-- 项目执行环境以 Windows PowerShell 5.1 兼容为门禁。只含 ASCII 的 PowerShell 源码可使用无 BOM UTF-8；包含任何非 ASCII 源码字面量时必须使用 UTF-8 BOM。
-- `$OutputEncoding` 和 `[Console]::OutputEncoding` 只影响输入输出流，不会修复无 BOM 源码的解码。能从 UTF-8 JSON/manifest 读取的本地化路径、名称和事实，不在脚本中重复硬编码。
-- 文件快照验证函数要么返回明确的路径字符串并使用 `*Path` 变量名，要么返回包含 `path`、`length`、`sha256` 的结构对象；调用方不得假定返回类型。
-- 多字段发布断言必须逐项检查或先形成具名布尔集合，并在失败信息中带出实际值和期望值。Windows PowerShell 5 下的条件值和泛型 List 应先在对象初始化器外求值，List 写入报告前显式 `ToArray()`。
-- 相对证据路径以拥有该字段的 JSON 文件所在目录为基准解析。manifest、release、final summary 的路径基准不得混用。
-- ExtractorSharp、图像生成服务、MCP 或其他外部适配器都不是默认可信事实源。使用前必须固定入口、参数、版本或 SHA-256、读写边界、超时和网络需求，并把原始响应转换为工作区内可复核的结构化证据。
-- 外部适配器默认只读官方源，只能向当前主题工作区的新路径写入；不得把密钥、令牌、个人模型端点或机器绝对路径提交到通用 skill、manifest 或共享配置。网络默认关闭，确需联网时必须由当前任务明确需要并限制目标。
-- 自动化控制面必须使用 manifest 注册的 JSON DAG 与固定适配器白名单。默认调用只做静态验证；写步骤需要显式执行开关、新 `RunId`、声明输出和成功谓词，恢复还必须绑定 workflow、registry、runner、脚本、参数与输入输出哈希。发布事务的 release/receipt 输出只能通过 `resume-reconcile` 在同一 Run 恢复时对账既有文件；普通 `create-new` 输出不得覆盖。人工审核不可由自动化生成通过状态。
-- `jobs` 下没有职业规则、manifest、来源 inventory 和验证证据的 NPK 只能进入哈希冻结的遗留隔离清单；不得被职业发现、构建、发布或部署流程自动提升。
-- 修改 PowerShell 后运行 `tools/Test-DnfPowerShellSource.ps1`；工程交付前运行只读总门禁 `tools/Test-DnfProjectGate.ps1`。
-
-## 修改边界
-
-- 默认只处理 ImagePacks2 中的视觉资源及其工作区副本。
-- 不修改 PVF、EXE、DLL、伤害、冷却、判定、技能逻辑或服务端数据。
-- 不检查、启动、结束或监控 DNF 进程，除非用户明确要求。
-- 构建、检查和生成工作区产物不等于部署。只有用户明确要求部署时才写入游戏目录。
-- 不随机、伪造或回填 NPK/IMG 文件时间戳、签名、来源或其他元数据来规避扫描、完整性检查或检测；构建时间只作为真实审计字段记录。
-- 不保证补丁不会被客户端、完整性检查或反作弊检测，也不承诺账号安全。
-
-## 来源与事实源
-
-- 原始 NPK 只读。构建前记录客户端版本或来源说明、文件大小、修改时间和 SHA-256。
-- 先导出并盘点真实 NPK、内部 IMG、IMG 版本、帧数和帧元数据，再决定修改范围。
-- 先识别 IMG magic、版本和对应 handler；Ver1/Ver2/Ver4/Ver5/Ver6 布局不同，不能用同一帧结构处理所有包。
-- 不根据职业中文名、技能中文名、翻译名或经验猜测 NPK 文件名和内部 IMG 路径。
-- 资源映射必须来自实际 inventory、可复核的 manifest 或已验证构建代码。
-- 只有 manifest 明确证明显示名映射后，才把同名逐技能职业/主题 Prompt 应用于具体资源；映射未核验时只能使用源帧语义与 manifest 独立授权的主题共同规则，不能按 Prompt 标题猜资源。
-- 已知正确的历史产物作为不可变基线；优化必须新建输出，并声明相对基线允许变化的集合。
-- 同一主题的 Prompt 数量、预览图数量或文件名不能证明“全技能覆盖”。
-
-## 帧与图集不变量
-
-除非 manifest 明确允许且有 A/B 证据，回灌后必须保留：
-
-- IMG 版本、内部路径、帧索引、帧顺序和帧数。
-- 帧 `Width`、`Height`、`CanvasWidth`、`CanvasHeight`、`X`、`Y` 和锚点语义。
-- `Hidden`、`LINK` 目标、图集矩形、旋转标志、TextureVersion 和压缩语义。
-- 原透明通道、可见/全透明状态和技能的起手、循环、命中、收尾阶段。
-- 未获授权的 IMG、帧和解码后的 BGRA 像素。
-
-`512x512` 只能作为 AI 概念图或 Prompt 画布建议，不能作为 NPK 回灌尺寸。不得统一强制透明背景、无角色或居中；人物层、Cut-in、加色混合层和黑色 RGB 数据必须按源资源语义处理。
-
-## 纹理格式
-
-- 默认保留源 Sprite 类型、Texture 类型、IMG 版本和图集结构。
-- Sprite 与 Texture 的声明格式必须一致；禁止产生“Sprite 标记为 DXT、Texture 或载荷实际为 ARGB”的混合格式。
-- 标记为 DXT1/DXT3/DXT5 的载荷必须是真正的 DDS/BC 数据，包含有效 `DDS ` magic、匹配的 FourCC、合法头和按 4x4 块计算的长度。
-- DXT1/BC1 只有无 alpha 或 1-bit alpha；具有连续半透明的源帧优先保留 DXT5/BC3，不得无依据降级格式。
-- Ver5 还必须保留共享 Texture 表、TextureVersion、texture index 关系、裁剪矩形、旋转和共享关系；不能把 Ver2 式裸 ARGB 塞入 Ver5 DXT sprite。
-- 使用不能编码 BC 的工具时，不得仅把原 DXT 枚举传给 PNG/Bitmap 替换接口。
-- 需要重新编码 BC 时使用经过验证的成熟编码器，并独立检查输出；ExtractorSharp 的 Bitmap 替换接口不能当作 DDS 编码器。
-- 完整转换为 ARGB 只能在 Sprite、Texture、压缩方式和载荷共同一致，并通过目标客户端 A/B 验证后采用；不能从某个职业或版本的成功案例推断所有客户端均兼容。
-- 第三方工具能重新打开输出，只说明该工具自洽，不代表游戏客户端兼容。
-
-## 图片编辑
-
-- 所有活动手工 P 图、栅格精修和分层工程使用项目本地解析的 Aseprite。尽量保留原帧作底层参考，使用可复核图层、可见性、混合模式和导出设置。
-- Aseprite 授权二进制只能由用户从工作区外导入被忽略的 `tools/bin/aseprite/<version-hash-slot>/`，不得提交或随项目分发；活动入口必须通过 `tools/bin/aseprite/current.json` 或显式路径解析固定版本和 SHA-256。
-- `--version` 只能证明程序可启动。调用 Aseprite Lua 前必须运行真实 API 能力探针；脚本使用 `Image.context` 等 API 时最低要求 API 30，能力不满足即中止且不得写活动产物。
-- 导出后重新检查像素尺寸、alpha、边缘、色彩模式和文件名；Aseprite 预览和工程重开只能证明栅格编辑链自洽，不能代替全帧结构验证。
-- AI 出图只作为素材或概念。回灌前必须在 Aseprite 中按原帧几何、时序和 alpha 重新适配，并同时保存分层 `.aseprite` 工程和明确供 handler 使用的 runtime PNG。
-- 批量逐帧生成必须先冻结源帧 inventory 和运行计划。每帧记录精确技术资源键、源图哈希、输出图哈希、生成配置、实际 seed、模型/适配器身份和异常；显示名未核验时目录和映射使用技术资源 ID，不使用技能中文名猜测。
-- 同一动作组应固定模型、采样器、分辨率、控制方式、适配器版本和 Prompt 哈希，并显式声明 seed 策略。共享 seed、ControlNet、Lineart、Canny 或 LoRA 只能作为可选实现，不能代替逐帧来源、几何和时序验证，也不能无条件应用于所有资源。
-- AI 原始输出、Aseprite 分层工程和最终运行帧必须分目录保存；任何生成服务或 Aseprite 脚本不得直接写入 NPK、覆盖源帧或把输出部署到 `ImagePacks2`。Aseprite 不负责 DDS/BC 编码、IMG/NPK 封装或客户端兼容证明；这些仍由 DirectXTex、实际 IMG handler 和独立验证器负责。具体契约见项目级 `$dnf-patch-maker` 的 `references/frame-redraw-and-adapter-contract.md`。
-
-## 构建流程
-
-1. 固化原包和已知正确基线的路径、大小、时间和 SHA-256。
-2. 建立 inventory/manifest，区分特效层、人物层、公共资源、技能专包和各动作阶段。
-3. 声明允许变化：目标 NPK、内部 IMG、帧、元数据、像素与主题验收条件。
-4. 涉及逐帧生成时，先建立运行计划并冻结源图、生成配置、分组、seed 策略、输入输出路径和外部工具 provenance；生成结果先作为素材，不直接回灌。
-5. 在通过 API 能力探针的项目本地 Aseprite 中按源帧适配，保存分层工程并导出运行帧；回灌接口的期望位图尺寸、alpha、色彩模式、图集和 mipmap 策略由实际 IMG handler 与 manifest 决定，不统一关闭 mipmap 或强制固定方形尺寸。
-6. 在工作区新文件上修改；禁止直接覆盖唯一基线。
-7. 先写临时输出，完成验证后再原子替换最终工作区产物。
-8. 生成构建报告：工具版本、输入哈希、输出哈希、数量、变更集合、排除集合、逐帧运行摘要和异常。
-9. 把实机验证留给用户，除非用户明确委托；不得自行处理游戏进程。
-
-## 本地定制产物约定
-
-- 官方 `ImagePacks2` NPK 始终作为只读来源；构建、封装和验证不得覆盖、重命名、移动或删除官方文件。
-- 离线验证全部通过后，必须在对应主题工作区生成可独立识别、带版本号的定制 NPK 成品；最终交付文件名不得冒充官方源包文件名。
-- 定制 NPK 只收录 manifest 已授权且实际需要覆盖的内部 IMG；不得为了接近官方包大小而复制未修改资源。内部 IMG 路径必须保持真实原路径，以便用户自行进行目标客户端覆盖测试。
-- “完整产物”只表示当前 manifest 已证明范围内的全部获准变化均已封装并通过门禁；在 `fullSkillCoverageProven` 不为 `true` 时，不得把局部产物命名或描述成全技能完整包。
-- 本项目默认只生成本地产物，不写入游戏目录。部署、备份、覆盖顺序测试和回滚默认由用户自行执行；只有当前用户请求明确委托部署时，才把部署作为离线交付后的独立步骤，并在发布报告中记录授权、目标、哈希和实机待验状态。
-- 文件名前缀或独立文件名只能用于人工识别，不能据此宣称客户端一定优先加载；覆盖行为仍须由用户在目标客户端 A/B 验证。
-
-## 验证门禁
-
-发布前至少验证：
-
-- NPK 可读、内部路径唯一，IMG 数量和路径集合符合 manifest。
-- 每个 IMG 可解析；每个非 LINK 帧可解码，LINK 目标有效。
-- 至少使用一个独立于生成器的解析或检查路径，避免只做同一工具的 round-trip。
-- Sprite/Texture/压缩/载荷一致；DXT 额外检查 DDS magic、FourCC、尺寸和块长度。
-- 帧数、索引、几何、Canvas、偏移、Hidden、LINK、图集矩形和旋转符合允许变化。
-- 源中可见帧未意外变为全透明、空帧或全画布黑帧。
-- 未声明变化的帧解码 BGRA 与基线逐字节一致。
-- 已声明变化的帧满足职业和主题规则，且起手、循环、命中、收尾均有覆盖。
-- 逐帧重绘任务的源帧、生成素材、Aseprite 分层工程、runtime PNG 和回灌帧引用闭合；每个实际变化帧都能追溯到唯一运行记录，缺帧、重帧、错序、尺寸漂移和未声明的生成配置漂移均为硬失败。
-- 同一动作组检查相邻帧的轮廓、锚点、alpha 覆盖和主题连续性；固定 seed 或同一 LoRA 不能单独证明无闪烁，时序异常仍须结合源序列和全帧联系表复核。
-- 至少在黑、白、棋盘背景检查 alpha；联系表要覆盖全帧，代表帧预览只作补充。
-- 输出 SHA-256、文件大小和验证摘要已记录。
-
-任何结构校验失败、解码失败、意外空帧、格式混合或未声明差异都必须中止发布，不能降级成警告继续交付。
-
-## 发布状态机与引用闭环
-
-1. inventory、资源计划、组件构建和最终聚合开始时保持 `fullSkillCoverageProven=false`。
-2. 最终 NPK 只能在新的版本化路径生成；最终验证必须写入不存在或确认为空的新目录，不能复用旧证据目录。
-3. 最终验证器只输出“允许生成发布元数据”的 final summary，不直接修改 manifest 或 `release.json`。
-4. final summary 全部通过后，才从该摘要更新 manifest 与 `release.json` 的覆盖状态及路径、长度、SHA-256、工具链和未部署状态；发布事务还必须生成 transaction receipt，并在命名 Mutex 内用 manifest-before CAS 提交。
-5. 元数据更新后必须运行 `tools/Test-DnfReleaseClosure.ps1`，复核资源计划起始状态为 false、三方引用一致、证据快照未漂移、实时独立索引通过且部署仍为 false。
-6. 最后更新 README 并运行 `tools/Test-DnfProjectGate.ps1`。只有发布后闭环与项目总门禁均通过，才能报告当前 manifest 范围的完整离线产物。
-7. 使用声明式工作流时，最终验证后只生成不可覆盖的 pending 审核模板；审核人另存 `manual-review.json` 并完成全联系表审核后，才以同一 Run 恢复发布元数据、闭环和项目门禁步骤。
-
-被 final summary 记录哈希的生成器、验证器、配置、组件或来源若在验证后变化，必须使用新的验证目录重跑；不得只更新元数据哈希。具体状态机与 PowerShell 5 约束见 `$dnf-patch-maker` 的 `references/release-closure-contract.md`。
-
-## 交付与回滚
-
-- 发布产物与回滚基线分开存放并清楚标识，避免用户把二者同时部署。
-- 工作区可以生成包含官方内部 IMG 路径的独立定制覆盖候选；未经当前请求明确授权，本项目不得把它与官方 NPK 一同写入 `ImagePacks2`。获得明确授权后仍须把重复内部路径、文件名优先级未证明和目标客户端 A/B 待验写入报告，不得把部署动作本身当作覆盖成功证据。
-- `%`、`!` 等文件名前缀只可作为人工排序或识别习惯，不能宣称保证优先级、反和谐、覆盖行为或安全性。
-- 不覆盖最后一个已知正确产物；每次交付都给出输出路径、SHA-256、相对基线的变化和未完成的实机验证项。
-
-## 工程回写闭环
-
-- 生成、构建和验证过程中推出的正确工程，只能在独立验证后回写到规则与 Prompt。
-- 回写路径按作用域拆分：
-  - 项目级流程、门禁、验证顺序和工具契约 -> 根 `AGENTS.md` 与项目级 skill。
-  - 职业/主题稳定语义、阶段、构图、色板、材质和验收 -> 对应职业或主题 `AGENTS.md` 与 Prompt。
-  - 资源身份、IMG 路径、帧索引、哈希和一次性输出 -> `manifest.json`、验证报告或发布证据，不进入通用 skill。
-- 只回写经过当前线程独立验证、且在至少一个独立检查路径上保持一致的稳定结论；单次运行统计、临时路径、一次性哈希和未核验推断不回写。
-- 每次回写后，必须重新运行 `tools/Test-DnfPromptTree.ps1`；若更新了 skill 或根规则，还必须运行 `tools/Test-DnfProjectGate.ps1`。
-- 回写不能削弱更高优先级规则，不能把局部产物状态升级成全技能覆盖、客户端兼容或部署成功。
-
-## 历史记录
-
-历史漏洞、产物恢复过程和联网依据见 `docs/thread-handoff-2026-07-11.md`。现行操作以当前规则、manifest、Prompt、工具和验证报告为准，不依赖该历史文件才能执行。
+- 前端或桌面壳修改至少运行 `npm run typecheck`、`npm run lint` 和 `npm run test:unit`。
+- 样式、路由或用户流程修改还要运行 `npm run build` 和 `npm run test:e2e`。
+- 完整静态门禁使用 `npm run gate:static`，完整浏览器与桌面双目标门禁使用
+  `npm run gate:project`。

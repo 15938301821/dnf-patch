@@ -1,0 +1,42 @@
+:root {
+  color: #1d2720;
+  background: #f5f7f4;
+  font-family: Aptos, "Microsoft YaHei UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(22, 63, 49, 0.025) 1px, transparent 1px), #f5f7f4;
+  background-size: 100% 32px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+:focus-visible {
+  outline: 2px solid #176448;
+  outline-offset: 2px;
+}
