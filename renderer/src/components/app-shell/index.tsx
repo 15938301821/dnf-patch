@@ -8,6 +8,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { apiMode } from "../../api/mode.js";
 import { useAuthCommands } from "../../hooks/use-auth.js";
 import { useAuthStore } from "../../stores/auth-store.js";
 import styles from "./index.module.scss";
@@ -60,8 +61,8 @@ export function AppShell(): React.JSX.Element {
         </div>
         {menu}
         <div className={styles["sider-foot"]}>
-          <span>Mock API</span>
-          <strong>前端联调</strong>
+          <span>{apiMode === "mock" ? "Mock API" : "Remote API"}</span>
+          <strong>{apiMode === "mock" ? "前端联调" : "服务端连接"}</strong>
         </div>
       </Layout.Sider>
 

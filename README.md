@@ -12,16 +12,17 @@ npm run dev
 ```
 
 `npm run dev` 启动 Electron 桌面端，`npm run dev:web` 只启动浏览器端。两者加载同一套
-Renderer，开发服务固定监听 `http://127.0.0.1:5173`。默认启用 Mock API，可使用任意
-非空账号和密码登录，不需要本地后端、游戏文件或补丁工具。
+Renderer，开发服务固定监听 `http://127.0.0.1:5173`。普通开发默认连接正式后端；只有
+显式设置 `VITE_API_MODE=mock` 时才加载 Mock API。E2E 独立读取 `.env.e2e`，不会改变
+普通开发模式。
 
 ## 远程 API
 
-在工作区外或未提交的 `.env.local` 中配置：
+在未提交的 `renderer/.env.local` 中配置：
 
 ```dotenv
 VITE_API_MODE=remote
-VITE_API_BASE_URL=https://api.example.com/v1
+VITE_API_BASE_URL=http://127.0.0.1:56789/v1
 ```
 
 前端要求后端使用统一的 `{ "data": ... }` 响应包络。Access Token 只保存在浏览器

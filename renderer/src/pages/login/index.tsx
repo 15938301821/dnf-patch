@@ -3,6 +3,7 @@ import { Button, Form, Input, Typography, message } from "antd";
 import { KeyRound, LogIn, UserRound } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import type { LoginInput } from "../../api/contracts.js";
+import { apiMode } from "../../api/mode.js";
 import { useAuthCommands } from "../../hooks/use-auth.js";
 import { useAuthStore } from "../../stores/auth-store.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
@@ -77,7 +78,11 @@ export function LoginPage(): React.JSX.Element {
             进入工作台
           </Button>
         </Form>
-        <p className={styles.hint}>Mock 模式可使用任意非空账号和密码。</p>
+        <p className={styles.hint}>
+          {apiMode === "mock"
+            ? "Mock 模式可使用任意非空账号和密码。"
+            : "使用服务端账号和密码登录。"}
+        </p>
       </section>
       <aside className={styles.context}>
         <span>PATCH CONTROL SURFACE</span>

@@ -1,10 +1,11 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "antd/dist/reset.css";
+import { apiMode } from "./api/mode.js";
 import "./global.css";
 
 async function bootstrap(): Promise<void> {
-  if (import.meta.env.VITE_API_MODE !== "remote") {
+  if (apiMode === "mock") {
     const { configureMockApi } = await import("./api/mock-server.js");
     configureMockApi();
   }
