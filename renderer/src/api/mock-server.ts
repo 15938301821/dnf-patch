@@ -22,10 +22,14 @@ import { initialMockModelConfiguration } from "./mock-model-configuration.js";
 import {
   areSelectedSkillsValid,
   mockProfessionSkills,
-  swordSoulCandidateSkillIds,
 } from "./mock-profession-skills.js";
+import { initialMockProfessionStyles } from "./mock-profession-styles.js";
 import { refreshClient, server } from "./server.js";
 import { evaluateSkillExecution } from "../utils/skill-gate.js";
+import {
+  evaluateStyleCompleteness,
+  evaluateStyleDraftValidity,
+} from "../utils/style-completeness.js";
 
 interface MockState {
   professions: ProfessionSummary[];
@@ -70,33 +74,7 @@ const initialState: MockState = {
     },
   ],
   skills: mockProfessionSkills,
-  styles: [
-    {
-      id: "style-vergil",
-      professionId: "profession-sword-soul",
-      name: "暗蓝幻影",
-      description: "冷色剑气、克制高光与清晰的斩击阶段。",
-      agent:
-        "保持源帧几何、锚点与动作阶段，只调整已授权特效层的色彩、材质和粒子语言。",
-      prompt:
-        "Deep cobalt sword aura, restrained cyan edge light, crisp directional slash trails, transparent effect layer.",
-      selectedSkillIds: swordSoulCandidateSkillIds,
-      publishStatus: "private",
-      updatedAt: "2026-07-20T08:30:00.000Z",
-    },
-    {
-      id: "style-sakura",
-      professionId: "profession-female-nen",
-      name: "樱花念气",
-      description: "粉白念气与樱花粒子，保留原动作轮廓和透明层语义。",
-      agent: "以源帧语义为事实源，樱花材质只作用于已登记的念气特效层。",
-      prompt:
-        "Soft rose-white nen energy, controlled sakura petals, luminous core, readable silhouette, transparent background.",
-      selectedSkillIds: [],
-      publishStatus: "published",
-      updatedAt: "2026-07-18T09:10:00.000Z",
-    },
-  ],
+  styles: initialMockProfessionStyles,
   jobs: [
     {
       id: "job-demo-complete",
@@ -298,6 +276,7 @@ export function configureMockApi(): void {
         state.skills,
         professionId,
         input.selectedSkillIds,
+        true,
       )
     ) {
       return [
@@ -305,6 +284,19 @@ export function configureMockApi(): void {
         {
           code: "STYLE_SKILLS_INVALID",
           message: "请选择当前职业技能目录中的至少一个技能。",
+        },
+      ];
+    }
+    const draftValidity = evaluateStyleDraftValidity(input);
+    if (!draftValidity.allowed) {
+      return [
+        400,
+        {
+          code: "STYLE_CONTENT_INVALID",
+          message:
+            draftValidity.reasons[0] === "prompt-package-too-large"
+              ? "主题 Prompt 包超过 48 KiB 限制。"
+              : "逐技能主题内容必须与所选技能一一对应。",
         },
       ];
     }
@@ -333,7 +325,7 @@ export function configureMockApi(): void {
         state.skills,
         style.professionId,
         input.selectedSkillIds,
-        style.selectedSkillIds.length === 0,
+        true,
       )
     ) {
       return [
@@ -341,6 +333,19 @@ export function configureMockApi(): void {
         {
           code: "STYLE_SKILLS_INVALID",
           message: "请选择当前职业技能目录中的至少一个技能。",
+        },
+      ];
+    }
+    const draftValidity = evaluateStyleDraftValidity(input);
+    if (!draftValidity.allowed) {
+      return [
+        400,
+        {
+          code: "STYLE_CONTENT_INVALID",
+          message:
+            draftValidity.reasons[0] === "prompt-package-too-large"
+              ? "主题 Prompt 包超过 48 KiB 限制。"
+              : "逐技能主题内容必须与所选技能一一对应。",
         },
       ];
     }
@@ -354,6 +359,15 @@ export function configureMockApi(): void {
       const style = state.styles.find((item) => item.id === parts[4]);
       if (!style) {
         return [404, { code: "STYLE_NOT_FOUND", message: "职业风格不存在。" }];
+      }
+      if (!evaluateStyleCompleteness(style).allowed) {
+        return [
+          409,
+          {
+            code: "STYLE_CONTENT_INCOMPLETE",
+            message: "主题公共规则或逐技能主题内容尚未完整。",
+          },
+        ];
       }
       style.publishStatus = "pending";
       style.updatedAt = now();
@@ -387,6 +401,15 @@ export function configureMockApi(): void {
     const style = state.styles.find((item) => item.id === input.styleId);
     if (!profession || !style || style.professionId !== profession.id) {
       return [400, { code: "JOB_INPUT_INVALID", message: "职业或风格无效。" }];
+    }
+    if (!evaluateStyleCompleteness(style).allowed) {
+      return [
+        409,
+        {
+          code: "STYLE_CONTENT_INCOMPLETE",
+          message: "主题公共规则或逐技能主题内容尚未完整。",
+        },
+      ];
     }
     const executionGate = evaluateSkillExecution(
       style.selectedSkillIds,

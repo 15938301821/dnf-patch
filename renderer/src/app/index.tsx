@@ -8,6 +8,7 @@ import { LoginPage } from "../pages/login/index.js";
 import { JobsPage } from "../pages/jobs/index.js";
 import { ProfessionsPage } from "../pages/professions/index.js";
 import { SettingsPage } from "../pages/settings/index.js";
+import { StyleCreatePage } from "../pages/style-create/index.js";
 import { StyleEditorPage } from "../pages/style-editor/index.js";
 import { useAuthStore } from "../stores/auth-store.js";
 import styles from "./index.module.scss";
@@ -36,6 +37,10 @@ export function App(): React.JSX.Element {
             <Route element={<LoginPage />} path="/login" />
             <Route element={<ProtectedShell />}>
               <Route element={<ProfessionsPage />} path="/professions" />
+              <Route
+                element={<StyleCreatePage />}
+                path="/professions/:professionId/styles/new"
+              />
               <Route
                 element={<StyleEditorPage />}
                 path="/professions/:professionId/styles/:styleId"

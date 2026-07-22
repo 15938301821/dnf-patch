@@ -1,0 +1,18 @@
+.page {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.form {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #dbe2db;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+@media (max-width: 540px) {
+  .form {
+    padding: 15px;
+  }
+}

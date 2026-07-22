@@ -3,7 +3,6 @@ import {
   Alert,
   Button,
   Form,
-  Input,
   Popconfirm,
   Skeleton,
   Space,
@@ -22,22 +21,16 @@ import {
   type SaveProfessionStyleInput,
 } from "../../api/index.js";
 import { PageHeading } from "../../components/page-heading/index.js";
-import { SkillScopePicker } from "../../components/skill-scope-picker/index.js";
+import { ProfessionStyleForm } from "../../components/profession-style-form/index.js";
 import { StylePreview } from "../../components/style-preview/index.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
+import { createEmptyStyleInput } from "../../utils/profession-style.js";
 import {
   evaluateSkillExecution,
   type SkillExecutionGate,
 } from "../../utils/skill-gate.js";
+import { evaluateStyleCompleteness } from "../../utils/style-completeness.js";
 import styles from "./index.module.scss";
-
-const emptyValues: SaveProfessionStyleInput = {
-  name: "",
-  description: "",
-  agent: "",
-  prompt: "",
-  selectedSkillIds: [],
-};
 
 function skillGateDescription(gate: SkillExecutionGate): string {
   switch (gate.reason) {
@@ -63,7 +56,9 @@ export function StyleEditorPage(): React.JSX.Element {
   const [professionSkills, setProfessionSkills] = useState<
     ProfessionSkillSummary[]
   >([]);
-  const [draft, setDraft] = useState<SaveProfessionStyleInput>(emptyValues);
+  const [draft, setDraft] = useState<SaveProfessionStyleInput>(() =>
+    createEmptyStyleInput(),
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [creatingJob, setCreatingJob] = useState(false);
@@ -84,9 +79,9 @@ export function StyleEditorPage(): React.JSX.Element {
           const values: SaveProfessionStyleInput = {
             name: found.name,
             description: found.description,
-            agent: found.agent,
-            prompt: found.prompt,
+            themeDefinition: found.themeDefinition,
             selectedSkillIds: found.selectedSkillIds,
+            skillPrompts: found.skillPrompts,
           };
           setStyle(found);
           setDraft(values);
@@ -109,11 +104,8 @@ export function StyleEditorPage(): React.JSX.Element {
   const save = async (): Promise<ProfessionStyle | undefined> => {
     setSaving(true);
     try {
-      const saved = await saveProfessionStyle(
-        professionId,
-        styleId,
-        await form.validateFields(),
-      );
+      await form.validateFields();
+      const saved = await saveProfessionStyle(professionId, styleId, draft);
       setStyle(saved);
       void messageApi.success("风格已保存");
       return saved;
@@ -164,6 +156,7 @@ export function StyleEditorPage(): React.JSX.Element {
     draft.selectedSkillIds,
     professionSkills,
   );
+  const contentGate = evaluateStyleCompleteness(draft);
 
   const preview: ProfessionStyle = {
     id: style?.id ?? styleId,
@@ -202,14 +195,16 @@ export function StyleEditorPage(): React.JSX.Element {
               title="提交公共模板审核？"
             >
               <Button
-                disabled={style?.publishStatus === "pending"}
+                disabled={
+                  style?.publishStatus === "pending" || !contentGate.allowed
+                }
                 icon={<Send size={16} />}
               >
                 送审
               </Button>
             </Popconfirm>
             <Button
-              disabled={!skillGate.allowed}
+              disabled={!skillGate.allowed || !contentGate.allowed}
               icon={<Play size={16} />}
               loading={creatingJob}
               onClick={() => void createJob()}
@@ -229,68 +224,29 @@ export function StyleEditorPage(): React.JSX.Element {
             <span>风格内容</span>
             <small>私有草稿</small>
           </div>
-          <Form<SaveProfessionStyleInput>
+          <ProfessionStyleForm
             form={form}
-            layout="vertical"
-            onValuesChange={(_, values) =>
-              setDraft({ ...emptyValues, ...values })
+            initialValues={draft}
+            onChange={setDraft}
+            skills={professionSkills}
+          />
+          <Alert
+            className={styles["skill-gate"] ?? ""}
+            description={
+              contentGate.allowed
+                ? skillGateDescription(skillGate)
+                : "主题公共规则或逐技能主题内容尚未完整；可以保存草稿，但不能送审或创建制作任务。"
             }
-            requiredMark={false}
-          >
-            <Form.Item
-              label="风格名称"
-              name="name"
-              rules={[{ required: true, message: "请输入风格名称" }]}
-            >
-              <Input maxLength={100} showCount />
-            </Form.Item>
-            <Form.Item label="风格描述" name="description">
-              <Input.TextArea maxLength={500} rows={3} showCount />
-            </Form.Item>
-            <Form.Item
-              extra="定义不可变边界、来源约束与审核条件。"
-              label="Agent"
-              name="agent"
-              rules={[{ required: true, message: "请输入 Agent 内容" }]}
-            >
-              <Input.TextArea className={styles.code ?? ""} rows={10} />
-            </Form.Item>
-            <Form.Item
-              extra="仅描述风格增量，不在这里猜测 NPK、IMG 或帧映射。"
-              label="Prompt"
-              name="prompt"
-              rules={[{ required: true, message: "请输入 Prompt 内容" }]}
-            >
-              <Input.TextArea className={styles.code ?? ""} rows={10} />
-            </Form.Item>
-            <Form.Item
-              extra="AI 只会基于已选 skillId 生成逐技能草稿，不负责发现技能或推断资源映射。"
-              label="技能范围"
-              name="selectedSkillIds"
-              rules={
-                professionSkills.length > 0
-                  ? [
-                      {
-                        type: "array",
-                        min: 1,
-                        message: "至少选择一个技能",
-                      },
-                    ]
-                  : []
-              }
-            >
-              <SkillScopePicker loading={loading} skills={professionSkills} />
-            </Form.Item>
-            <Alert
-              className={styles["skill-gate"] ?? ""}
-              description={skillGateDescription(skillGate)}
-              showIcon
-              title={
-                skillGate.allowed ? "制作门禁已满足" : "当前仅可保存设计稿"
-              }
-              type={skillGate.allowed ? "success" : "warning"}
-            />
-          </Form>
+            showIcon
+            title={
+              contentGate.allowed && skillGate.allowed
+                ? "制作门禁已满足"
+                : "当前仅可保存设计稿"
+            }
+            type={
+              contentGate.allowed && skillGate.allowed ? "success" : "warning"
+            }
+          />
         </section>
         <StylePreview style={preview} />
       </div>

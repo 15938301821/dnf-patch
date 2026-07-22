@@ -1,0 +1,86 @@
+.field {
+  display: grid;
+  gap: 10px;
+}
+
+.heading,
+.row,
+.color-value {
+  display: flex;
+  align-items: center;
+}
+
+.heading {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.heading strong {
+  color: #303c34;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.heading span,
+.empty {
+  color: #7c877f;
+  font-size: 11px;
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.72fr) minmax(190px, 1fr) 32px;
+  align-items: start;
+  gap: 10px;
+}
+
+.row :global(.ant-form-item) {
+  margin: 0;
+}
+
+.color-value {
+  gap: 8px;
+}
+
+.color-value > input[type="color"] {
+  width: 36px;
+  height: 32px;
+  flex: 0 0 36px;
+  padding: 2px;
+  border: 1px solid #d9dfda;
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.empty {
+  padding: 14px;
+  border: 1px dashed #d6ddd7;
+  border-radius: 5px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) 32px;
+  }
+
+  .row > :first-child {
+    grid-column: 1 / -1;
+  }
+}

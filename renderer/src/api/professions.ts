@@ -7,6 +7,7 @@ import type {
   SaveProfessionStyleInput,
 } from "./contracts.js";
 import { requestData } from "./server.js";
+import { normalizeProfessionStyle } from "../utils/profession-style.js";
 
 export function getProfessionsList(): Promise<ProfessionSummary[]> {
   return requestData<ProfessionSummary[]>({
@@ -40,7 +41,7 @@ export function getProfessionStyles(
   return requestData<ProfessionStyle[]>({
     method: "GET",
     url: `/professions/${professionId}/styles`,
-  });
+  }).then((styles) => styles.map(normalizeProfessionStyle));
 }
 
 export function createProfessionStyle(

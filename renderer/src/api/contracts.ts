@@ -86,6 +86,42 @@ export interface ProfessionSkillSummary {
   promptStatus: SkillPromptStatus;
   mappingStatus: SkillMappingStatus;
   executionStatus: SkillExecutionStatus;
+  professionPrompt?: ProfessionPromptDefinition;
+  professionPromptSha256?: string;
+}
+
+export interface ProfessionPromptDefinition {
+  schemaVersion: 1;
+  stableSemantics: string;
+  commonPrompt: string;
+  sourceConstraints: string;
+  stageAcceptance: string;
+}
+
+export interface ThemeColorAnchor {
+  name: string;
+  value: string;
+}
+
+export interface ThemeDefinition {
+  schemaVersion: 1;
+  goal: string;
+  baseStyle: string;
+  colorAnchors: ThemeColorAnchor[];
+  materialRules: string;
+  particleRules: string;
+  layeringRules: string;
+  constraints: string;
+  acceptanceCriteria: string;
+  exclusions: string;
+}
+
+export interface SkillThemePrompt {
+  skillId: string;
+  themePrompt: string;
+  changes: string;
+  acceptanceCriteria: string;
+  exclusions: string;
 }
 
 export interface ProfessionStyle {
@@ -93,9 +129,9 @@ export interface ProfessionStyle {
   professionId: string;
   name: string;
   description: string;
-  agent: string;
-  prompt: string;
+  themeDefinition: ThemeDefinition;
   selectedSkillIds: string[];
+  skillPrompts: SkillThemePrompt[];
   publishStatus: PublishStatus;
   updatedAt: string;
 }
@@ -103,9 +139,9 @@ export interface ProfessionStyle {
 export interface SaveProfessionStyleInput {
   name: string;
   description: string;
-  agent: string;
-  prompt: string;
+  themeDefinition: ThemeDefinition;
   selectedSkillIds: string[];
+  skillPrompts: SkillThemePrompt[];
 }
 
 export type CreateProfessionStyleInput = SaveProfessionStyleInput;

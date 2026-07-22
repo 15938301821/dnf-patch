@@ -10,20 +10,15 @@ import {
   message,
 } from "antd";
 import { ArrowRight, Layers3, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   createProfession,
-  createProfessionStyle,
-  getProfessionSkills,
   getProfessionStyles,
   getProfessionsList,
   type CreateProfessionInput,
-  type CreateProfessionStyleInput,
-  type ProfessionSkillSummary,
   type ProfessionStyle,
   type ProfessionSummary,
 } from "../../api/index.js";
-import { CreateStyleModal } from "../../components/create-style-modal/index.js";
 import { PageHeading } from "../../components/page-heading/index.js";
 import { PublishStatus } from "../../components/publish-status/index.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
@@ -31,20 +26,15 @@ import styles from "./index.module.scss";
 
 export function ProfessionsPage(): React.JSX.Element {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [professionForm] = Form.useForm<CreateProfessionInput>();
-  const [styleForm] = Form.useForm<CreateProfessionStyleInput>();
   const [messageApi, messageContext] = message.useMessage();
   const [professions, setProfessions] = useState<ProfessionSummary[]>([]);
   const [stylesList, setStylesList] = useState<ProfessionStyle[]>([]);
-  const [professionSkills, setProfessionSkills] = useState<
-    ProfessionSkillSummary[]
-  >([]);
   const [selectedId, setSelectedId] = useState("");
   const [loading, setLoading] = useState(true);
   const [stylesLoading, setStylesLoading] = useState(false);
-  const [skillsLoading, setSkillsLoading] = useState(false);
   const [professionModalOpen, setProfessionModalOpen] = useState(false);
-  const [styleModalOpen, setStyleModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const loadProfessions = async (preferredId?: string): Promise<void> => {
@@ -61,7 +51,12 @@ export function ProfessionsPage(): React.JSX.Element {
       .then((items) => {
         if (active) {
           setProfessions(items);
-          setSelectedId(items[0]?.id ?? "");
+          const preferredId = searchParams.get("professionId") ?? "";
+          setSelectedId(
+            items.some((item) => item.id === preferredId)
+              ? preferredId
+              : (items[0]?.id ?? ""),
+          );
         }
       })
       .catch((error: unknown) => {
@@ -75,7 +70,7 @@ export function ProfessionsPage(): React.JSX.Element {
     return () => {
       active = false;
     };
-  }, [messageApi]);
+  }, [messageApi, searchParams]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -103,32 +98,6 @@ export function ProfessionsPage(): React.JSX.Element {
     };
   }, [messageApi, selectedId]);
 
-  useEffect(() => {
-    if (!selectedId) {
-      setProfessionSkills([]);
-      return;
-    }
-    let active = true;
-    setSkillsLoading(true);
-    void getProfessionSkills(selectedId)
-      .then((items) => {
-        if (active) {
-          setProfessionSkills(items);
-        }
-      })
-      .catch((error: unknown) => {
-        void messageApi.error(apiErrorMessage(error));
-      })
-      .finally(() => {
-        if (active) {
-          setSkillsLoading(false);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [messageApi, selectedId]);
-
   const submitProfession = async (): Promise<void> => {
     setSaving(true);
     try {
@@ -139,38 +108,6 @@ export function ProfessionsPage(): React.JSX.Element {
       setProfessionModalOpen(false);
       professionForm.resetFields();
       void messageApi.success("职业已创建");
-    } catch (error: unknown) {
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "errorFields" in error
-      ) {
-        return;
-      }
-      void messageApi.error(apiErrorMessage(error));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const submitStyle = async (): Promise<void> => {
-    if (!selectedId) {
-      return;
-    }
-    setSaving(true);
-    try {
-      const created = await createProfessionStyle(
-        selectedId,
-        await styleForm.validateFields(),
-      );
-      await Promise.all([
-        loadProfessions(selectedId),
-        getProfessionStyles(selectedId).then(setStylesList),
-      ]);
-      setStyleModalOpen(false);
-      styleForm.resetFields();
-      void messageApi.success("风格已创建");
-      void navigate(`/professions/${selectedId}/styles/${created.id}`);
     } catch (error: unknown) {
       if (
         typeof error === "object" &&
@@ -256,10 +193,9 @@ export function ProfessionsPage(): React.JSX.Element {
             <Button
               disabled={!selectedId}
               icon={<Plus size={16} />}
-              onClick={() => {
-                styleForm.resetFields();
-                setStyleModalOpen(true);
-              }}
+              onClick={() =>
+                void navigate(`/professions/${selectedId}/styles/new`)
+              }
             >
               新建风格
             </Button>
@@ -330,16 +266,6 @@ export function ProfessionsPage(): React.JSX.Element {
           </Form.Item>
         </Form>
       </Modal>
-
-      <CreateStyleModal
-        confirmLoading={saving}
-        onCancel={() => setStyleModalOpen(false)}
-        onConfirm={() => void submitStyle()}
-        open={styleModalOpen}
-        form={styleForm}
-        skills={professionSkills}
-        skillsLoading={skillsLoading}
-      />
     </div>
   );
 }

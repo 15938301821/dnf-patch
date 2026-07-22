@@ -1,5 +1,5 @@
 import { Image, Tag } from "antd";
-import { Eye, FileText, ShieldCheck } from "lucide-react";
+import { Eye, FileText, Palette, ShieldCheck } from "lucide-react";
 import previewImage from "../../assets/style-preview.png";
 import type { ProfessionStyle } from "../../api/contracts.js";
 import { PublishStatus } from "../publish-status/index.js";
@@ -8,7 +8,11 @@ import styles from "./index.module.scss";
 interface StylePreviewProps {
   style: Pick<
     ProfessionStyle,
-    "name" | "description" | "agent" | "prompt" | "publishStatus"
+    | "name"
+    | "description"
+    | "themeDefinition"
+    | "skillPrompts"
+    | "publishStatus"
   >;
 }
 
@@ -48,15 +52,30 @@ export function StylePreview({ style }: StylePreviewProps): React.JSX.Element {
         <article>
           <ShieldCheck aria-hidden="true" size={17} />
           <div>
-            <strong>Agent 约束</strong>
-            <p>{excerpt(style.agent, "尚未填写 Agent 约束。")}</p>
+            <strong>主题目标</strong>
+            <p>{excerpt(style.themeDefinition.goal, "尚未填写主题目标。")}</p>
           </div>
         </article>
         <article>
           <FileText aria-hidden="true" size={17} />
           <div>
-            <strong>Prompt 摘要</strong>
-            <p>{excerpt(style.prompt, "尚未填写风格 Prompt。")}</p>
+            <strong>共同视觉基线</strong>
+            <p>
+              {excerpt(
+                style.themeDefinition.baseStyle,
+                "尚未填写共同视觉基线。",
+              )}
+            </p>
+          </div>
+        </article>
+        <article>
+          <Palette aria-hidden="true" size={17} />
+          <div>
+            <strong>色板与技能增量</strong>
+            <p>
+              {style.themeDefinition.colorAnchors.length} 个颜色锚点，
+              {style.skillPrompts.length} 个技能主题草稿。
+            </p>
           </div>
         </article>
       </div>
