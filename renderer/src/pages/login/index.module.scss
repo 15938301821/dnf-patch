@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 登录页面的表单面板、辅助上下文和移动端单栏布局样式。
+ * 调用关系：由 pages/login/index.tsx 导入，页面通过受认证 API 管理登录流程并在成功后跳转受保护路由。
+ * 维护边界：只提供可读的首屏布局，不保存令牌、不处理登录错误，也不改变认证或重定向行为。
+ */
+
+/* 登录表单保持可用最小宽度，右侧上下文吸收其余空间而不挤压输入控件。 */
 .page {
   display: grid;
   min-height: 100vh;
@@ -19,6 +26,7 @@
 }
 
 .panel h1 {
+  /* 局部覆盖 Ant Design Typography，限定在登录面板标题，不影响其他页面。 */
   margin: 54px 0 28px !important;
   color: #172019 !important;
   font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
@@ -92,6 +100,7 @@
 }
 
 .metrics {
+  /* 三个阶段使用等宽稳定轨道，文案变化不会推动相邻指标。 */
   display: grid;
   max-width: 680px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -116,6 +125,7 @@
 }
 
 @media (max-width: 900px) {
+  /* 移动端隐藏辅助上下文，仅保留完整登录流程，防止双栏产生横向滚动。 */
   .page {
     grid-template-columns: 1fr;
   }

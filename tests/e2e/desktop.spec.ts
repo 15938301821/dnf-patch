@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 在真实 Electron 进程中验证桌面壳隔离、窗口拒绝和共用 Renderer 登录流程。
+ *
+ * Playwright 启动已构建主进程并在每例后关闭，Renderer 使用 E2E Mock API；测试能观察 Node、
+ * require、业务桥接和新窗口不可用，但不证明真实 Server、系统权限对话框、恶意页面攻防或
+ * 不同操作系统打包产物。应用引用必须逐例清理，避免残留 Electron 进程污染后续用例。
+ */
 import { resolve } from "node:path";
 import {
   _electron as electron,
@@ -10,12 +17,14 @@ const repositoryRoot = resolve(import.meta.dirname, "../..");
 let application: ElectronApplication | undefined;
 
 test.afterEach(async () => {
+  // 即使断言失败也关闭本例启动的真实 Electron 进程，避免跨用例共享高权限主进程。
   const launchedApplication = application;
   application = undefined;
   await launchedApplication?.close().catch(() => undefined);
 });
 
 test("loads the frontend in an isolated desktop shell", async () => {
+  // 使用已构建入口验证实际 webPreferences 和 Preload 结果，不以纯函数 Mock 替代桌面壳。
   application = await electron.launch({
     args: [resolve(repositoryRoot, "out/main/index.js")],
     cwd: repositoryRoot,

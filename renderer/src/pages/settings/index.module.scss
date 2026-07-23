@@ -1,8 +1,15 @@
+/**
+ * @fileoverview 设置页的模型角色表单、资源导入状态和只读策略栏的布局样式。
+ * 调用关系：由 pages/settings/index.tsx 导入，页面通过类型化 API 加载/保存脱敏模型配置和资源导入状态。
+ * 维护边界：只组织凭据输入与状态展示，不能让 API Key 进入样式、浏览器存储或页面之外的可观察状态。
+ */
+
 .page {
   width: min(1050px, 100%);
   margin: 0 auto;
 }
 
+/* 主表单弹性占宽，策略栏保持可扫描宽度；两栏都允许动态内容在内部换行。 */
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 290px;
@@ -62,6 +69,7 @@
 }
 
 .resource-import-tag {
+  /* 覆盖 Ant Design Tag 默认尾边距，保持状态标签与标题两端严格对齐。 */
   margin-inline-end: 0 !important;
   white-space: nowrap;
 }
@@ -122,6 +130,7 @@
 }
 
 @media (max-width: 800px) {
+  /* 窄屏把策略说明移到表单下方，避免固定侧栏压缩凭据输入控件。 */
   .layout {
     grid-template-columns: 1fr;
   }

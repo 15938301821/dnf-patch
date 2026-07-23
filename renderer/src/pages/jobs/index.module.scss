@@ -1,8 +1,15 @@
+/**
+ * @fileoverview 任务列表页面的摘要指标、表格容器与移动端堆叠样式。
+ * 调用关系：由 pages/jobs/index.tsx 导入，页面负责加载当前用户可见的任务 ViewModel 并传给表格。
+ * 维护边界：只防止异步计数和长哈希影响布局，不决定任务状态、轮询、权限或 Artifact 下载。
+ */
+
 .page {
   width: min(1220px, 100%);
   margin: 0 auto;
 }
 
+/* 摘要使用三个等宽稳定轨道，异步计数变化不会引发布局位移。 */
 .summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -36,6 +43,7 @@
 }
 
 .table {
+  /* 外层裁剪圆角，表格自身通过 Ant Design 横向滚动处理窄视口。 */
   min-width: 0;
   padding: 10px 18px 18px;
   overflow: hidden;
@@ -66,6 +74,7 @@
 }
 
 @media (max-width: 620px) {
+  /* 移动端摘要纵向排列并把分隔线改为横向，表格仍保留内部滚动。 */
   .summary {
     grid-template-columns: 1fr;
   }

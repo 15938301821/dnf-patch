@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 编排 `/professions` 的职业主列表、所选职业风格和新建职业弹窗。
+ * 路由查询参数可指定初始职业；页面先加载职业，再随选择请求风格，并通过类型化 API 创建职业。
+ * 副作用是受认证请求、导航与消息；请求卸载后必须忽略过期结果，客户端不生成技能或资源事实。
+ */
 import { useEffect, useState } from "react";
 import {
   Button,
@@ -24,6 +29,10 @@ import { PublishStatus } from "../../components/publish-status/index.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
 import styles from "./index.module.scss";
 
+/**
+ * 渲染职业选择、对应风格列表与新建职业流程。
+ * @returns 区分加载、空集合和可操作状态的职业工作区。
+ */
 export function ProfessionsPage(): React.JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -37,6 +46,11 @@ export function ProfessionsPage(): React.JSX.Element {
   const [professionModalOpen, setProfessionModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  /**
+   * 刷新职业集合，并优先选中新建或调用方指定的职业。
+   * @param preferredId 服务端已返回的职业 ID；缺失时保留当前选择或取首项。
+   * @returns 列表与选择状态更新完成后结算。
+   */
   const loadProfessions = async (preferredId?: string): Promise<void> => {
     const items = await getProfessionsList();
     setProfessions(items);
@@ -47,6 +61,7 @@ export function ProfessionsPage(): React.JSX.Element {
 
   useEffect(() => {
     let active = true;
+    // 第一步：建立主列表和查询参数指定的初始选择；卸载后不接受过期结果。
     void getProfessionsList()
       .then((items) => {
         if (active) {
@@ -79,6 +94,7 @@ export function ProfessionsPage(): React.JSX.Element {
     }
     let active = true;
     setStylesLoading(true);
+    // 第二步：选择变化后只加载该职业风格；旧选择的迟到结果不得覆盖当前列表。
     void getProfessionStyles(selectedId)
       .then((items) => {
         if (active) {
@@ -98,9 +114,14 @@ export function ProfessionsPage(): React.JSX.Element {
     };
   }, [messageApi, selectedId]);
 
+  /**
+   * 校验并创建职业，随后刷新主列表并关闭弹窗。
+   * @returns 全流程结束后结算；校验或请求失败时禁止关闭弹窗和重置输入。
+   */
   const submitProfession = async (): Promise<void> => {
     setSaving(true);
     try {
+      // 第三步：只有创建和列表刷新都成功，才提交 UI 成功态并清空表单。
       const created = await createProfession(
         await professionForm.validateFields(),
       );

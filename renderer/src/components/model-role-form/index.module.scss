@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 固定角色模型配置编辑表单的布局与响应式样式。
+ * 调用关系：由 model-role-form 组件导入，展示脱敏配置字段和仅提交时存在的密钥输入控件。
+ * 维护边界：只处理标签、输入轨道和窄屏换行；不保存 API Key、不发请求，也不改变角色配置状态。
+ */
+
 .role {
   padding: 20px;
   border: 1px solid #dce3dc;
@@ -6,6 +12,7 @@
 }
 
 .heading {
+  /* 图标与标签使用稳定轨道，中间说明可收缩，避免长职责文案挤压表单。 */
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) auto;
   align-items: start;
@@ -74,6 +81,7 @@
 }
 
 .fields {
+  /* endpoint、模型和 Key 按输入长度分配轨道，校验消息只向下扩展。 */
   display: grid;
   grid-template-columns: minmax(220px, 1.35fr) minmax(150px, 0.7fr) minmax(
       160px,
@@ -88,6 +96,7 @@
 }
 
 @media (max-width: 960px) {
+  /* 中等视口将标签和表单字段依次堆叠，确保密码控件保留完整宽度。 */
   .heading {
     grid-template-columns: 38px minmax(0, 1fr);
   }

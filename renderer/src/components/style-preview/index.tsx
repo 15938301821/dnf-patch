@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 把当前职业风格草稿投影为只读模拟预览。
+ *
+ * 风格编辑页传入本地草稿 ViewModel，组件展示固定参考图、主题摘录和状态；不读取 Store、
+ * 不发请求，也不声称图片是后端生成产物。空文本使用界面回退值，动态内容必须被布局截断，
+ * 避免长 Prompt 改变工作区尺寸。
+ */
 import { Image, Tag } from "antd";
 import { Eye, FileText, Palette, ShieldCheck } from "lucide-react";
 import previewImage from "../../assets/style-preview.png";
@@ -5,6 +12,7 @@ import type { ProfessionStyle } from "../../server/contracts.js";
 import { PublishStatus } from "../publish-status/index.js";
 import styles from "./index.module.scss";
 
+/** 预览所需的最小脱敏风格字段，不包含职业资源或任务数据。 */
 interface StylePreviewProps {
   style: Pick<
     ProfessionStyle,
@@ -16,11 +24,18 @@ interface StylePreviewProps {
   >;
 }
 
+/** 返回去除空白后的草稿文本，空值则使用仅供展示的占位文案。 */
 function excerpt(value: string, fallback: string): string {
   const normalized = value.trim();
   return normalized || fallback;
 }
 
+/**
+ * 展示当前草稿的模拟视觉摘要。
+ *
+ * @param props 风格编辑页提供的受控草稿片段；内容可能尚未满足送审门禁。
+ * @returns 固定参考图与主题摘要，不产生网络或状态写入副作用。
+ */
 export function StylePreview({ style }: StylePreviewProps): React.JSX.Element {
   return (
     <section className={styles.preview}>

@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 在已选技能间切换并编辑逐技能主题增量。
+ *
+ * 共享风格表单提供 Form 实例和后端技能目录，本组件观察所选 ID 与 Prompt 数组并维护当前
+ * 标签页；字段值仍由父表单拥有。组件不发请求、不修改职业 Prompt 事实；选择变化时必须把
+ * 活动技能收敛到仍存在的首项，避免渲染指向已删除行的索引。
+ */
 import { Alert, Button, Empty, Form, Input, Tag } from "antd";
 import { Check, CircleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -8,11 +15,13 @@ import type {
 } from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
+/** 逐技能编辑器从父表单读取值所需的契约。 */
 interface SkillThemePromptEditorProps {
   form: ReturnType<typeof Form.useForm<SaveProfessionStyleInput>>[0];
   skills: readonly ProfessionSkillSummary[];
 }
 
+/** 判断单个技能的四个主题增量字段是否都已有非空内容。 */
 function promptComplete(prompt: SkillThemePrompt | undefined): boolean {
   return Boolean(
     prompt &&
@@ -23,7 +32,12 @@ function promptComplete(prompt: SkillThemePrompt | undefined): boolean {
   );
 }
 
-/** Edits one selected skill at a time while preserving the remaining drafts. */
+/**
+ * 每次展示一个已选技能，同时保留其他技能的表单草稿。
+ *
+ * @param props 父级 Form 实例与同职业后端技能目录；组件不会更改目录事实。
+ * @returns 技能标签页、只读职业 Prompt 与当前技能的受控输入区域。
+ */
 export function SkillThemePromptEditor({
   form,
   skills,
@@ -44,6 +58,7 @@ export function SkillThemePromptEditor({
   const [activeSkillId, setActiveSkillId] = useState("");
 
   useEffect(() => {
+    // 技能被父表单移除后立即切换，避免旧索引继续编辑另一行或空行。
     if (!selectedSkillIds.includes(activeSkillId)) {
       setActiveSkillId(selectedSkillIds[0] ?? "");
     }
@@ -170,6 +185,12 @@ export function SkillThemePromptEditor({
   );
 }
 
+/**
+ * 展示一个后端生产的只读职业 Prompt 事实。
+ *
+ * @param props 字段标签与服务端文本，不接受编辑或产生副作用。
+ * @returns 保留换行的事实展示块。
+ */
 function PromptFact({
   label,
   value,

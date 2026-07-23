@@ -1,3 +1,4 @@
+/** @fileoverview 为显式 Mock 模式安装同 DTO 和门禁语义的内存 Axios 替身；不证明真实 Server、数据库、Worker、模型或对象存储可用，也不得存储真实凭据。 */
 import MockAdapter from "axios-mock-adapter";
 import { AxiosHeaders } from "axios";
 import type {
@@ -103,26 +104,27 @@ const initialState: MockState = {
 let state: MockState = structuredClone(initialState);
 let sessionActive = false;
 
+/** 用正式 API 的成功包络包装一份 Mock 响应数据。 */
 function envelope<T>(data: T): ApiEnvelope<T> {
   return { data };
 }
-
+/** 解析 Axios Mock 收到的 JSON 请求体；无请求体时使用空对象。 */
 function parseBody(body: string | undefined): unknown {
   return JSON.parse(body ?? "{}") as unknown;
 }
-
+/** @returns 当前时刻的 ISO 字符串，用于内存演示记录。 */
 function now(): string {
   return new Date().toISOString();
 }
-
+/** 使用领域前缀和随机 UUID 生成本次 Mock 进程内的记录 ID。 */
 function id(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
 }
-
+/** 创建不含真实凭据、仅供 Mock 请求链使用的临时会话 DTO。 */
 function session(): AuthSession {
   return { accessToken: `mock.${crypto.randomUUID()}`, user };
 }
-
+/** 在 Mock 风格集合变化后同步对应职业的派生计数与更新时间。 */
 function recalculateStyleCount(professionId: string): void {
   const profession = state.professions.find((item) => item.id === professionId);
   if (profession) {
@@ -133,10 +135,12 @@ function recalculateStyleCount(professionId: string): void {
   }
 }
 
+/** 在两个 Axios 客户端上安装内存路由；不返回值，重置端点仅供测试隔离。 */
 export function configureMockApi(): void {
   const mock = new MockAdapter(server, { delayResponse: 280 });
   const refreshMock = new MockAdapter(refreshClient, { delayResponse: 120 });
 
+  // 第一步：模拟登录、当前用户、登出和 Cookie 刷新语义，不保存真实凭据。
   mock.onPost("/auth/login").reply((config) => {
     const input = parseBody(config.data as string | undefined) as LoginInput;
     if (!input.username.trim() || !input.password) {
@@ -148,6 +152,7 @@ export function configureMockApi(): void {
     sessionActive = true;
     return [200, envelope(session())];
   });
+  // 第二步：模型读取保持脱敏，写入只记录是否曾提供 Key，不保留明文。
   mock
     .onGet("/auth/me")
     .reply(() =>
@@ -167,9 +172,11 @@ export function configureMockApi(): void {
         : [401, { code: "REFRESH_TOKEN_INVALID", message: "会话已失效。" }],
     );
 
+  // 第三步：资源导入只改变内存任务状态，不访问游戏目录或启动 Worker。
   mock
     .onGet("/users/me/model-configuration")
     .reply(() => [200, envelope(state.modelConfiguration)]);
+  /** 校验首次配置的 Key 存在性，并只保存脱敏后的密钥存在状态。 */
   mock.onPut("/users/me/model-configuration").reply((config) => {
     const input = parseBody(
       config.data as string | undefined,
@@ -204,6 +211,7 @@ export function configureMockApi(): void {
   mock
     .onGet("/resource-imports/overview")
     .reply(() => [200, envelope(state.resourceImport)]);
+  /** 在资源根已配置时创建内存排队记录，否则按正式错误语义拒绝。 */
   mock.onPost("/resource-imports/jobs").reply(() => {
     if (!state.resourceImport.resourceRootConfigured) {
       return [
@@ -230,6 +238,7 @@ export function configureMockApi(): void {
     return [201, envelope(job)];
   });
 
+  // 第四步：职业、技能和风格路由复用正式 DTO，并执行草稿与送审门禁。
   mock.onGet("/professions").reply(() => [200, envelope(state.professions)]);
   mock.onPost("/professions").reply((config) => {
     const input = parseBody(
@@ -266,6 +275,7 @@ export function configureMockApi(): void {
       ),
     ];
   });
+  /** 校验技能集合与草稿结构后创建私有风格，不触发审核或制作。 */
   mock.onPost(/\/professions\/[^/]+\/styles$/u).reply((config) => {
     const professionId = config.url?.split("/")[2] ?? "";
     const input = parseBody(
@@ -311,6 +321,7 @@ export function configureMockApi(): void {
     recalculateStyleCount(professionId);
     return [201, envelope(style)];
   });
+  /** 在目标风格存在且草稿有效时原位更新内存记录。 */
   mock.onPut(/\/professions\/[^/]+\/styles\/[^/]+$/u).reply((config) => {
     const parts = config.url?.split("/") ?? [];
     const style = state.styles.find((item) => item.id === parts[4]);
@@ -352,6 +363,7 @@ export function configureMockApi(): void {
     Object.assign(style, input, { updatedAt: now() });
     return [200, envelope(style)];
   });
+  /** 仅完整风格可转为待审核状态，缺失内容保持失败关闭。 */
   mock
     .onPost(/\/professions\/[^/]+\/styles\/[^/]+\/review$/u)
     .reply((config) => {
@@ -374,7 +386,9 @@ export function configureMockApi(): void {
       return [200, envelope(style)];
     });
 
+  // 第五步：任务路由校验幂等键和资源门禁，但只生成演示元数据，不制作产物。
   mock.onGet("/jobs").reply(() => [200, envelope(state.jobs)]);
+  /** 依次校验幂等键、主体关系、内容和资源门禁后生成演示任务。 */
   mock.onPost("/jobs").reply((config) => {
     const idempotencyKey =
       config.headers instanceof AxiosHeaders
@@ -440,6 +454,7 @@ export function configureMockApi(): void {
     state.jobs.unshift(job);
     return [201, envelope(job)];
   });
+  /** 为已有 Mock 任务返回固定元数据引用，不提供实际下载字节。 */
   mock.onGet(/\/jobs\/[^/]+\/artifact$/u).reply((config) => {
     const jobId = config.url?.split("/")[2] ?? "";
     const job = state.jobs.find((item) => item.id === jobId);
@@ -465,6 +480,7 @@ export function configureMockApi(): void {
   });
 }
 
+/** 把模型写入 DTO 映射为不含 Key 的 Mock 读取 ViewModel。 */
 function mockSavedRole(
   role: keyof ModelConfiguration,
   input: SaveModelConfigurationInput,

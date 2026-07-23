@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 职业风格创建表单中主题与技能字段分区的局部网格样式。
+ * 调用关系：由 profession-style-form 组件导入，表单状态和保存行为由父页面/组件管理。
+ * 维护边界：只防止字段、校验文案和长文本在窄屏溢出，不校验或提交任何风格数据。
+ */
+
 .theme,
 .skills {
   display: grid;
@@ -7,6 +13,7 @@
 
 .basics,
 .grid {
+  /* 双列字段使用可收缩轨道，校验和字符计数只能向下扩展而不改变列宽。 */
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 16px;
@@ -19,6 +26,7 @@
 }
 
 @media (max-width: 680px) {
+  /* 移动端所有多行字段改为单列，避免 TextArea 最小内容宽度造成溢出。 */
   .basics,
   .grid {
     grid-template-columns: 1fr;

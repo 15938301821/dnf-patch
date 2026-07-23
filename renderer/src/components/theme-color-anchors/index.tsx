@@ -1,13 +1,27 @@
+/**
+ * @fileoverview 编辑主题定义中的命名颜色锚点列表。
+ *
+ * 共享职业风格表单通过 Ant Design Form.List 渲染本组件，值由父表单拥有并最终进入风格写入
+ * DTO；组件只同步颜色选择器和文本框，不发请求。颜色值必须保持 `#RRGGBB`，最多 16 项，
+ * 动态增删不能绕过表单校验或共享可变对象。
+ */
 import { Button, Form, Input } from "antd";
 import { Plus, Trash2 } from "lucide-react";
 import type { ThemeColorAnchor } from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
+/** 颜色选择器与文本输入共享的受控值契约。 */
 interface ColorValueInputProps {
   value?: string;
   onChange?: (value: string) => void;
 }
 
+/**
+ * 同步原生颜色控件和十六进制文本输入。
+ *
+ * @param props 父级 Form.Item 提供的受控值与变更回调；非法文本仅影响颜色控件回退显示。
+ * @returns 两个输入组成的受控字段，不自行提交表单。
+ */
 function ColorValueInput({
   value = "#000000",
   onChange,
@@ -31,7 +45,11 @@ function ColorValueInput({
   );
 }
 
-/** Edits named color anchors as stable structured values. */
+/**
+ * 渲染主题颜色锚点的动态表单列表。
+ *
+ * @returns 由父级 Ant Design Form 拥有状态的增删界面；组件本身不发请求。
+ */
 export function ThemeColorAnchors(): React.JSX.Element {
   return (
     <Form.List name={["themeDefinition", "colorAnchors"]}>

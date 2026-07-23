@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 主题颜色锚点动态表单行、色板输入和窄屏排列的局部样式。
+ * 调用关系：由 theme-color-anchors 组件导入，受控表单负责添加、删除和校验颜色锚点数据。
+ * 维护边界：只保持动态行稳定尺寸与局部 Ant Design 覆盖，不存储颜色、不提交表单或修改全局主题。
+ */
+
 .field {
   display: grid;
   gap: 10px;
@@ -38,6 +44,7 @@
 }
 
 .row {
+  /* 名称、颜色值和删除命令使用稳定轨道，动态校验消息只能向下扩展。 */
   display: grid;
   grid-template-columns: minmax(140px, 0.72fr) minmax(190px, 1fr) 32px;
   align-items: start;
@@ -45,6 +52,7 @@
 }
 
 .row :global(.ant-form-item) {
+  /* 仅清除当前动态行的 Ant Design Form.Item 外边距，避免影响其他表单。 */
   margin: 0;
 }
 
@@ -71,6 +79,7 @@
 }
 
 @media (max-width: 640px) {
+  /* 小屏让名称字段独占首行，颜色和删除命令保留可点击宽度。 */
   .heading {
     align-items: flex-start;
     flex-direction: column;

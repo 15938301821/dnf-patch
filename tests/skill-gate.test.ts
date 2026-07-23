@@ -1,7 +1,19 @@
+/**
+ * @fileoverview 验证技能制作门禁对目录缺失、越界 ID 与未核验资源采取失败关闭策略。
+ *
+ * 测试以手写技能摘要调用纯函数，不读取真实职业目录或资源；它只证明客户端是否允许发起任务
+ * 请求，不证明后端授权、NPK/IMG 映射、Worker 能力或产物兼容性。
+ */
 import { describe, expect, it } from "vitest";
 import type { ProfessionSkillSummary } from "../renderer/src/server/contracts.js";
 import { evaluateSkillExecution } from "../renderer/src/utils/skill-gate.js";
 
+/**
+ * 构造默认可制作的技能摘要，并允许用例覆盖单个门禁字段。
+ *
+ * @param overrides 当前场景要替换的后端摘要字段。
+ * @returns 不与其他用例共享的技能测试 DTO。
+ */
 function skill(
   overrides: Partial<ProfessionSkillSummary> = {},
 ): ProfessionSkillSummary {

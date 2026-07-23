@@ -1,6 +1,14 @@
+/**
+ * @fileoverview 定义浏览器、Electron、测试和根配置共享的 ESLint 静态边界。
+ *
+ * ESLint CLI 消费本扁平配置，忽略生成物，并对 TypeScript 启用项目类型信息；规则限制文件
+ * 规模、前端 Node/模型依赖和绕过类型化 API 的网络传输。配置只报告源码问题，不修改运行
+ * 逻辑；生成目录与凭据文件不得加入检查输入。
+ */
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 
+/** 仓库手写客户端代码的 ESLint 扁平配置数组。 */
 export default tseslint.config(
   {
     ignores: [

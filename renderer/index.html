@@ -1,3 +1,8 @@
+<!--
+  @fileoverview Renderer 的浏览器与 Electron 共用 HTML 挂载入口。
+  调用关系：Vite/Electron 加载本文件后执行 src/main.tsx，React 仅挂载到 #root。
+  维护边界：只提供文档元数据与挂载点；不放置业务页面、认证信息、内联脚本或 Electron/Node 能力。
+-->
 <!doctype html>
 <html lang="zh-CN">
   <head>
@@ -7,6 +12,7 @@
     <title>DNF Patch Studio</title>
   </head>
   <body>
+    <!-- React 在此独占挂载浏览器与 Electron 共用界面；不要在根节点内预置可执行内容。 -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

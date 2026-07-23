@@ -51,6 +51,20 @@
 - 不覆盖或回退用户未提交的无关修改，不提交构建输出、测试输出或凭据。
 - 修改行为时补充与风险相称的测试；保持正式 API 与 Mock API 的 DTO 和状态语义一致。
 
+## 中文备注与可维护性
+
+- 代码必须以首次接触当前模块的前端工程师能够独立维护为验收标准，不能假设维护者熟悉
+  既有页面流程、后端契约、Electron 安全模型或历史实现。
+- 新增或实质性重写的 TypeScript、TSX、JavaScript 和 Electron 源文件必须提供中文文件头，
+  说明文件职责、调用位置、输入输出、副作用及不能删除的安全边界。
+- 导出的组件、Hook、Store、API 函数、公共类型和复杂私有函数必须提供中文 JSDoc；三个以上
+  业务阶段、异步竞态、清理流程和安全检查必须添加中文步骤备注。
+- API、认证、Mock、路由、状态与 Electron 术语在模块首次出现时必须解释。备注要说明
+  “为什么”和失败后禁止发生的动作，不能只把 TypeScript 或 JSX 语法翻译成中文。
+- 具体格式与模板遵守 `.github/instructions/global.instructions.md` 和
+  `.github/instructions/client.instructions.md`。代码变化时必须同步更新备注，过时备注按代码
+  缺陷处理。
+
 ## 验证
 
 - 前端或桌面壳修改至少运行 `npm run typecheck`、`npm run lint` 和 `npm run test:unit`。

@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 提供受保护页面共用的桌面侧栏、移动抽屉、身份区与嵌套路由出口。
+ *
+ * App 的受保护路由渲染本组件，导航来自当前 location，用户来自认证 Store；唯一外部副作用
+ * 是导航和调用认证 Hook 登出。组件不判定后端授权，不读取 Token；登出后 Store 状态驱动
+ * 根路由离开受保护区域，移动导航命令必须同时关闭抽屉。
+ */
 import { useState } from "react";
 import { Avatar, Button, Drawer, Layout, Menu, Tooltip } from "antd";
 import {
@@ -13,12 +20,14 @@ import { useAuthCommands } from "../../hooks/use-auth.js";
 import { useAuthStore } from "../../stores/auth-store.js";
 import styles from "./index.module.scss";
 
+/** 应用壳展示的稳定一级路由，不包含业务权限推断。 */
 const navigation = [
   { key: "/professions", icon: <BookOpen size={18} />, label: "职业与风格" },
   { key: "/jobs", icon: <Boxes size={18} />, label: "制作任务" },
   { key: "/settings", icon: <Settings size={18} />, label: "模型设置" },
 ];
 
+/** 把嵌套路由路径收敛为侧栏的一级选中键。 */
 function selectedPath(pathname: string): string {
   if (pathname.startsWith("/jobs")) {
     return "/jobs";
@@ -29,6 +38,11 @@ function selectedPath(pathname: string): string {
   return "/professions";
 }
 
+/**
+ * 渲染已认证客户端的响应式应用外壳。
+ *
+ * @returns 固定侧栏或移动抽屉、身份命令及当前子路由 Outlet。
+ */
 export function AppShell(): React.JSX.Element {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();

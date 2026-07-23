@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 技能主题 Prompt 编辑器的导航、编辑区与职业事实摘要布局样式。
+ * 调用关系：由 skill-theme-prompt-editor 组件导入，组件使用父页面提供的已选技能和可编辑 Prompt 状态。
+ * 维护边界：只维持长 Prompt、技能名称和只读事实的可读布局，不修改 Prompt、资源映射或提交顺序。
+ */
+
+/* 技能标签保持固定导航宽度，编辑区吸收剩余空间并允许长 Prompt 换行。 */
 .workspace {
   display: grid;
   grid-template-columns: 230px minmax(0, 1fr);
@@ -18,6 +25,7 @@
 
 .skill,
 .active {
+  /* 覆盖 Ant Design 文本按钮尺寸，仅限技能标签，避免状态 Tag 造成行高跳动。 */
   display: flex !important;
   width: 100%;
   height: 42px;
@@ -77,6 +85,7 @@
 }
 
 .profession {
+  /* 只读职业事实以等宽双列展示，单项长文本不能撑宽编辑器。 */
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
@@ -108,6 +117,7 @@
 }
 
 @media (max-width: 760px) {
+  /* 窄屏将技能导航置顶，并把职业事实改为单列以避免横向滚动。 */
   .workspace {
     grid-template-columns: 1fr;
   }

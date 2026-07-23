@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 页面标题、说明文字和命令区的通用局部布局样式。
+ * 调用关系：由 page-heading 展示组件导入，供多个受保护页面组合标题与显式操作按钮。
+ * 维护边界：只处理标题与操作区的响应式关系，不触发页面请求、导航或按钮命令。
+ */
+
 .heading {
   display: flex;
   align-items: flex-start;
@@ -24,12 +30,14 @@
 }
 
 .action {
+  /* 命令区不被长描述压缩；移动端断点再将按钮扩展到可点击宽度。 */
   display: flex;
   flex: 0 0 auto;
   gap: 10px;
 }
 
 @media (max-width: 640px) {
+  /* 小屏标题与命令纵向排列，避免操作组和长标题互相遮挡。 */
   .heading {
     align-items: stretch;
     flex-direction: column;

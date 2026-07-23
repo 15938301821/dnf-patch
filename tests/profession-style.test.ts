@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 验证职业风格值创建、技能 Prompt 对齐和旧响应规范化。
+ *
+ * 测试只操作内存对象，不调用 API 或挂载表单；它保护可变数组隔离和兼容映射不发明逐技能
+ * 内容，但不证明真实旧数据迁移、服务端写入或页面交互。
+ */
 import { describe, expect, it } from "vitest";
 import {
   createEmptyStyleInput,

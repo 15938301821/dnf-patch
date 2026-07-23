@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 验证任务 API 的幂等请求头、Mock 门禁与产物元数据边界。
+ *
+ * Axios Mock Adapter 替代真实 Server、Worker 和对象存储，并在每例前重置内存状态；测试可证明
+ * 客户端请求形状与替身语义，不证明真实任务调度、制作、上传、下载或产物校验。
+ */
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   createPatchTask,
@@ -7,6 +13,7 @@ import {
 import { configureMockApi } from "../renderer/src/mock/index.js";
 
 beforeAll(() => {
+  // 仅安装同契约内存适配器，不建立真实网络连接。
   configureMockApi();
 });
 
@@ -16,6 +23,7 @@ beforeEach(async () => {
 
 describe("patch task API", () => {
   it("sends the caller's Idempotency-Key when creating a task", async () => {
+    // 请求拦截器只观察最终 Axios 头；任务仍应被资源门禁阻断，不能据此认为 Worker 已运行。
     let observedKey: unknown;
     const interceptorId = server.interceptors.request.use((config) => {
       observedKey = config.headers.get("Idempotency-Key");

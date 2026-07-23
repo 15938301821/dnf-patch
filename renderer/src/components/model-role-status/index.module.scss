@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 固定角色模型配置只读状态卡的布局与脱敏字段展示样式。
+ * 调用关系：由 model-role-status 组件导入，消费服务端返回的 endpoint、模型和 keyConfigured ViewModel。
+ * 维护边界：只约束状态信息的排版与断点；不能据此显示密钥、密文或改变服务端配置。
+ */
+
 .role {
   padding: 20px;
   border: 1px solid #dce3dc;
@@ -6,6 +12,7 @@
 }
 
 .heading {
+  /* 图标与职责标签固定，中间说明轨道可收缩以容纳动态 endpoint 文案。 */
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) auto;
   align-items: start;
@@ -74,6 +81,7 @@
 }
 
 .details {
+  /* endpoint 获得更宽轨道，模型和凭据状态保持稳定；文本只在单元内换行。 */
   display: grid;
   grid-template-columns: minmax(220px, 1.35fr) minmax(150px, 0.7fr) minmax(
       110px,
@@ -106,6 +114,7 @@
 }
 
 @media (max-width: 960px) {
+  /* 中等视口先把职责标签移到第二行，再将详情降为单列。 */
   .heading {
     grid-template-columns: 38px minmax(0, 1fr);
   }

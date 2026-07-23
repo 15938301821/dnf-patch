@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 编辑当前用户一个固定模型角色的 endpoint、模型 ID 与可选新 API Key。
+ *
+ * 设置页的 Ant Design Form 拥有字段和提交生命周期，本组件只声明嵌套字段及校验；读取配置
+ * 始终脱敏，已配置时留空表示保留。组件不持久化、不回显 Key，也不直接调用模型 Provider。
+ */
 import { Form, Input, Tag } from "antd";
 import type {
   ModelRoleConfiguration,
@@ -5,8 +11,10 @@ import type {
 } from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
+/** 设置契约允许编辑的三个固定角色键。 */
 type ModelRole = keyof SaveModelConfigurationInput;
 
+/** 单个角色表单区块的脱敏配置与展示契约。 */
 interface ModelRoleFormProps {
   configuration: ModelRoleConfiguration | undefined;
   description: string;
@@ -17,6 +25,12 @@ interface ModelRoleFormProps {
   title: string;
 }
 
+/**
+ * 渲染一个固定模型角色的受控表单字段。
+ *
+ * @param props 父表单提供的角色键、脱敏配置和职责文案。
+ * @returns endpoint、模型和密码输入；保存与清理仍由设置页负责。
+ */
 export function ModelRoleForm({
   configuration,
   description,
@@ -71,6 +85,7 @@ export function ModelRoleForm({
           name={[role, "apiKey"]}
           rules={[
             {
+              /** 已有服务端密钥时允许留空保留，否则要求本次提供非空新值。 */
               validator: (_, value: unknown) => {
                 if (
                   configuration?.keyConfigured ||

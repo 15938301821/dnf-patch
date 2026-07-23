@@ -1,5 +1,12 @@
+/**
+ * @fileoverview 定义 Renderer 统一使用的 Ant Design 主题令牌与组件级视觉参数。
+ *
+ * 该纯配置由应用根部的 ConfigProvider 消费，不读取状态、不修改 DOM，也不承载业务语义；
+ * 调整令牌时需同时验证桌面和移动视口，避免组件级覆盖破坏可读性或交互状态。
+ */
 import type { ThemeConfig } from "antd";
 
+/** 应用根 Provider 消费的稳定主题配置，不包含用户数据或运行时副作用。 */
 export const antdTheme: ThemeConfig = {
   token: {
     colorPrimary: "#176448",

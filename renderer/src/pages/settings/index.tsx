@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 编排 `/settings` 的个人模型配置与后端资源导入状态。
+ * 页面并行读取两个领域，模型表单只消费脱敏 ViewModel；表单校验通过后，Key 短暂进入写入
+ * DTO，并在请求成功或失败后清空。资源导入仅提交后端任务并轮询权威状态，浏览器不访问目录或执行 Worker。
+ */
 import { useEffect, useState } from "react";
 import { Alert, Button, Form, Skeleton, Tag, message } from "antd";
 import { ImagePlus, ScanLine, Workflow } from "lucide-react";
@@ -16,6 +21,9 @@ import { PageHeading } from "../../components/page-heading/index.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
 import styles from "./index.module.scss";
 
+const RESOURCE_IMPORT_POLL_INTERVAL_MS = 1_500;
+
+/** 将后端资源导入状态映射为界面文案，不推断任务是否最终成功。 */
 function resourceImportStatusText(status: ResourceImportStatus): string {
   switch (status) {
     case "not-configured":
@@ -31,10 +39,22 @@ function resourceImportStatusText(status: ResourceImportStatus): string {
   }
 }
 
+/** 判断后端任务是否仍可能推进；只有这两个非终态允许页面继续轮询。 */
+function isResourceImportPending(
+  status: ResourceImportStatus | undefined,
+): boolean {
+  return status === "queued" || status === "running";
+}
+
+/** 将服务端导入来源模式映射为界面文案，不暴露资源路径。 */
 function resourceImportModeText(mode: ResourceImportOverview["mode"]): string {
   return mode === "server-mirror" ? "服务器资源镜像" : "上传 Manifest";
 }
 
+/**
+ * 展示固定模型角色配置和只读资源导入概况，并提供受控保存命令。
+ * @returns 加载骨架、脱敏表单与后端任务控制区。
+ */
 export function SettingsPage(): React.JSX.Element {
   const [messageApi, messageContext] = message.useMessage();
   const [form] = Form.useForm<SaveModelConfigurationInput>();
@@ -47,6 +67,7 @@ export function SettingsPage(): React.JSX.Element {
 
   useEffect(() => {
     let active = true;
+    // 第一步：并行取得脱敏模型配置和资源状态；任一失败都不伪造默认服务端事实。
     void Promise.all([getModelConfiguration(), getResourceImportOverview()])
       .then(([value, importOverview]) => {
         if (active) {
@@ -68,11 +89,53 @@ export function SettingsPage(): React.JSX.Element {
   }, [messageApi]);
 
   useEffect(() => {
+    // 第二步：只把脱敏字段写入表单，读取 DTO 不含也不能恢复 API Key。
     if (!loading && configuration) {
       form.setFieldsValue(modelFormValues(configuration));
     }
   }, [configuration, form, loading]);
 
+  useEffect(() => {
+    if (!isResourceImportPending(resourceImport?.status)) {
+      return;
+    }
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    /** 当前任务仍未终结时安排下一次只读查询；请求失败后停止，避免无限错误通知。 */
+    const scheduleRefresh = (): void => {
+      timer = setTimeout(() => {
+        void getResourceImportOverview()
+          .then((overview) => {
+            if (!active) {
+              return;
+            }
+            setResourceImport(overview);
+            if (isResourceImportPending(overview.status)) {
+              scheduleRefresh();
+            }
+          })
+          .catch((error: unknown) => {
+            if (active) {
+              void messageApi.error(apiErrorMessage(error));
+            }
+          });
+      }, RESOURCE_IMPORT_POLL_INTERVAL_MS);
+    };
+
+    scheduleRefresh();
+    return () => {
+      active = false;
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
+    };
+  }, [messageApi, resourceImport?.lastJobId, resourceImport?.status]);
+
+  /**
+   * 校验并保存固定角色配置，随后用脱敏响应刷新表单。
+   * @returns 校验通过后，保存和敏感输入清理完成时结算；校验失败保留输入供用户修正。
+   */
   const saveConfiguration = async (): Promise<void> => {
     const input = await form.validateFields();
     setSavingConfiguration(true);
@@ -84,6 +147,7 @@ export function SettingsPage(): React.JSX.Element {
     } catch (error) {
       void messageApi.error(apiErrorMessage(error));
     } finally {
+      // 第三步：请求成功或失败都清除三个 Key 控件；表单校验失败尚未进入本请求阶段。
       form.resetFields([
         ["orchestrator", "apiKey"],
         ["spriteProcessor", "apiKey"],
@@ -93,6 +157,10 @@ export function SettingsPage(): React.JSX.Element {
     }
   };
 
+  /**
+   * 请求后端排队资源导入，并在接受后重新读取概况。
+   * @returns 提交与刷新结束后结算；失败时客户端不得自行执行导入。
+   */
   const startResourceImport = async (): Promise<void> => {
     setImportingResources(true);
     try {
@@ -214,7 +282,10 @@ export function SettingsPage(): React.JSX.Element {
             <p>{resourceImport?.message ?? "后端尚未返回资源导入状态。"}</p>
             <Button
               block
-              disabled={importStatus === "not-configured"}
+              disabled={
+                importStatus === "not-configured" ||
+                isResourceImportPending(importStatus)
+              }
               loading={importingResources}
               onClick={() => void startResourceImport()}
             >
@@ -265,6 +336,7 @@ export function SettingsPage(): React.JSX.Element {
   );
 }
 
+/** 把脱敏读取 ViewModel 转为不含 API Key 的可编辑表单值。 */
 function modelFormValues(
   configuration: ModelConfiguration,
 ): SaveModelConfigurationInput {
@@ -275,6 +347,7 @@ function modelFormValues(
   };
 }
 
+/** 保留单个角色的 endpoint 与模型 ID，刻意不构造 Key 字段。 */
 function editableRole(
   configuration: ModelConfiguration[keyof ModelConfiguration],
 ): SaveModelConfigurationInput[keyof SaveModelConfigurationInput] {

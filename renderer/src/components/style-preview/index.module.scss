@@ -1,4 +1,11 @@
+/**
+ * @fileoverview 风格预览图和证据摘要的稳定尺寸、局部遮罩与响应式展示样式。
+ * 调用关系：由 style-preview 组件导入，组件只展示已生成或草稿中的预览和脱敏证据文案。
+ * 维护边界：样式不生成图片、不验证证据，也不把预览显示误表述为补丁已完成或已部署。
+ */
+
 .preview {
+  /* 大屏预览随页面滚动但避开固定顶栏；父栏收窄时内容在内部裁剪。 */
   position: sticky;
   top: 94px;
   min-width: 0;
@@ -30,6 +37,7 @@
 }
 
 .figure {
+  /* 固定宽高比保护异步图片与草稿文案加载时的布局稳定性。 */
   position: relative;
   aspect-ratio: 16 / 11;
   margin: 0;
@@ -64,6 +72,7 @@
 }
 
 .figure figcaption {
+  /* 文案位于遮罩上层；z-index 仅在 figure 局部层叠上下文内生效。 */
   position: absolute;
   right: 20px;
   bottom: 19px;
@@ -90,6 +99,7 @@
 }
 
 .evidence {
+  /* 证据块采用等宽轨道和单像素底色分隔，长内容在各自单元内截断。 */
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
@@ -128,6 +138,7 @@
 }
 
 @media (max-width: 1040px) {
+  /* 与编辑页单栏断点一致，解除 sticky 以保持自然阅读顺序。 */
   .preview {
     position: static;
   }

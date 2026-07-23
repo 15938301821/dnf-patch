@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Renderer 的全局设计令牌、最小 reset 与键盘可访问性基础样式。
+ * 调用关系：由 src/main.tsx 在 React 应用启动时加载，页面和 CSS Module 在其上叠加局部布局。
+ * 维护边界：只放字体、背景、盒模型和焦点可见性；不写页面布局、Ant Design 业务覆盖或认证/网络逻辑。
+ */
+
+/* 全局文件只定义基础令牌与可访问性，不覆盖 Ant Design 业务组件或页面局部布局。 */
 :root {
   color: #1d2720;
   background: #f5f7f4;
@@ -19,6 +26,7 @@ body {
   background-size: 100% 32px;
 }
 
+/* 表单控件继承应用字体，避免浏览器默认字体导致固定高度控件文字跳动。 */
 button,
 input,
 textarea,
@@ -37,6 +45,7 @@ p {
 }
 
 :focus-visible {
+  /* 键盘焦点必须高于页面背景可见，不能用局部组件样式移除。 */
   outline: 2px solid #176448;
   outline-offset: 2px;
 }

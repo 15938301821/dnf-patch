@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 验证风格草稿保存、送审完整性和 UTF-8 冻结包大小门禁。
+ *
+ * 测试使用内存 DTO 调用纯函数，保护技能 Prompt 漂移和超限内容不能进入后续动作；未调用真实
+ * Server 或 Worker，不证明后端授权、资源核验、模型生成或产物验证。
+ */
 import { describe, expect, it } from "vitest";
 import type { SaveProfessionStyleInput } from "../renderer/src/server/contracts.js";
 import {
@@ -7,6 +13,7 @@ import {
   stylePromptPackageBytes,
 } from "../renderer/src/utils/style-completeness.js";
 
+/** @returns 满足当前客户端完整性规则的独立结构化测试草稿。 */
 function completeStyle(): SaveProfessionStyleInput {
   return {
     name: "暗蓝幻影",
@@ -46,6 +53,7 @@ describe("style completeness", () => {
   });
 
   it("allows an incomplete private draft but reports review blockers", () => {
+    // 私有保存与送审门禁必须区分，避免缺字段草稿被误判为完全无效。
     const style = completeStyle();
     style.themeDefinition.goal = "";
     style.selectedSkillIds = [];
@@ -62,6 +70,7 @@ describe("style completeness", () => {
   });
 
   it("detects selected skill and prompt collection drift", () => {
+    // 人为制造一一对应关系漂移，模拟表单合并或旧数据造成的结构风险。
     const style = completeStyle();
     const prompt = style.skillPrompts[0];
     if (!prompt) throw new Error("TEST_PROMPT_REQUIRED");

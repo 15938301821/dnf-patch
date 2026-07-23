@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 技能范围选择器的可滚动目录、选择状态和窄屏排列样式。
+ * 调用关系：由 skill-scope-picker 组件导入，父表单控制已选技能并传入只读职业/技能 ViewModel。
+ * 维护边界：滚动和稳定轨道仅服务于可扫描交互，不决定技能门禁、提交资格或后端资源事实。
+ */
+
 .picker {
   display: grid;
   gap: 10px;
@@ -53,6 +59,7 @@
 }
 
 .list {
+  /* 目录高度受限并在内部滚动，长技能集合不会把后续 Prompt 编辑区推离视口。 */
   display: grid;
   max-height: 290px;
   gap: 5px;
@@ -62,6 +69,7 @@
 
 .item,
 .itemSelected {
+  /* 名称和状态之间保留弹性空间，状态 Tag 可换行但不能撑宽父容器。 */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -129,6 +137,7 @@
 }
 
 @media (max-width: 640px) {
+  /* 小屏把摘要和每项状态纵向排列，保留完整可点击标签区域。 */
   .summary,
   .item,
   .itemSelected {

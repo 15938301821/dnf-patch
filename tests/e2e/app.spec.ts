@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 在真实浏览器中验证登录、响应式职业流程和结构化风格门禁。
+ *
+ * Playwright 连接本地生产预览，API 由 E2E Mock Adapter 替代；测试覆盖 DOM、路由和 390px
+ * 溢出风险，但不证明真实 Server、数据库、Worker、模型、对象存储或下载链路。选择器以可访问
+ * 角色和名称为边界，不依赖 CSS Modules 生成类名。
+ */
 import { expect, test, type Page } from "@playwright/test";
 
 test("logs in and renders the profession workspace responsively", async ({
@@ -46,6 +53,7 @@ test("creates an empty-skill draft and returns to its profession", async ({
 test("submits complete structured content while resource gates stay closed", async ({
   page,
 }) => {
+  // 使用完整主题内容打开审核门禁，同时保留 Mock 资源未核验状态以验证任务按钮失败关闭。
   await login(page);
   await page.getByRole("button", { name: "新建风格" }).click();
   await expect(
@@ -127,6 +135,12 @@ test("submits complete structured content while resource gates stay closed", asy
   await expect(taskButton).toBeDisabled();
 });
 
+/**
+ * 通过浏览器可访问控件建立一段 Mock 会话。
+ *
+ * @param page 当前 Playwright 页面；预览服务器已由测试配置启动。
+ * @returns 导航到职业页且 URL 稳定后结算。
+ */
 async function login(page: Page): Promise<void> {
   await page.goto("/");
   await expect(page).toHaveTitle("DNF Patch Studio");
@@ -136,6 +150,12 @@ async function login(page: Page): Promise<void> {
   await expect(page).toHaveURL(/#\/professions$/u);
 }
 
+/**
+ * 轮询根文档宽度，保护动态内容在当前视口不产生页面级横向滚动。
+ *
+ * @param page 已渲染目标流程的 Playwright 页面。
+ * @returns 根节点滚动宽度不大于客户端宽度时结算。
+ */
 async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   await expect
     .poll(() =>

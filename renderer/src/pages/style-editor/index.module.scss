@@ -1,8 +1,15 @@
+/**
+ * @fileoverview 风格编辑页的编辑表单、动态预览双栏和移动端单栏布局样式。
+ * 调用关系：由 pages/style-editor/index.tsx 导入，页面编排草稿读取、技能门禁、保存与预览组件。
+ * 维护边界：只约束长 Prompt 与预览内容的空间关系，不保存草稿、不生成图片，也不改变后端任务状态。
+ */
+
 .page {
   width: min(1380px, 100%);
   margin: 0 auto;
 }
 
+/* 双栏轨道为表单和动态预览保留最小宽度，长 Prompt 只能在各自栏内换行。 */
 .workspace {
   display: grid;
   grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
@@ -49,12 +56,14 @@
 }
 
 @media (max-width: 1040px) {
+  /* 中等视口改为上下排列，解除 sticky 预览与编辑栏争抢横向空间。 */
   .workspace {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 540px) {
+  /* 小屏使用普通文档流，避免网格最小内容宽度造成水平溢出。 */
   .workspace {
     display: block;
   }

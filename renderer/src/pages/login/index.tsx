@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 提供匿名用户登录页与已认证用户的入口重定向。
+ *
+ * 根路由渲染本页，表单把一次性账号密码交给认证 Hook，成功后 Store 状态驱动跳转；页面不
+ * 直接访问 Axios，也不持久化凭据。Mock API 仅是前端替身，不代表真实认证服务可用；提交
+ * 期间锁定按钮，失败只展示安全错误且不得伪造会话。
+ */
 import { useState } from "react";
 import { Button, Form, Input, Typography, message } from "antd";
 import { KeyRound, LogIn, UserRound } from "lucide-react";
@@ -9,6 +16,11 @@ import { useAuthStore } from "../../stores/auth-store.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
 import styles from "./index.module.scss";
 
+/**
+ * 渲染受控登录表单并按认证 Store 状态跳转。
+ *
+ * @returns 匿名状态下的登录界面；已认证时返回替换历史的职业页导航。
+ */
 export function LoginPage(): React.JSX.Element {
   const [submitting, setSubmitting] = useState(false);
   const status = useAuthStore((state) => state.status);
@@ -18,6 +30,12 @@ export function LoginPage(): React.JSX.Element {
     return <Navigate replace to="/professions" />;
   }
 
+  /**
+   * 提交 Ant Design 已校验的登录值，并把错误映射为页面消息。
+   *
+   * @param input 用户本次输入的账号密码，不写入 Store 或浏览器存储。
+   * @returns 认证请求与提交状态清理完成后结算。
+   */
   const submit = async (input: LoginInput): Promise<void> => {
     setSubmitting(true);
     try {

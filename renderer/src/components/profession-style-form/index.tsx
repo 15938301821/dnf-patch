@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 提供新建与编辑页面共用的结构化职业风格受控表单。
+ *
+ * 页面拥有草稿与提交副作用，本组件把 Ant Design Form、主题字段、技能范围和逐技能 Prompt
+ * 组合为一致写入 DTO。移除有内容的技能必须先确认；合并部分表单值时要保持技能 ID 与 Prompt
+ * 一一对应。组件不发请求、不读取 Store，也不把职业 Prompt 或资源状态改写为客户端事实。
+ */
 import { Form, Input, Modal, Tabs, type FormInstance } from "antd";
 import type {
   ProfessionSkillSummary,
@@ -13,6 +20,7 @@ import { SkillThemePromptEditor } from "../skill-theme-prompt-editor/index.js";
 import { ThemeColorAnchors } from "../theme-color-anchors/index.js";
 import styles from "./index.module.scss";
 
+/** 共享风格表单的受控数据、技能事实与变更回调。 */
 interface ProfessionStyleFormProps {
   form: FormInstance<SaveProfessionStyleInput>;
   initialValues: SaveProfessionStyleInput;
@@ -21,6 +29,7 @@ interface ProfessionStyleFormProps {
   skillsLoading?: boolean;
 }
 
+/** Ant Design 增量回调可能返回的深层部分表单形状。 */
 type StyleFormValues = Partial<
   Omit<SaveProfessionStyleInput, "themeDefinition" | "skillPrompts">
 > & {
@@ -28,7 +37,12 @@ type StyleFormValues = Partial<
   skillPrompts?: Array<Partial<SkillThemePrompt>>;
 };
 
-/** Renders the shared structured form used by style creation and editing. */
+/**
+ * 渲染新建与编辑页面共用的结构化风格表单。
+ *
+ * @param props 页面拥有的 Form 实例、初值、后端技能目录和草稿变更回调。
+ * @returns 主题与技能两个标签页；所有网络提交仍由父页面负责。
+ */
 export function ProfessionStyleForm({
   form,
   initialValues,
@@ -42,6 +56,11 @@ export function ProfessionStyleForm({
     { form, preserve: true },
   );
 
+  /**
+   * 对齐技能选择与 Prompt 行，并在删除非空内容前要求用户确认。
+   *
+   * @param selectedSkillIds 选择器回传的当前职业技能稳定 ID。
+   */
   const updateSkills = (selectedSkillIds: string[]): void => {
     const current: SkillThemePrompt[] =
       watchedValues?.skillPrompts ?? initialValues.skillPrompts;
@@ -50,6 +69,7 @@ export function ProfessionStyleForm({
         !selectedSkillIds.includes(prompt.skillId) &&
         hasSkillPromptContent(prompt),
     );
+    /** 在无需确认或用户确认后一次性更新 Form 与父级草稿。 */
     const apply = (): void => {
       const skillPrompts = reconcileSkillPrompts(selectedSkillIds, current);
       form.setFieldsValue({ selectedSkillIds, skillPrompts });
@@ -120,6 +140,13 @@ export function ProfessionStyleForm({
   );
 }
 
+/**
+ * 把 Ant Design 返回的深层部分值合并成完整且技能行对齐的写入 DTO。
+ *
+ * @param current 最近的完整草稿，提供所有缺失字段的基线。
+ * @param values 本次监听或变更回调产生的部分值。
+ * @returns 新的完整草稿；不会修改传入对象或共享技能 Prompt 数组。
+ */
 function mergeStyleFormValues(
   current: SaveProfessionStyleInput,
   values: StyleFormValues | undefined,
@@ -154,6 +181,7 @@ function mergeStyleFormValues(
   };
 }
 
+/** 渲染公共主题定义字段；值和校验生命周期全部归父 Form 所有。 */
 function ThemeFields(): React.JSX.Element {
   return (
     <div className={styles.theme}>

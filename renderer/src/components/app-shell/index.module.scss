@@ -1,9 +1,16 @@
+/**
+ * @fileoverview 桌面应用壳的固定侧栏、粘性顶栏和移动端导航切换样式。
+ * 调用关系：由 components/app-shell/index.tsx 导入，包裹受保护页面的导航与内容区域。
+ * 维护边界：只控制壳层布局、局部 Ant Design 覆盖和断点；不管理认证、路由状态或 Drawer 交互逻辑。
+ */
+
 .shell {
   min-height: 100vh;
   background: transparent;
 }
 
 .sider {
+  /* 桌面侧栏固定在视口并高于内容；z-index 需低于移动 Drawer 的遮罩层。 */
   position: fixed !important;
   inset: 0 auto 0 0;
   z-index: 20;
@@ -50,6 +57,7 @@
 }
 
 .menu {
+  /* 仅覆盖应用壳内 Ant Design Menu 的默认边框，避免产生双分隔线。 */
   padding: 14px 10px;
   border-inline-end: 0 !important;
 }
@@ -79,12 +87,14 @@
 }
 
 .workspace {
+  /* 与固定侧栏宽度保持一致的内容偏移，防止路由页面被侧栏遮挡。 */
   min-width: 0;
   margin-left: 232px;
   background: transparent;
 }
 
 .header {
+  /* 顶栏保持在路由内容上方，局部 z-index 低于侧栏和 Drawer。 */
   position: sticky;
   top: 0;
   z-index: 12;
@@ -123,6 +133,7 @@
 }
 
 @media (max-width: 860px) {
+  /* 移动端隐藏固定侧栏并清除偏移，改由 Drawer 承担导航。 */
   .sider {
     display: none;
   }

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 定义 Mock 模式的剑魂候选技能目录及选择合法性检查。
+ *
+ * Mock 风格种子和 Mock Server 消费这些稳定 ID；数据是前端替身事实，不是客户端发现结果，
+ * 也不证明 NPK、IMG 或帧映射已经核验。模块只做确定性数组构造和纯校验。
+ */
 import type { ProfessionSkillSummary } from "../server/contracts.js";
 
 const swordSoulCandidateNames = [
@@ -19,10 +25,12 @@ const swordSoulCandidateNames = [
   "三觉 Cut-in",
 ] as const;
 
+/** 与候选名称按索引一一对应的 Mock 技能稳定 ID。 */
 export const swordSoulCandidateSkillIds = swordSoulCandidateNames.map(
   (_, index) => `sword-soul-candidate-${String(index + 1).padStart(3, "0")}`,
 );
 
+/** Mock Server 返回的只读语义技能摘要，全部保持仅设计和资源未核验状态。 */
 export const mockProfessionSkills: ProfessionSkillSummary[] =
   swordSoulCandidateNames.map((displayName, index) => ({
     id: swordSoulCandidateSkillIds[index] ?? "",
@@ -33,6 +41,15 @@ export const mockProfessionSkills: ProfessionSkillSummary[] =
     executionStatus: "draft-only",
   }));
 
+/**
+ * 判断提交的技能 ID 是否全部属于指定职业的 Mock 目录。
+ *
+ * @param skills Mock Server 当前技能集合，而非浏览器推断结果。
+ * @param professionId 请求路径中的职业稳定 ID。
+ * @param selectedSkillIds 写入 DTO 中尚未信任的技能稳定 ID。
+ * @param allowEmpty 私有草稿是否允许暂时没有技能。
+ * @returns 空值策略满足且每个 ID 均属于该职业时返回 `true`。
+ */
 export function areSelectedSkillsValid(
   skills: readonly ProfessionSkillSummary[],
   professionId: string,

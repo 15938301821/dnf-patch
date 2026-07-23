@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 提供 Mock 模式启动时使用的固定职业风格演示数据。
+ *
+ * Mock Server 克隆本数组后供页面读取和修改；数据只用于前端交互与测试，不代表公共模板、
+ * 真实资源映射或后端发布状态。所有技能引用来自相邻 Mock 技能目录，不产生外部副作用。
+ */
 import type {
   ProfessionStyle,
   SkillThemePrompt,
@@ -42,6 +48,7 @@ const sakuraTheme: ThemeDefinition = {
   exclusions: "排除全画布黑块、空起手、人物误染和静态粉色光团。",
 };
 
+/** 每次 Mock 重置时克隆的初始风格集合，调用方不得直接作为可变运行状态复用。 */
 export const initialMockProfessionStyles: ProfessionStyle[] = [
   {
     id: "style-vergil",
@@ -67,6 +74,7 @@ export const initialMockProfessionStyles: ProfessionStyle[] = [
   },
 ];
 
+/** 为一个 Mock 技能稳定 ID 生成独立的暗蓝主题增量。 */
 function createVergilSkillPrompt(skillId: string): SkillThemePrompt {
   return {
     skillId,

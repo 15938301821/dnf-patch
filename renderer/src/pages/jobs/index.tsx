@@ -1,3 +1,10 @@
+/**
+ * @fileoverview 展示 `/jobs` 制作任务列表并按需读取已验证产物元数据。
+ *
+ * 受保护路由渲染本页，页面通过任务 API 加载摘要，用户点击后再请求单个产物引用；输出是
+ * 表格、进度与元数据弹窗。副作用只有受认证请求和消息提示，不下载字节、不访问对象存储，
+ * 也不把 Mock 返回描述为真实 Worker 或存储集成已通过。
+ */
 import { useEffect, useState } from "react";
 import {
   Button,
@@ -30,12 +37,22 @@ const statusView: Record<PatchTaskStatus, { color: string; label: string }> = {
   blocked: { color: "warning", label: "已阻断" },
 };
 
+/**
+ * 渲染任务摘要、手动刷新和产物元数据检查界面。
+ *
+ * @returns 当前加载、空列表、任务表格与可选元数据弹窗；请求错误保留在页面消息层。
+ */
 export function JobsPage(): React.JSX.Element {
   const [jobs, setJobs] = useState<PatchTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingArtifactId, setLoadingArtifactId] = useState("");
   const [artifact, setArtifact] = useState<PatchTaskArtifact>();
 
+  /**
+   * 重新读取当前用户任务摘要并维护页面加载状态。
+   *
+   * @returns 请求与状态清理完成后结算；失败时不伪造任务。
+   */
   const load = async (): Promise<void> => {
     setLoading(true);
     try {
@@ -51,6 +68,12 @@ export function JobsPage(): React.JSX.Element {
     void load();
   }, []);
 
+  /**
+   * 为列表中的一个任务读取产物元数据，不获取实际文件。
+   *
+   * @param job 当前表格行的任务 ViewModel，必须由任务列表 API 生产。
+   * @returns 元数据写入或错误提示完成后结算。
+   */
   const inspectArtifact = async (job: PatchTask): Promise<void> => {
     setLoadingArtifactId(job.id);
     try {
@@ -100,6 +123,7 @@ export function JobsPage(): React.JSX.Element {
               {
                 title: "职业 / 风格",
                 key: "subject",
+                /** 把任务主题字段组合为主次两行，不改变服务端数据。 */
                 render: (_, job) => (
                   <div className={styles.subject}>
                     <strong>{job.professionName}</strong>
@@ -111,6 +135,7 @@ export function JobsPage(): React.JSX.Element {
                 title: "状态",
                 dataIndex: "status",
                 key: "status",
+                /** 按稳定状态映射标签颜色和文案。 */
                 render: (status: PatchTaskStatus) => (
                   <Tag color={statusView[status].color}>
                     {statusView[status].label}
@@ -121,6 +146,7 @@ export function JobsPage(): React.JSX.Element {
                 title: "进度",
                 dataIndex: "progress",
                 key: "progress",
+                /** 把服务端百分比投影为只读进度条。 */
                 render: (progress: number) => (
                   <Progress
                     percent={progress}
@@ -133,6 +159,7 @@ export function JobsPage(): React.JSX.Element {
                 title: "创建时间",
                 dataIndex: "createdAt",
                 key: "createdAt",
+                /** 仅在展示时把 ISO 时间格式化为中文本地时间。 */
                 render: (value: string) =>
                   new Date(value).toLocaleString("zh-CN"),
               },
@@ -140,6 +167,7 @@ export function JobsPage(): React.JSX.Element {
                 title: "产物",
                 key: "artifact",
                 align: "right",
+                /** 根据产物可用标记渲染按需查询命令，不直接下载字节。 */
                 render: (_, job) => (
                   <Button
                     disabled={!job.artifactAvailable}

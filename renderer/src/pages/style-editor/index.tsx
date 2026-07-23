@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 编排 `/professions/:professionId/styles/:styleId` 的风格编辑、送审与任务创建。
+ * 页面并行读取风格和后端技能目录，受控草稿驱动表单与模拟预览；所有写操作经类型化 API。
+ * 送审和建任务必须先保存成功，且分别受内容与资源门禁约束；卸载后不得写入过期加载结果。
+ */
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -22,6 +27,7 @@ import {
 } from "../../api/index.js";
 import { PageHeading } from "../../components/page-heading/index.js";
 import { ProfessionStyleForm } from "../../components/profession-style-form/index.js";
+import { PublishStatus } from "../../components/publish-status/index.js";
 import { StylePreview } from "../../components/style-preview/index.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
 import { createEmptyStyleInput } from "../../utils/profession-style.js";
@@ -32,6 +38,11 @@ import {
 import { evaluateStyleCompleteness } from "../../utils/style-completeness.js";
 import styles from "./index.module.scss";
 
+/**
+ * 把技能执行门禁映射为页面说明。
+ * @param gate 由当前草稿与后端技能目录计算的失败关闭结果。
+ * @returns 不夸大后端授权或资源核验范围的用户提示。
+ */
 function skillGateDescription(gate: SkillExecutionGate): string {
   switch (gate.reason) {
     case "skills-catalog-unavailable":
@@ -47,6 +58,10 @@ function skillGateDescription(gate: SkillExecutionGate): string {
   }
 }
 
+/**
+ * 渲染结构化风格编辑器，并编排保存、送审和制作任务命令。
+ * @returns 加载骨架或含门禁、表单和模拟预览的工作区。
+ */
 export function StyleEditorPage(): React.JSX.Element {
   const [form] = Form.useForm<SaveProfessionStyleInput>();
   const [messageApi, messageContext] = message.useMessage();
@@ -65,6 +80,7 @@ export function StyleEditorPage(): React.JSX.Element {
 
   useEffect(() => {
     let active = true;
+    // 第一步：风格与技能目录必须共同返回，避免用不匹配的目录计算制作门禁。
     void Promise.all([
       getProfessionStyles(professionId),
       getProfessionSkills(professionId),
@@ -74,6 +90,7 @@ export function StyleEditorPage(): React.JSX.Element {
         if (!found) {
           throw new Error("职业风格不存在或无权访问。");
         }
+        // 第二步：路由变化或卸载后忽略 stale result，禁止旧风格覆盖当前草稿。
         if (active) {
           setProfessionSkills(skills);
           const values: SaveProfessionStyleInput = {
@@ -85,7 +102,6 @@ export function StyleEditorPage(): React.JSX.Element {
           };
           setStyle(found);
           setDraft(values);
-          form.setFieldsValue(values);
         }
       })
       .catch((error: unknown) => {
@@ -101,6 +117,10 @@ export function StyleEditorPage(): React.JSX.Element {
     };
   }, [form, messageApi, professionId, styleId]);
 
+  /**
+   * 校验并保存当前受控草稿。
+   * @returns 保存后的服务端风格；校验或请求失败时返回 `undefined`，供后续动作立即停止。
+   */
   const save = async (): Promise<ProfessionStyle | undefined> => {
     setSaving(true);
     try {
@@ -123,6 +143,7 @@ export function StyleEditorPage(): React.JSX.Element {
     }
   };
 
+  /** 先保存再送审；保存失败时禁止调用审核端点。 */
   const submitReview = async (): Promise<void> => {
     if (!(await save())) {
       return;
@@ -136,6 +157,7 @@ export function StyleEditorPage(): React.JSX.Element {
     }
   };
 
+  /** 先保存再创建任务；任一步失败时禁止导航到任务页。 */
   const createJob = async (): Promise<void> => {
     if (!(await save())) {
       return;
@@ -222,7 +244,7 @@ export function StyleEditorPage(): React.JSX.Element {
         <section className={styles.editor}>
           <div className={styles["editor-head"]}>
             <span>风格内容</span>
-            <small>私有草稿</small>
+            <PublishStatus status={style?.publishStatus ?? "private"} />
           </div>
           <ProfessionStyleForm
             form={form}
