@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button, Form, Input, Typography, message } from "antd";
 import { KeyRound, LogIn, UserRound } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import type { LoginInput } from "../../api/contracts.js";
+import type { LoginInput } from "../../server/contracts.js";
 import { apiMode } from "../../api/mode.js";
 import { useAuthCommands } from "../../hooks/use-auth.js";
 import { useAuthStore } from "../../stores/auth-store.js";

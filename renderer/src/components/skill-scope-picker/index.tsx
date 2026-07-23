@@ -1,5 +1,5 @@
 import { Checkbox, Empty, Skeleton, Tag } from "antd";
-import type { ProfessionSkillSummary } from "../../api/contracts.js";
+import type { ProfessionSkillSummary } from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
 interface SkillScopePickerProps {

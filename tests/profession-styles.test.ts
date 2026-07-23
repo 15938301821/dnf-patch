@@ -6,7 +6,7 @@ import {
   server,
   type CreateProfessionStyleInput,
 } from "../renderer/src/api/index.js";
-import { configureMockApi } from "../renderer/src/api/mock-server.js";
+import { configureMockApi } from "../renderer/src/mock/index.js";
 import { createEmptyStyleInput } from "../renderer/src/utils/profession-style.js";
 
 beforeAll(() => {

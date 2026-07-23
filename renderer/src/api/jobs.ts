@@ -2,8 +2,8 @@ import type {
   CreatePatchTaskInput,
   PatchTask,
   PatchTaskArtifact,
-} from "./contracts.js";
-import { requestData } from "./server.js";
+} from "../server/contracts.js";
+import { requestData } from "../server/server.js";
 
 export function getJobsList(): Promise<PatchTask[]> {
   return requestData<PatchTask[]>({ method: "GET", url: "/jobs" });

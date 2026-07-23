@@ -3,7 +3,7 @@ import type {
   ProfessionSkillSummary,
   SaveProfessionStyleInput,
   SkillThemePrompt,
-} from "../../api/contracts.js";
+} from "../../server/contracts.js";
 import {
   hasSkillPromptContent,
   reconcileSkillPrompts,

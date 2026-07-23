@@ -2,8 +2,8 @@ import type {
   ProfessionStyle,
   SkillThemePrompt,
   ThemeDefinition,
-} from "./contracts.js";
-import { swordSoulCandidateSkillIds } from "./mock-profession-skills.js";
+} from "../server/contracts.js";
+import { swordSoulCandidateSkillIds } from "./profession-skills.js";
 
 const vergilTheme: ThemeDefinition = {
   schemaVersion: 1,

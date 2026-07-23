@@ -6,7 +6,7 @@ import "./global.css";
 
 async function bootstrap(): Promise<void> {
   if (apiMode === "mock") {
-    const { configureMockApi } = await import("./api/mock-server.js");
+    const { configureMockApi } = await import("./mock/index.js");
     configureMockApi();
   }
   const [{ App }, root] = await Promise.all([

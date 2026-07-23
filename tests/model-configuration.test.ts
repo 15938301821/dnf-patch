@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SaveModelConfigurationInput } from "../renderer/src/api/contracts.js";
+import type { SaveModelConfigurationInput } from "../renderer/src/server/contracts.js";
 import { omitBlankApiKeys } from "../renderer/src/api/model-configuration.js";
 
 describe("model configuration request boundary", () => {

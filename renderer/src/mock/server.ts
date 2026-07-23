@@ -17,19 +17,19 @@ import type {
   SaveModelConfigurationInput,
   SaveProfessionStyleInput,
   SessionUser,
-} from "./contracts.js";
-import { initialMockModelConfiguration } from "./mock-model-configuration.js";
-import {
-  areSelectedSkillsValid,
-  mockProfessionSkills,
-} from "./mock-profession-skills.js";
-import { initialMockProfessionStyles } from "./mock-profession-styles.js";
-import { refreshClient, server } from "./server.js";
+} from "../server/contracts.js";
+import { refreshClient, server } from "../server/server.js";
 import { evaluateSkillExecution } from "../utils/skill-gate.js";
 import {
   evaluateStyleCompleteness,
   evaluateStyleDraftValidity,
 } from "../utils/style-completeness.js";
+import { initialMockModelConfiguration } from "./model-configuration.js";
+import {
+  areSelectedSkillsValid,
+  mockProfessionSkills,
+} from "./profession-skills.js";
+import { initialMockProfessionStyles } from "./profession-styles.js";
 
 interface MockState {
   professions: ProfessionSummary[];

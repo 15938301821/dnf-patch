@@ -1,4 +1,4 @@
-import type { ProfessionSkillSummary } from "./contracts.js";
+import type { ProfessionSkillSummary } from "../server/contracts.js";
 
 const swordSoulCandidateNames = [
   "里·鬼剑术",

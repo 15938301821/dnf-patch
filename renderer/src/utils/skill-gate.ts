@@ -1,4 +1,4 @@
-import type { ProfessionSkillSummary } from "../api/contracts.js";
+import type { ProfessionSkillSummary } from "../server/contracts.js";
 
 export type SkillExecutionGateReason =
   | "skills-catalog-unavailable"

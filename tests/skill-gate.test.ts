@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ProfessionSkillSummary } from "../renderer/src/api/contracts.js";
+import type { ProfessionSkillSummary } from "../renderer/src/server/contracts.js";
 import { evaluateSkillExecution } from "../renderer/src/utils/skill-gate.js";
 
 function skill(

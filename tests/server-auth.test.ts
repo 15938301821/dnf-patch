@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldRefreshAccessToken } from "../renderer/src/api/server.js";
+import { shouldRefreshAccessToken } from "../renderer/src/server/server.js";
 
 describe("API session refresh boundary", () => {
   it("does not turn an invalid login into a refresh request", () => {

@@ -5,8 +5,8 @@ import type {
   ProfessionStyle,
   ProfessionSummary,
   SaveProfessionStyleInput,
-} from "./contracts.js";
-import { requestData } from "./server.js";
+} from "../server/contracts.js";
+import { requestData } from "../server/server.js";
 import { normalizeProfessionStyle } from "../utils/profession-style.js";
 
 export function getProfessionsList(): Promise<ProfessionSummary[]> {

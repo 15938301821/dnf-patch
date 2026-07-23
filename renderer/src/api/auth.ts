@@ -1,6 +1,10 @@
-import type { AuthSession, LoginInput, SessionUser } from "./contracts.js";
-import { requestData } from "./server.js";
-import { setAccessToken } from "./token-store.js";
+import type {
+  AuthSession,
+  LoginInput,
+  SessionUser,
+} from "../server/contracts.js";
+import { requestData } from "../server/server.js";
+import { setAccessToken } from "../server/token-store.js";
 
 export async function login(input: LoginInput): Promise<AuthSession> {
   const session = await requestData<AuthSession>({

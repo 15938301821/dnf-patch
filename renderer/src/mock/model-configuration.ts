@@ -1,4 +1,4 @@
-import type { ModelConfiguration } from "./contracts.js";
+import type { ModelConfiguration } from "../server/contracts.js";
 
 export const initialMockModelConfiguration: ModelConfiguration = {
   orchestrator: {

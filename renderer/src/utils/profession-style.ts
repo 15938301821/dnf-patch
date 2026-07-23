@@ -3,7 +3,7 @@ import type {
   SaveProfessionStyleInput,
   SkillThemePrompt,
   ThemeDefinition,
-} from "../api/contracts.js";
+} from "../server/contracts.js";
 
 interface LegacyProfessionStyle {
   id: string;

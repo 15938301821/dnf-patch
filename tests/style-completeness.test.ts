@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SaveProfessionStyleInput } from "../renderer/src/api/contracts.js";
+import type { SaveProfessionStyleInput } from "../renderer/src/server/contracts.js";
 import {
   STYLE_PROMPT_PACKAGE_MAX_BYTES,
   evaluateStyleDraftValidity,

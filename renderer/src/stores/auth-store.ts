@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { SessionUser } from "../api/contracts.js";
+import type { SessionUser } from "../server/contracts.js";
 
 export type AuthStatus = "booting" | "anonymous" | "authenticated";
 

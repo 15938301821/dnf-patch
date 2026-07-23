@@ -2,7 +2,7 @@ import type {
   SaveProfessionStyleInput,
   SkillThemePrompt,
   ThemeDefinition,
-} from "../api/contracts.js";
+} from "../server/contracts.js";
 
 export const STYLE_PROMPT_PACKAGE_MAX_BYTES = 48 * 1_024;
 

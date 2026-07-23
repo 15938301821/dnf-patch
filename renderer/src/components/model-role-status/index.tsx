@@ -1,5 +1,5 @@
 import { Tag } from "antd";
-import type { ModelRoleConfiguration } from "../../api/contracts.js";
+import type { ModelRoleConfiguration } from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
 interface ModelRoleStatusProps {

@@ -4,7 +4,7 @@ import {
   getResourceImportOverview,
   server,
 } from "../renderer/src/api/index.js";
-import { configureMockApi } from "../renderer/src/api/mock-server.js";
+import { configureMockApi } from "../renderer/src/mock/index.js";
 
 beforeAll(() => {
   configureMockApi();

@@ -1,7 +1,7 @@
 import { Image, Tag } from "antd";
 import { Eye, FileText, Palette, ShieldCheck } from "lucide-react";
 import previewImage from "../../assets/style-preview.png";
-import type { ProfessionStyle } from "../../api/contracts.js";
+import type { ProfessionStyle } from "../../server/contracts.js";
 import { PublishStatus } from "../publish-status/index.js";
 import styles from "./index.module.scss";
 

@@ -1,8 +1,8 @@
 import type {
   ModelConfiguration,
   SaveModelConfigurationInput,
-} from "./contracts.js";
-import { requestData } from "./server.js";
+} from "../server/contracts.js";
+import { requestData } from "../server/server.js";
 
 export function getModelConfiguration(): Promise<ModelConfiguration> {
   return requestData<ModelConfiguration>({

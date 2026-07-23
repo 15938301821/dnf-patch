@@ -2,7 +2,7 @@ import { Form, Input, Tag } from "antd";
 import type {
   ModelRoleConfiguration,
   SaveModelConfigurationInput,
-} from "../../api/contracts.js";
+} from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
 type ModelRole = keyof SaveModelConfigurationInput;

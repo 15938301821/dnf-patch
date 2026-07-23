@@ -1,5 +1,5 @@
 import { Tag } from "antd";
-import type { PublishStatus as Status } from "../../api/contracts.js";
+import type { PublishStatus as Status } from "../../server/contracts.js";
 
 const statusView: Record<Status, { color: string; label: string }> = {
   private: { color: "default", label: "私有" },

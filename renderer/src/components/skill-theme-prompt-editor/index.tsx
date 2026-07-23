@@ -5,7 +5,7 @@ import type {
   ProfessionSkillSummary,
   SaveProfessionStyleInput,
   SkillThemePrompt,
-} from "../../api/contracts.js";
+} from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
 interface SkillThemePromptEditorProps {

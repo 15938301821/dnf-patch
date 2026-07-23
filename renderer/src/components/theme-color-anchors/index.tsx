@@ -1,6 +1,6 @@
 import { Button, Form, Input } from "antd";
 import { Plus, Trash2 } from "lucide-react";
-import type { ThemeColorAnchor } from "../../api/contracts.js";
+import type { ThemeColorAnchor } from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
 interface ColorValueInputProps {
