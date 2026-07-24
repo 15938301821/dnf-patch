@@ -3,8 +3,7 @@
  *
  * 登录页和认证 Hook 调用这些函数，所有请求经共享 Axios 客户端发送 Cookie；登录响应中的
  * Access Token 只写入内存 Token Store，Refresh Token 由 HttpOnly Cookie 管理。模块不写
- * 浏览器存储、不记录凭据；登出请求成功后才清除 Token，远端失败时由 Hook 的 finally 清理
- * 用户 Store，Axios 刷新失败也会清除 Token。
+ * 浏览器存储、不记录凭据；登出无论远端结果如何都清除 Token，Axios 刷新失败也会清除 Token。
  */
 import type {
   AuthSession,
@@ -42,9 +41,12 @@ export async function getCurrentUser(): Promise<SessionUser> {
 /**
  * 通过 `POST /auth/logout` 结束服务端会话并清除内存 Access Token。
  *
- * @returns 服务端确认后结算；请求失败时拒绝，由认证 Hook 负责无条件清理界面状态。
+ * @returns 服务端确认后结算；请求失败时仍清除内存 Token 后拒绝，由认证 Hook 清理界面状态。
  */
 export async function logout(): Promise<void> {
-  await requestData<null>({ method: "POST", url: "/auth/logout" });
-  setAccessToken(undefined);
+  try {
+    await requestData<null>({ method: "POST", url: "/auth/logout" });
+  } finally {
+    setAccessToken(undefined);
+  }
 }

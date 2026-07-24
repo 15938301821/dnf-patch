@@ -209,9 +209,6 @@ export function JobsPage(): React.JSX.Element {
             <Descriptions.Item label="SHA-256">
               <span className={styles.hash}>{artifact.sha256}</span>
             </Descriptions.Item>
-            <Descriptions.Item label="存储引用">
-              <span className={styles.hash}>{artifact.storageKey}</span>
-            </Descriptions.Item>
           </Descriptions>
         ) : null}
       </Modal>

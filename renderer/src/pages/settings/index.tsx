@@ -46,11 +46,6 @@ function isResourceImportPending(
   return status === "queued" || status === "running";
 }
 
-/** 将服务端导入来源模式映射为界面文案，不暴露资源路径。 */
-function resourceImportModeText(mode: ResourceImportOverview["mode"]): string {
-  return mode === "server-mirror" ? "服务器资源镜像" : "上传 Manifest";
-}
-
 /**
  * 展示固定模型角色配置和只读资源导入概况，并提供受控保存命令。
  * @returns 加载骨架、脱敏表单与后端任务控制区。
@@ -254,11 +249,7 @@ export function SettingsPage(): React.JSX.Element {
             <dl className={styles["resource-import-meta"]}>
               <div>
                 <dt>导入模式</dt>
-                <dd>
-                  {resourceImport
-                    ? resourceImportModeText(resourceImport.mode)
-                    : "等待后端状态"}
-                </dd>
+                <dd>{resourceImport ? "服务器资源镜像" : "等待后端状态"}</dd>
               </div>
               <div>
                 <dt>资源根</dt>

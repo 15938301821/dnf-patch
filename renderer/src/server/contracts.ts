@@ -54,8 +54,8 @@ export interface SaveModelConfigurationInput {
   referenceGenerator: SaveModelRoleConfigurationInput;
 }
 
-/** 后端资源导入的来源模式，客户端只展示而不读取资源路径。 */
-export type ResourceImportMode = "server-mirror" | "uploaded-manifest";
+/** 后端固定的只读资源镜像模式；客户端只展示状态，不读取资源路径。 */
+export type ResourceImportMode = "server-mirror";
 /** 后端资源导入流程对客户端公开的阶段。 */
 export type ResourceImportStatus =
   "not-configured" | "idle" | "queued" | "running" | "failed";
@@ -196,10 +196,9 @@ export interface PatchTask {
   artifactAvailable: boolean;
 }
 
-/** 已验证产物的只读元数据引用，不包含产物字节或公开下载地址。 */
+/** 已验证产物的脱敏元数据，不包含内部对象 key、产物字节或下载授权。 */
 export interface PatchTaskArtifact {
   artifactName: string;
-  storageKey: string;
   mediaType: string;
   byteLength: number;
   sha256: string;

@@ -165,7 +165,7 @@ export function StyleEditorPage(): React.JSX.Element {
     setCreatingJob(true);
     try {
       await createPatchTask({ professionId, styleId });
-      void messageApi.success("模拟制作任务已创建");
+      void messageApi.success("制作任务已创建");
       void navigate("/jobs");
     } catch (error) {
       void messageApi.error(apiErrorMessage(error));

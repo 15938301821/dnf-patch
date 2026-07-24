@@ -64,7 +64,6 @@ describe("patch task API", () => {
   it("returns artifact metadata instead of mock download bytes", async () => {
     await expect(getJobArtifactMetadata("job-demo-complete")).resolves.toEqual({
       artifactName: "mock-sakura-preview.bpk",
-      storageKey: "mock-artifacts/job-demo-complete/mock-sakura-preview.bpk",
       mediaType: "application/octet-stream",
       byteLength: 512,
       sha256: "A".repeat(64),

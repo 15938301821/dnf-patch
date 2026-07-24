@@ -465,7 +465,6 @@ export function configureMockApi(): void {
       200,
       envelope({
         artifactName: job.artifactName ?? `${job.id}.bpk`,
-        storageKey: `mock-artifacts/${job.id}/${job.artifactName ?? `${job.id}.bpk`}`,
         mediaType: "application/octet-stream",
         byteLength: 512,
         sha256: "A".repeat(64),
