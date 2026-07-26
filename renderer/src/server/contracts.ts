@@ -196,12 +196,23 @@ export interface PatchTask {
   artifactAvailable: boolean;
 }
 
+/** Package V3 固定产物角色；客户端只能使用服务端返回的角色，不能提交任意 Artifact ID。 */
+export type PatchTaskArtifactRole = "candidate" | "manifest" | "validation";
+
 /** 已验证产物的脱敏元数据，不包含内部对象 key、产物字节或下载授权。 */
 export interface PatchTaskArtifact {
+  artifactId: string;
+  role: PatchTaskArtifactRole;
   artifactName: string;
   mediaType: string;
   byteLength: number;
   sha256: string;
+}
+
+/** 服务端为当前用户任务的固定角色签发的短期下载授权，URL 不得持久化。 */
+export interface PatchTaskArtifactDownload extends PatchTaskArtifact {
+  downloadUrl: string;
+  expiresAtUtc: string;
 }
 
 /** 创建制作任务时引用后端稳定职业与风格 ID 的声明式 DTO。 */

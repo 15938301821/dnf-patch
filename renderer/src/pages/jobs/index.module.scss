@@ -68,9 +68,27 @@
 }
 
 .hash {
+  display: block;
+  max-width: 390px;
   overflow-wrap: anywhere;
   font-family: Consolas, monospace;
   font-size: 11px;
+}
+
+.artifactFile {
+  display: grid;
+  gap: 3px;
+  min-width: 150px;
+}
+
+.artifactFile strong {
+  color: #27332b;
+  font-size: 12px;
+}
+
+.artifactFile span {
+  color: #7a857d;
+  font-size: 10px;
 }
 
 @media (max-width: 620px) {

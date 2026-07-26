@@ -46,19 +46,6 @@ export function ProfessionsPage(): React.JSX.Element {
   const [professionModalOpen, setProfessionModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  /**
-   * 刷新职业集合，并优先选中新建或调用方指定的职业。
-   * @param preferredId 服务端已返回的职业 ID；缺失时保留当前选择或取首项。
-   * @returns 列表与选择状态更新完成后结算。
-   */
-  const loadProfessions = async (preferredId?: string): Promise<void> => {
-    const items = await getProfessionsList();
-    setProfessions(items);
-    setSelectedId(
-      (current) => ((preferredId ?? current) || items[0]?.id) ?? "",
-    );
-  };
-
   useEffect(() => {
     let active = true;
     // 第一步：建立主列表和查询参数指定的初始选择；卸载后不接受过期结果。
@@ -115,17 +102,21 @@ export function ProfessionsPage(): React.JSX.Element {
   }, [messageApi, selectedId]);
 
   /**
-   * 校验并创建职业，随后刷新主列表并关闭弹窗。
+   * 校验并创建职业，随后用服务端摘要更新主列表并关闭弹窗。
    * @returns 全流程结束后结算；校验或请求失败时禁止关闭弹窗和重置输入。
    */
   const submitProfession = async (): Promise<void> => {
     setSaving(true);
     try {
-      // 第三步：只有创建和列表刷新都成功，才提交 UI 成功态并清空表单。
+      // 第三步：创建响应已是完整摘要，成功态不能再被一次冗余列表刷新阻塞。
       const created = await createProfession(
         await professionForm.validateFields(),
       );
-      await loadProfessions(created.id);
+      setProfessions((current) => [
+        created,
+        ...current.filter((item) => item.id !== created.id),
+      ]);
+      setSelectedId(created.id);
       setProfessionModalOpen(false);
       professionForm.resetFields();
       void messageApi.success("职业已创建");

@@ -1,14 +1,16 @@
 /**
- * @fileoverview 提供制作任务列表、创建与产物元数据查询的类型化 HTTP API。
+ * @fileoverview 提供制作任务列表、创建、三项产物元数据与短期下载授权的类型化 HTTP API。
  *
  * 任务页面和风格编辑页调用本模块，请求经受认证 Axios 客户端发送；创建请求只提交后端稳定
- * 职业/风格 ID，并携带幂等键防止重复调度。模块不执行本机工具、不下载产物字节，也不证明
- * Worker 或对象存储可用；服务端门禁和错误会原样拒绝给页面。
+ * 职业/风格 ID，并携带幂等键防止重复调度。下载授权只提交任务 ID 和固定角色，不接收对象 key
+ * 或任意 Artifact ID；模块不执行本机工具，也不证明 Worker、对象存储或客户端兼容性。
  */
 import type {
   CreatePatchTaskInput,
   PatchTask,
   PatchTaskArtifact,
+  PatchTaskArtifactDownload,
+  PatchTaskArtifactRole,
 } from "../server/contracts.js";
 import { requestData } from "../server/server.js";
 
@@ -41,16 +43,56 @@ export function createPatchTask(
 }
 
 /**
- * 通过 `GET /jobs/:jobId/artifact` 查询已验证产物的元数据引用。
+ * 通过 `GET /jobs/:jobId/artifacts` 查询 Package V3 三项已验证产物元数据。
  *
  * @param jobId 任务列表返回的稳定 ID。
- * @returns 名称、存储引用、媒体类型、大小与摘要；不返回或下载实际字节。
+ * @returns candidate、manifest、validation 固定角色的名称、类型、大小与摘要；不返回实际字节。
  */
-export function getJobArtifactMetadata(
-  jobId: string,
-): Promise<PatchTaskArtifact> {
-  return requestData<PatchTaskArtifact>({
+export function getJobArtifacts(jobId: string): Promise<PatchTaskArtifact[]> {
+  return requestData<PatchTaskArtifact[]>({
     method: "GET",
-    url: `/jobs/${jobId}/artifact`,
+    url: `/jobs/${jobId}/artifacts`,
   });
+}
+
+/**
+ * 通过 `POST /jobs/:jobId/artifacts/:role/download-authorization` 取得短期 GET URL。
+ *
+ * @param jobId 任务列表返回并由服务端执行所有权检查的稳定 ID。
+ * @param role 从三项元数据选择的固定角色；客户端不提交 Artifact ID 或对象存储定位信息。
+ * @returns 选中角色的脱敏元数据与短期 URL；URL 到期失效且不表示下载、兼容或部署已完成。
+ */
+export function authorizeJobArtifactDownload(
+  jobId: string,
+  role: PatchTaskArtifactRole,
+): Promise<PatchTaskArtifactDownload> {
+  return requestData<PatchTaskArtifactDownload>({
+    method: "POST",
+    url: `/jobs/${jobId}/artifacts/${role}/download-authorization`,
+  });
+}
+
+/**
+ * 为固定角色申请短期授权并读取实际 Artifact 字节。
+ *
+ * @param jobId 当前用户任务的稳定 ID，由服务端执行所有权检查。
+ * @param role 三项元数据中的固定角色，不接收对象 key 或任意 Artifact ID。
+ * @returns 服务端元数据和经长度复核的 Blob；短期 URL 只存在于当前调用栈且不会向页面返回。
+ */
+export async function downloadJobArtifact(
+  jobId: string,
+  role: PatchTaskArtifactRole,
+): Promise<{ artifact: PatchTaskArtifact; blob: Blob }> {
+  const authorization = await authorizeJobArtifactDownload(jobId, role);
+  const response = await fetch(authorization.downloadUrl, {
+    cache: "no-store",
+    credentials: "omit",
+    referrerPolicy: "no-referrer",
+  });
+  if (!response.ok) throw new Error("ARTIFACT_DOWNLOAD_FAILED");
+  const blob = await response.blob();
+  if (blob.size !== authorization.byteLength) {
+    throw new Error("ARTIFACT_DOWNLOAD_LENGTH_MISMATCH");
+  }
+  return { artifact: authorization, blob };
 }

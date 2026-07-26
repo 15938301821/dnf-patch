@@ -26,6 +26,7 @@ import {
   evaluateStyleDraftValidity,
 } from "../utils/style-completeness.js";
 import { initialMockModelConfiguration } from "./model-configuration.js";
+import { configureMockTaskArtifactRoutes } from "./job-artifacts.js";
 import {
   areSelectedSkillsValid,
   mockProfessionSkills,
@@ -437,7 +438,9 @@ export function configureMockApi(): void {
           message:
             executionGate.reason === "resources-unverified"
               ? "所选技能的资源映射尚未核验，仅可保存设计稿。"
-              : "风格缺少可执行的技能范围。",
+              : executionGate.reason === "profession-prompt-missing"
+                ? "所选技能缺少结构化职业 Prompt，仅可保存设计稿。"
+                : "风格缺少可执行的技能范围。",
         },
       ];
     }
@@ -454,23 +457,7 @@ export function configureMockApi(): void {
     state.jobs.unshift(job);
     return [201, envelope(job)];
   });
-  /** 为已有 Mock 任务返回固定元数据引用，不提供实际下载字节。 */
-  mock.onGet(/\/jobs\/[^/]+\/artifact$/u).reply((config) => {
-    const jobId = config.url?.split("/")[2] ?? "";
-    const job = state.jobs.find((item) => item.id === jobId);
-    if (!job) {
-      return [404, "Not found"];
-    }
-    return [
-      200,
-      envelope({
-        artifactName: job.artifactName ?? `${job.id}.bpk`,
-        mediaType: "application/octet-stream",
-        byteLength: 512,
-        sha256: "A".repeat(64),
-      }),
-    ];
-  });
+  configureMockTaskArtifactRoutes(mock, () => state.jobs);
 
   mock.onPost("/__mock/reset").reply(() => {
     state = structuredClone(initialState);

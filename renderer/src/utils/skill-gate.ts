@@ -13,6 +13,7 @@ export type SkillExecutionGateReason =
   | "skills-required"
   | "skill-not-found"
   | "resources-unverified"
+  | "profession-prompt-missing"
   | "ready";
 
 /** 技能制作门禁结果；阻断 ID 只描述输入问题，不代表客户端已核验资源。 */
@@ -67,16 +68,21 @@ export function evaluateSkillExecution(
     };
   }
 
-  // 第三步：仅目录明确声明 build-ready 的技能可通过；其余保持仅设计模式。
+  // 第三步：先区分未核验映射与缺少职业 Prompt，再仅放行目录明确声明 build-ready 的技能。
   const blockedSkillIds = selectedSkills
     .filter((skill) => skill?.executionStatus !== "build-ready")
     .map((skill) => skill?.id)
     .filter((skillId): skillId is string => skillId !== undefined);
   if (blockedSkillIds.length > 0) {
+    const resourcesVerified = selectedSkills.every(
+      (skill) => skill?.mappingStatus === "verified",
+    );
     return {
       allowed: false,
       blockedSkillIds,
-      reason: "resources-unverified",
+      reason: resourcesVerified
+        ? "profession-prompt-missing"
+        : "resources-unverified",
     };
   }
 

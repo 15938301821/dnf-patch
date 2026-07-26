@@ -4,7 +4,8 @@
  * App 在启动时调用会话恢复 Hook，登录页和应用壳调用命令 Hook；输入来自登录表单或后端
  * 会话响应，输出写入仅含用户视图的 Zustand Store。副作用是认证请求和状态切换；Access
  * Token 由 API 模块内存保存，Refresh Token 由 HttpOnly Cookie 管理，二者都不得进入 Store。
- * 启动请求卸载后必须忽略结果，登出无论远端是否成功都必须清除当前用户，防止跨会话残留。
+ * 启动请求卸载后必须忽略结果；刷新失败会通过内存失效事件立即离开受保护路由，登出无论
+ * 远端是否成功都作为本地成功完成，防止旧用户残留或未处理 Promise。
  */
 import { useCallback, useEffect } from "react";
 import {
@@ -13,6 +14,7 @@ import {
   logout as logoutRequest,
   type LoginInput,
 } from "../api/index.js";
+import { subscribeToAccessTokenInvalidation } from "../server/token-store.js";
 import { useAuthStore } from "../stores/auth-store.js";
 
 /**
@@ -23,6 +25,7 @@ import { useAuthStore } from "../stores/auth-store.js";
 export function useAuthLifecycle(): void {
   useEffect(() => {
     let active = true;
+    const unsubscribe = connectAuthStoreToTokenInvalidation();
     // 第一步：请求当前用户；底层 401 拦截器可凭 HttpOnly Cookie 尝试一次会话刷新。
     void getCurrentUser()
       .then((user) => {
@@ -37,10 +40,36 @@ export function useAuthLifecycle(): void {
         }
       });
     return () => {
-      // 第三步：卸载只撤销本 Hook 的写入资格，不操作由 HTTP 层拥有的刷新请求。
+      // 第三步：卸载同时撤销请求写入资格和失效订阅，不操作由 HTTP 层拥有的刷新请求。
       active = false;
+      unsubscribe();
     };
   }, []);
+}
+
+/**
+ * 把HTTP层的Token失效事件连接到纯认证Store。
+ *
+ * @returns 取消订阅函数；调用方卸载时必须执行，避免旧应用生命周期继续切换状态。
+ */
+export function connectAuthStoreToTokenInvalidation(): () => void {
+  return subscribeToAccessTokenInvalidation(() => {
+    useAuthStore.getState().setAnonymous();
+  });
+}
+
+/**
+ * 尝试结束远端会话，并始终完成本地匿名转换。
+ *
+ * @returns 本地清理完成后正常结算；远端会话已过期或网络失败不会阻止用户退出。
+ */
+export async function logoutCurrentSession(): Promise<void> {
+  try {
+    await logoutRequest();
+  } catch {
+    // 远端会话可能已经失效；API 层已清 Token，本地退出仍必须完成。
+  }
+  useAuthStore.getState().setAnonymous();
 }
 
 /** 登录页与应用壳可调用的认证命令集合。 */
@@ -73,13 +102,7 @@ export function useAuthCommands(): AuthCommands {
    *
    * @returns 清理完成后结算；即使远端请求失败，本地也不会保留旧用户。
    */
-  const logout = useCallback(async (): Promise<void> => {
-    try {
-      await logoutRequest();
-    } finally {
-      useAuthStore.getState().setAnonymous();
-    }
-  }, []);
+  const logout = useCallback(logoutCurrentSession, []);
 
   return { login, logout };
 }

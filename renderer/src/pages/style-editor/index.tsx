@@ -53,6 +53,8 @@ function skillGateDescription(gate: SkillExecutionGate): string {
       return "所选技能不属于当前职业目录，请重新选择。";
     case "resources-unverified":
       return "所选技能的资源映射尚未核验；当前只能保存设计稿，不能创建制作任务。";
+    case "profession-prompt-missing":
+      return "所选技能的资源映射已核验，但尚缺结构化职业 Prompt；当前只能保存设计稿，不能创建制作任务。";
     case "ready":
       return "所选技能的资源映射已核验，可以创建制作任务。";
   }

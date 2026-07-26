@@ -70,6 +70,24 @@ describe("skill execution gate", () => {
     });
   });
 
+  it("reports a missing profession prompt after resource verification", () => {
+    expect(
+      evaluateSkillExecution(
+        ["skill-draft"],
+        [
+          skill({
+            id: "skill-draft",
+            executionStatus: "draft-only",
+          }),
+        ],
+      ),
+    ).toMatchObject({
+      allowed: false,
+      blockedSkillIds: ["skill-draft"],
+      reason: "profession-prompt-missing",
+    });
+  });
+
   it("allows only verified build-ready resources", () => {
     expect(evaluateSkillExecution(["skill-verified"], [skill()])).toEqual({
       allowed: true,

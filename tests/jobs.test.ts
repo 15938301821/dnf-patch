@@ -6,8 +6,10 @@
  */
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  authorizeJobArtifactDownload,
   createPatchTask,
-  getJobArtifactMetadata,
+  downloadJobArtifact,
+  getJobArtifacts,
   server,
 } from "../renderer/src/api/index.js";
 import { configureMockApi } from "../renderer/src/mock/index.js";
@@ -61,12 +63,38 @@ describe("patch task API", () => {
     });
   });
 
-  it("returns artifact metadata instead of mock download bytes", async () => {
-    await expect(getJobArtifactMetadata("job-demo-complete")).resolves.toEqual({
-      artifactName: "mock-sakura-preview.bpk",
-      mediaType: "application/octet-stream",
-      byteLength: 512,
-      sha256: "A".repeat(64),
-    });
+  it("returns three distinct Package artifact roles without object bytes", async () => {
+    const artifacts = await getJobArtifacts("job-demo-complete");
+
+    expect(artifacts.map((artifact) => artifact.role)).toEqual([
+      "candidate",
+      "manifest",
+      "validation",
+    ]);
+    expect(new Set(artifacts.map((artifact) => artifact.artifactId)).size).toBe(
+      3,
+    );
+    expect(new Set(artifacts.map((artifact) => artifact.sha256)).size).toBe(3);
+  });
+
+  it("requests a short-lived download authorization by fixed role", async () => {
+    const authorization = await authorizeJobArtifactDownload(
+      "job-demo-complete",
+      "validation",
+    );
+
+    expect(authorization.role).toBe("validation");
+    expect(authorization.artifactName).toBe("validation.json");
+    expect(authorization.sha256).toBe("C".repeat(64));
+    expect(authorization.downloadUrl.startsWith("data:application/json")).toBe(
+      true,
+    );
+  });
+
+  it("reads authorized bytes through the typed API", async () => {
+    const result = await downloadJobArtifact("job-demo-complete", "validation");
+
+    expect(result.artifact.role).toBe("validation");
+    await expect(result.blob.text()).resolves.toBe("M".repeat(384));
   });
 });
