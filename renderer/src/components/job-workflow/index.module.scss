@@ -1,0 +1,289 @@
+/**
+ * @fileoverview 任务级工作流总览的进度带、四阶段节点和关键事实网格样式。
+ * 调用关系：由 job-workflow 只读组件导入；不计算任务状态或轮询频率。
+ * 维护边界：四阶段在窄屏改为两列，连接线随之隐藏，防止长状态文案或产物名造成页面横向溢出。
+ */
+
+.section {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d8e0d9;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #e4e9e4;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: #176448;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.header h2 {
+  margin: 0;
+  color: #1d2921;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  font-size: 19px;
+  letter-spacing: 0;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status > span {
+  position: relative;
+  padding-left: 12px;
+  color: #7b877f;
+  font-size: 10px;
+}
+
+.status > span::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #84a18f;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.status .refreshing::before {
+  background: #2f718c;
+  box-shadow: 0 0 0 4px rgba(47, 113, 140, 0.12);
+}
+
+.progress {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 17px 22px 13px;
+}
+
+.progress-copy {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.progress-copy span {
+  color: #748078;
+  font-size: 10px;
+}
+
+.progress-copy strong {
+  color: #1f3027;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 20px;
+}
+
+/* 四阶段固定轨道保护轮询刷新时节点不位移，连接线只在单行桌面布局出现。 */
+.workflow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 10px 22px 23px;
+  list-style: none;
+}
+
+.workflow li {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.workflow li:not(:last-child)::after {
+  position: absolute;
+  top: 17px;
+  right: 9px;
+  left: 35px;
+  height: 2px;
+  background: #dde4de;
+  content: "";
+}
+
+.node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #d6ded7;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #849087;
+}
+
+.workflow li > span:last-child {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-width: 0;
+  padding-right: 12px;
+  background: #ffffff;
+}
+
+.workflow strong {
+  color: #46534b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.workflow small {
+  color: #8b958e;
+  font-size: 9px;
+}
+
+.workflow-passed .node {
+  border-color: #86b198;
+  background: #e8f3ec;
+  color: #176448;
+}
+
+.workflow-passed:not(:last-child)::after {
+  background: #86b198 !important;
+}
+
+.workflow-running .node {
+  border-color: #6fa2b7;
+  background: #e8f3f7;
+  color: #2f718c;
+}
+
+.workflow-failed .node {
+  border-color: #d6a09c;
+  background: #f8eceb;
+  color: #a3433e;
+}
+
+.workflow-blocked .node {
+  border-color: #dab48d;
+  background: #faf0e5;
+  color: #a65f28;
+}
+
+.workflow-unknown .node {
+  border-style: dashed;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid #e4e9e4;
+  background: #f8faf7;
+}
+
+.facts div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  min-height: 69px;
+  align-content: center;
+  padding: 12px 20px;
+  border-right: 1px solid #e2e7e2;
+}
+
+.facts div:last-child {
+  border-right: 0;
+}
+
+.facts dt {
+  color: #7a867e;
+  font-size: 9px;
+}
+
+.facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #334239;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .header {
+    align-items: flex-start;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .status {
+    align-items: flex-end;
+    flex-direction: column-reverse;
+  }
+
+  .progress {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .progress-copy {
+    justify-content: flex-start;
+  }
+
+  .workflow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px 8px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .workflow li:not(:last-child)::after {
+    display: none;
+  }
+
+  .facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .facts div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .facts div:nth-child(n + 3) {
+    border-top: 1px solid #e2e7e2;
+  }
+}

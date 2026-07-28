@@ -1,0 +1,337 @@
+/**
+ * @fileoverview 模型吞吐面板的稳定指标网格、SVG 图表、模型分组与审计表样式。
+ * 调用关系：job-throughput 的容器和趋势子组件共同导入；只控制布局与可读性，不计算 Token。
+ * 维护边界：图表固定 viewBox 和表格内部滚动用于隔离动态调用量，移动端不得产生页面级横向溢出。
+ */
+
+.section {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d8e0d9;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #e4e9e4;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: #2f718c;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.header h2,
+.subheading-row h3 {
+  margin: 0;
+  color: #1d2921;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  letter-spacing: 0;
+}
+
+.header h2 {
+  font-size: 19px;
+}
+
+.call-count {
+  flex: 0 0 auto;
+  color: #657168;
+  font-size: 11px;
+}
+
+/* 五项摘要用稳定轨道和分隔线呈现，不嵌套额外卡片，刷新时长数字不会推动相邻内容。 */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-bottom: 1px solid #e4e9e4;
+  background: #f8faf7;
+}
+
+.metric {
+  display: grid;
+  min-height: 86px;
+  align-content: center;
+  padding: 13px 20px;
+  border-right: 1px solid #e2e7e2;
+}
+
+.metric:last-child {
+  border-right: 0;
+}
+
+.metric span {
+  color: #758078;
+  font-size: 10px;
+}
+
+.metric strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #1f3027;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.metric small {
+  min-height: 16px;
+  color: #8a948d;
+  font-size: 10px;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(270px, 0.8fr);
+  min-width: 0;
+  border-bottom: 1px solid #e4e9e4;
+}
+
+.trend,
+.groups,
+.ledger {
+  min-width: 0;
+  padding: 20px 22px;
+}
+
+.groups {
+  border-left: 1px solid #e4e9e4;
+  background: #fbfcfa;
+}
+
+.subheading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.subheading-row h3 {
+  font-size: 13px;
+}
+
+.subheading-row span {
+  color: #869088;
+  font-size: 10px;
+}
+
+.group-name,
+.model-cell {
+  display: flex;
+  align-items: center;
+}
+
+.group-name > i,
+.model-cell > i {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.groups-empty {
+  display: grid;
+  min-height: 230px;
+  place-content: center;
+  text-align: center;
+}
+
+.groups-empty {
+  color: #8a948d;
+  font-size: 11px;
+}
+
+.group {
+  display: grid;
+  gap: 8px;
+  padding: 13px 0;
+  border-bottom: 1px solid #e6ebe7;
+}
+
+.group:last-child {
+  border-bottom: 0;
+}
+
+.group-name {
+  min-width: 0;
+}
+
+.group-name div {
+  display: grid;
+  min-width: 0;
+}
+
+.group-name strong {
+  color: #344139;
+  font-size: 11px;
+}
+
+.group-name span {
+  overflow: hidden;
+  color: #8a948d;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-name b {
+  margin-left: auto;
+  color: #35463d;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.group-bar {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #e8ede8;
+}
+
+.group-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.group-meta {
+  color: #7f8982;
+  font-size: 9px;
+}
+
+.ledger {
+  padding-bottom: 16px;
+}
+
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table-scroll table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.table-scroll th {
+  padding: 8px 10px;
+  border-bottom: 1px solid #dfe5df;
+  color: #707c74;
+  font-weight: 600;
+  text-align: left;
+}
+
+.table-scroll td {
+  padding: 10px;
+  border-bottom: 1px solid #edf0ed;
+  color: #536058;
+  white-space: nowrap;
+}
+
+.table-scroll tr:last-child td {
+  border-bottom: 0;
+}
+
+.model-cell span {
+  display: grid;
+}
+
+.model-cell strong {
+  color: #36443b;
+  font-size: 10px;
+}
+
+.model-cell small {
+  max-width: 190px;
+  overflow: hidden;
+  color: #8a948d;
+  font-size: 9px;
+  text-overflow: ellipsis;
+}
+
+.rate {
+  color: #176448 !important;
+  font-family: Bahnschrift, sans-serif;
+  font-weight: 600;
+}
+
+.empty-cell {
+  color: #8a948d !important;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metric:nth-child(3) {
+    border-right: 0;
+  }
+
+  .metric:nth-child(n + 4) {
+    border-top: 1px solid #e2e7e2;
+  }
+
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .groups {
+    border-top: 1px solid #e4e9e4;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .header,
+  .trend,
+  .groups,
+  .ledger {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric {
+    min-height: 82px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .metric:nth-child(odd) {
+    border-right: 1px solid #e2e7e2;
+  }
+
+  .metric:nth-child(even) {
+    border-right: 0;
+  }
+
+  .metric:nth-child(n + 3) {
+    border-top: 1px solid #e2e7e2;
+  }
+
+  .subheading-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}

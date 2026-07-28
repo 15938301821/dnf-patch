@@ -17,6 +17,7 @@ import {
   message,
 } from "antd";
 import { Download, FileSearch, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   downloadJobArtifact,
   getJobArtifacts,
@@ -28,14 +29,7 @@ import {
 import { PageHeading } from "../../components/page-heading/index.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
 import styles from "./index.module.scss";
-
-const statusView: Record<PatchTaskStatus, { color: string; label: string }> = {
-  queued: { color: "default", label: "排队中" },
-  running: { color: "processing", label: "制作中" },
-  passed: { color: "success", label: "已完成" },
-  failed: { color: "error", label: "失败" },
-  blocked: { color: "warning", label: "已阻断" },
-};
+import { patchTaskStatusView } from "../../config/job-detail-view.js";
 
 /**
  * 渲染任务摘要、手动刷新和产物元数据检查界面。
@@ -43,6 +37,7 @@ const statusView: Record<PatchTaskStatus, { color: string; label: string }> = {
  * @returns 当前加载、空列表、任务表格与可选元数据弹窗；请求错误保留在页面消息层。
  */
 export function JobsPage(): React.JSX.Element {
+  const navigate = useNavigate();
   const [messageApi, messageContextHolder] = message.useMessage();
   const [jobs, setJobs] = useState<PatchTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,8 +180,8 @@ export function JobsPage(): React.JSX.Element {
                 key: "status",
                 /** 按稳定状态映射标签颜色和文案。 */
                 render: (status: PatchTaskStatus) => (
-                  <Tag color={statusView[status].color}>
-                    {statusView[status].label}
+                  <Tag color={patchTaskStatusView[status].color}>
+                    {patchTaskStatusView[status].label}
                   </Tag>
                 ),
               },
@@ -221,7 +216,11 @@ export function JobsPage(): React.JSX.Element {
                     disabled={!job.artifactAvailable}
                     icon={<FileSearch size={16} />}
                     loading={loadingArtifactId === job.id}
-                    onClick={() => void inspectArtifact(job)}
+                    onClick={(event) => {
+                      // 行本身进入详情，固定角色元数据命令必须阻止事件冒泡以保留用户意图。
+                      event.stopPropagation();
+                      void inspectArtifact(job);
+                    }}
                     type="link"
                   >
                     查看元数据
@@ -232,6 +231,19 @@ export function JobsPage(): React.JSX.Element {
             dataSource={jobs}
             locale={{ emptyText: <Empty description="暂无制作任务" /> }}
             pagination={false}
+            onRow={(job) => ({
+              "aria-label": `查看${job.professionName}${job.styleName}任务详情`,
+              className: styles["clickable-row"] ?? "",
+              onClick: () => void navigate(`/jobs/${job.id}`),
+              onKeyDown: (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  void navigate(`/jobs/${job.id}`);
+                }
+              },
+              role: "link",
+              tabIndex: 0,
+            })}
             rowKey="id"
             scroll={{ x: 760 }}
           />

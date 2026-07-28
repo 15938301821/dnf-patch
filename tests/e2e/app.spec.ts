@@ -135,6 +135,76 @@ test("submits complete structured content while resource gates stay closed", asy
   await expect(taskButton).toBeDisabled();
 });
 
+test("opens a running task from its row and observes the next polling cycle", async ({
+  page,
+}) => {
+  // Axios Mock 替代真实详情 API；本流程验证路由、DOM 和 3 秒轮询可见状态，不证明 Provider 正在调用。
+  await login(page);
+  await page.getByRole("menuitem", { name: "制作任务" }).click();
+  await expect(page.getByRole("heading", { name: "制作任务" })).toBeVisible();
+  await page.getByRole("link", { name: "查看剑魂暗蓝幻影任务详情" }).click();
+
+  await expect(page).toHaveURL(/#\/jobs\/job-demo-running$/u);
+  await expect(
+    page.getByRole("heading", { name: "剑魂 · 暗蓝幻影" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "任务工作流" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "逐技能进度" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "大模型吞吐" })).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: "模型输出吞吐趋势" }),
+  ).toBeVisible();
+  await expect(page.getByText("未计量", { exact: true }).first()).toBeVisible();
+
+  // 运行态 Hook 在首个响应完成 3 秒后启动下一轮；Mock 每次响应推进审计时间，避免依赖短暂加载标记。
+  const updatedAt = page
+    .getByText("最近更新", { exact: true })
+    .locator("..")
+    .locator("dd");
+  const firstUpdatedAt = await updatedAt.textContent();
+  await expect(updatedAt).not.toHaveText(firstUpdatedAt ?? "", {
+    timeout: 5_000,
+  });
+  await expectNoHorizontalOverflow(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoHorizontalOverflow(page);
+});
+
+test("previews a verified reference PNG from a completed task", async ({
+  page,
+}) => {
+  // 静态 PNG 替代真实对象存储对象，但请求仍经过固定任务/技能授权、长度和文件签名复核代码。
+  await login(page);
+  await page.getByRole("menuitem", { name: "制作任务" }).click();
+  await page
+    .getByRole("link", { name: "查看气功师（女）樱花念气任务详情" })
+    .click();
+
+  await expect(page).toHaveURL(/#\/jobs\/job-demo-complete$/u);
+  await expect(
+    page.getByRole("heading", { name: "气功师（女） · 樱花念气" }),
+  ).toBeVisible();
+  await expect(page.getByText("3 / 3", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "预览念气罩模型参考图" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  const referenceImage = page.getByRole("img", { name: "念气罩模型参考图" });
+  await expect(referenceImage).toBeVisible();
+  await expect
+    .poll(() =>
+      referenceImage.evaluate(
+        (image) =>
+          (image as unknown as { naturalWidth?: number }).naturalWidth ?? 0,
+      ),
+    )
+    .toBeGreaterThan(0);
+  await expectNoHorizontalOverflow(page);
+
+  await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoHorizontalOverflow(page);
+});
+
 /**
  * 通过浏览器可访问控件建立一段 Mock 会话。
  *

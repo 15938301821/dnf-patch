@@ -196,6 +196,108 @@ export interface PatchTask {
   artifactAvailable: boolean;
 }
 
+/** 详情页统一使用的阶段状态；unknown 表示服务端缺少精确历史证据，客户端不得猜测。 */
+export type PatchTaskStepStatus =
+  "pending" | "running" | "passed" | "failed" | "blocked" | "unknown";
+
+/** 任务级工作流的四个固定阶段，由服务端按持久化证据映射。 */
+export type PatchTaskWorkflowStageKey =
+  "planning" | "skill-production" | "package-validation" | "complete";
+
+/** 顶层工作流一个阶段的脱敏 ViewModel，不包含 Job、Worker 或租约标识。 */
+export interface PatchTaskWorkflowStage {
+  key: PatchTaskWorkflowStageKey;
+  status: PatchTaskStepStatus;
+}
+
+/** 单技能生产链的四个固定阶段，前两项为模型阶段、后两项为受控工具阶段。 */
+export type PatchTaskSkillStageKey =
+  | "engineer-plan"
+  | "reference-image"
+  | "aseprite-adaptation"
+  | "runtime-validation";
+
+/** 单技能固定阶段的服务端证据状态。 */
+export interface PatchTaskSkillStage {
+  key: PatchTaskSkillStageKey;
+  status: PatchTaskStepStatus;
+}
+
+/** 详情页一个技能的当前 attempt 进度；参考图标记不包含 Artifact ID 或授权 URL。 */
+export interface PatchTaskSkillProgress {
+  skillId: string;
+  displayName: string;
+  status: PatchTaskStepStatus;
+  stages: PatchTaskSkillStage[];
+  errorCode?: string;
+  referenceImageAvailable: boolean;
+}
+
+/** 浏览器可展示的固定模型角色；unknown 用于保守承接异常历史值。 */
+export type PatchTaskModelRole =
+  "orchestrator" | "engineer" | "artist" | "unknown";
+
+/** 模型调用的脱敏审计状态，不携带 Provider 响应正文或错误详情。 */
+export type PatchTaskModelCallStatus =
+  "running" | "passed" | "failed" | "blocked" | "abandoned" | "unknown";
+
+/** 最近模型调用的趋势样本；nullable 计量表示 Provider 未返回可靠 usage。 */
+export interface PatchTaskModelCallSample {
+  id: string;
+  role: PatchTaskModelRole;
+  model: string;
+  status: PatchTaskModelCallStatus;
+  createdAt: string;
+  finishedAt?: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  providerLatencyMs: number | null;
+  outputTokensPerSecond: number | null;
+}
+
+/** 按固定角色和模型聚合的吞吐分组，用于详情页横向比较。 */
+export interface PatchTaskModelGroup {
+  role: PatchTaskModelRole;
+  model: string;
+  calls: number;
+  measuredCalls: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  averageOutputTokensPerSecond: number | null;
+  averageProviderLatencyMs: number | null;
+}
+
+/** 任务级模型吞吐摘要；计量覆盖率与调用成功率的分母不同，界面不得混用。 */
+export interface PatchTaskModelThroughput {
+  totalCalls: number;
+  egressCalls: number;
+  runningCalls: number;
+  measuredCalls: number;
+  successRate: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  averageOutputTokensPerSecond: number | null;
+  averageProviderLatencyMs: number | null;
+  groups: PatchTaskModelGroup[];
+  recentCalls: PatchTaskModelCallSample[];
+}
+
+/** 服务端为任务详情页整理的完整 ViewModel，不包含 Prompt、模型凭据、对象 key 或短期 URL。 */
+export interface PatchTaskDetail extends PatchTask {
+  updatedAt: string;
+  finishedAt?: string;
+  currentStage: PatchTaskWorkflowStageKey;
+  totalSkills: number;
+  passedSkills: number;
+  workflow: PatchTaskWorkflowStage[];
+  skills: PatchTaskSkillProgress[];
+  packageStatus: "queued" | "building" | "passed" | "failed" | "blocked";
+  modelThroughput: PatchTaskModelThroughput;
+}
+
 /** Package V3 固定产物角色；客户端只能使用服务端返回的角色，不能提交任意 Artifact ID。 */
 export type PatchTaskArtifactRole = "candidate" | "manifest" | "validation";
 
@@ -211,6 +313,22 @@ export interface PatchTaskArtifact {
 
 /** 服务端为当前用户任务的固定角色签发的短期下载授权，URL 不得持久化。 */
 export interface PatchTaskArtifactDownload extends PatchTaskArtifact {
+  downloadUrl: string;
+  expiresAtUtc: string;
+}
+
+/** 当前技能固定 reference-image-v1 PNG 的脱敏元数据，不表示已用于最终补丁。 */
+export interface PatchTaskReferenceImage {
+  artifactId: string;
+  skillId: string;
+  artifactName: string;
+  mediaType: "image/png";
+  byteLength: number;
+  sha256: string;
+}
+
+/** 服务端为固定技能参考图签发的短期下载授权，URL 不得进入组件状态或持久化。 */
+export interface PatchTaskReferenceImageDownload extends PatchTaskReferenceImage {
   downloadUrl: string;
   expiresAtUtc: string;
 }

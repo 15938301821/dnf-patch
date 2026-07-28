@@ -27,6 +27,7 @@ import {
 } from "../utils/style-completeness.js";
 import { initialMockModelConfiguration } from "./model-configuration.js";
 import { configureMockTaskArtifactRoutes } from "./job-artifacts.js";
+import { configureMockTaskDetailRoutes } from "./job-details.js";
 import {
   areSelectedSkillsValid,
   mockProfessionSkills,
@@ -78,6 +79,15 @@ const initialState: MockState = {
   skills: mockProfessionSkills,
   styles: initialMockProfessionStyles,
   jobs: [
+    {
+      id: "job-demo-running",
+      professionName: "剑魂",
+      styleName: "暗蓝幻影",
+      status: "running",
+      progress: 46,
+      createdAt: "2026-07-28T01:18:00.000Z",
+      artifactAvailable: false,
+    },
     {
       id: "job-demo-complete",
       professionName: "气功师（女）",
@@ -458,6 +468,7 @@ export function configureMockApi(): void {
     return [201, envelope(job)];
   });
   configureMockTaskArtifactRoutes(mock, () => state.jobs);
+  configureMockTaskDetailRoutes(mock, () => state.jobs);
 
   mock.onPost("/__mock/reset").reply(() => {
     state = structuredClone(initialState);

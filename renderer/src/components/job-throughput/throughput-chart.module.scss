@@ -1,0 +1,114 @@
+/**
+ * @fileoverview 模型吞吐 SVG 趋势图的固定宽高比、坐标轴、数据点、图例和空状态样式。
+ * 调用关系：仅由 throughput-chart.tsx 导入；主吞吐组件继续在 index.module.scss 管理面板布局。
+ * 维护边界：图表 viewBox 与最小高度保护动态样本不引发布局位移，样式不计算或补齐 Token 计量。
+ */
+
+.chart-wrap {
+  min-width: 0;
+}
+
+/* SVG 保持固定宽高比，标签和数据点变化不会改变下方分组与账本位置。 */
+.chart {
+  display: block;
+  width: 100%;
+  aspect-ratio: 720 / 230;
+  min-height: 210px;
+  border: 1px solid #e0e7e1;
+  border-radius: 5px;
+  background:
+    linear-gradient(rgba(47, 113, 140, 0.035) 1px, transparent 1px), #fbfdfb;
+  background-size: 100% 28px;
+}
+
+.grid-line {
+  stroke: #dfe6e0;
+  stroke-width: 1;
+}
+
+.axis-label,
+.axis-caption,
+.axis-caption-end,
+.axis-unit {
+  fill: #7b877f;
+  font-family: Aptos, "Microsoft YaHei UI", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+.axis-label {
+  text-anchor: end;
+}
+
+.axis-caption-end {
+  text-anchor: end;
+}
+
+.axis-unit {
+  fill: #536159;
+  font-weight: 600;
+}
+
+.area-path {
+  fill: rgba(23, 100, 72, 0.08);
+  stroke: none;
+}
+
+.line-path {
+  fill: none;
+  stroke: #176448;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.point {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+  color: #667269;
+  font-size: 10px;
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+}
+
+.legend i {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.chart-empty {
+  display: grid;
+  min-height: 230px;
+  place-content: center;
+  text-align: center;
+}
+
+.chart-empty strong {
+  color: #536159;
+  font-size: 13px;
+}
+
+.chart-empty span {
+  color: #8a948d;
+  font-size: 11px;
+}
+
+@media (max-width: 620px) {
+  .chart {
+    min-height: 180px;
+  }
+}

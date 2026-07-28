@@ -13,6 +13,7 @@ import { antdTheme } from "../config/antd-theme.js";
 import { useAuthLifecycle } from "../hooks/use-auth.js";
 import { LoginPage } from "../pages/login/index.js";
 import { JobsPage } from "../pages/jobs/index.js";
+import { JobDetailPage } from "../pages/job-detail/index.js";
 import { ProfessionsPage } from "../pages/professions/index.js";
 import { SettingsPage } from "../pages/settings/index.js";
 import { StyleCreatePage } from "../pages/style-create/index.js";
@@ -63,6 +64,7 @@ export function App(): React.JSX.Element {
                 path="/professions/:professionId/styles/:styleId"
               />
               <Route element={<JobsPage />} path="/jobs" />
+              <Route element={<JobDetailPage />} path="/jobs/:jobId" />
               <Route element={<SettingsPage />} path="/settings" />
             </Route>
             <Route element={<Navigate replace to="/professions" />} path="*" />

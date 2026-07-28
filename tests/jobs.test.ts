@@ -7,9 +7,12 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   authorizeJobArtifactDownload,
+  authorizeJobReferenceImageDownload,
   createPatchTask,
   downloadJobArtifact,
+  downloadJobReferenceImage,
   getJobArtifacts,
+  getJobDetail,
   server,
 } from "../renderer/src/api/index.js";
 import { configureMockApi } from "../renderer/src/mock/index.js";
@@ -96,5 +99,70 @@ describe("patch task API", () => {
 
     expect(result.artifact.role).toBe("validation");
     await expect(result.blob.text()).resolves.toBe("M".repeat(384));
+  });
+
+  it("returns running and completed detail views without filling missing usage", async () => {
+    const [running, completed] = await Promise.all([
+      getJobDetail("job-demo-running"),
+      getJobDetail("job-demo-complete"),
+    ]);
+
+    expect(running.status).toBe("running");
+    expect(running.currentStage).toBe("skill-production");
+    expect(
+      running.modelThroughput.recentCalls.find(
+        (call) => call.id === "run-artist",
+      )?.outputTokensPerSecond,
+    ).toBeNull();
+    expect(completed.status).toBe("passed");
+    expect(completed.passedSkills).toBe(completed.totalSkills);
+    expect(completed.modelThroughput.measuredCalls).toBe(8);
+  });
+
+  it("authorizes a reference image by task and fixed skill instead of Artifact ID", async () => {
+    const authorization = await authorizeJobReferenceImageDownload(
+      "job-demo-complete",
+      "skill-nen-guard",
+    );
+
+    expect(authorization.skillId).toBe("skill-nen-guard");
+    expect(authorization.mediaType).toBe("image/png");
+    expect(authorization.downloadUrl).not.toContain(authorization.artifactId);
+  });
+
+  it("verifies PNG signature and length before returning a reference Blob", async () => {
+    // fetch 替身只替代静态资源读取；授权仍经过 Axios Mock，测试不证明真实对象存储或网络可用。
+    const originalFetch = globalThis.fetch;
+    const bytes = new Uint8Array(4_841_702);
+    bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
+    globalThis.fetch = () =>
+      Promise.resolve(
+        new Response(new Blob([bytes], { type: "image/png" }), { status: 200 }),
+      );
+    try {
+      const result = await downloadJobReferenceImage(
+        "job-demo-complete",
+        "skill-nen-guard",
+      );
+      expect(result.image.skillId).toBe("skill-nen-guard");
+      expect(result.blob.type).toBe("image/png");
+      expect(result.blob.size).toBe(4_841_702);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("rejects reference image access for a skill without current passed evidence", async () => {
+    await expect(
+      authorizeJobReferenceImageDownload(
+        "job-demo-running",
+        "skill-handling-sword",
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        status: 404,
+        data: { code: "PATCH_TASK_REFERENCE_IMAGE_NOT_READY" },
+      },
+    });
   });
 });
