@@ -52,6 +52,11 @@
   background: #ffffff;
 }
 
+/* 首次读取失败占用表格内容区；后台轮询失败保留旧表格，仅由消息层提示，避免布局跳动。 */
+.listError {
+  margin-bottom: 12px;
+}
+
 /* 整行是进入详情的键盘链接；焦点样式作用于行内单元格，避免表格裁剪原生 outline。 */
 .clickable-row {
   cursor: pointer;

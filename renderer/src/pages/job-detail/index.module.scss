@@ -1,7 +1,7 @@
 /**
- * @fileoverview 任务详情路由的页面宽度、区块间距、错误状态和参考图预览样式。
+ * @fileoverview 任务详情路由的页面宽度、区块间距与错误状态样式。
  * 调用关系：由 pages/job-detail/index.tsx 导入，内部工作流、技能和吞吐各自维护局部样式。
- * 维护边界：长任务 ID/SHA 允许断行，预览使用稳定视口约束；本文件不控制轮询或 Blob URL 清理。
+ * 维护边界：三图弹窗样式和 Blob 生命周期由独立组件维护；本文件不控制轮询或图片请求。
  */
 
 .page {
@@ -41,100 +41,9 @@
   margin-bottom: 18px;
 }
 
-/* 图片区域保持可预测高度且展示完整画面，避免大图尺寸改变弹窗或遮挡元数据。 */
-.preview {
-  display: grid;
-  gap: 14px;
-}
-
-.preview-image {
-  display: grid;
-  min-height: 340px;
-  max-height: 66vh;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid #dce3dd;
-  border-radius: 5px;
-  background:
-    linear-gradient(45deg, #eef2ee 25%, transparent 25%),
-    linear-gradient(-45deg, #eef2ee 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #eef2ee 75%),
-    linear-gradient(-45deg, transparent 75%, #eef2ee 75%), #f8faf7;
-  background-position:
-    0 0,
-    0 8px,
-    8px -8px,
-    -8px 0;
-  background-size: 16px 16px;
-}
-
-.preview-image img {
-  display: block;
-  max-width: 100%;
-  max-height: 66vh;
-  object-fit: contain;
-}
-
-.preview dl {
-  display: grid;
-  grid-template-columns: minmax(120px, 0.8fr) minmax(120px, 0.6fr) minmax(
-      0,
-      2fr
-    );
-  margin: 0;
-  border: 1px solid #e0e6e1;
-  border-radius: 5px;
-  background: #f8faf7;
-}
-
-.preview dl div {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-  padding: 11px 13px;
-  border-right: 1px solid #e0e6e1;
-}
-
-.preview dl div:last-child {
-  border-right: 0;
-}
-
-.preview dt {
-  color: #7d8981;
-  font-size: 9px;
-}
-
-.preview dd {
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  color: #35433b;
-  font-family: "Cascadia Code", Consolas, monospace;
-  font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 @media (max-width: 620px) {
   .title-status {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .preview-image {
-    min-height: 240px;
-  }
-
-  .preview dl {
-    grid-template-columns: 1fr;
-  }
-
-  .preview dl div {
-    border-right: 0;
-    border-bottom: 1px solid #e0e6e1;
-  }
-
-  .preview dl div:last-child {
-    border-bottom: 0;
   }
 }

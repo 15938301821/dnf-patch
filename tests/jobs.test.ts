@@ -6,13 +6,17 @@
  */
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  archiveJob,
   authorizeJobArtifactDownload,
   authorizeJobReferenceImageDownload,
+  authorizeJobSkillPreviewDownload,
   createPatchTask,
   downloadJobArtifact,
   downloadJobReferenceImage,
+  downloadJobSkillPreview,
   getJobArtifacts,
   getJobDetail,
+  getJobsList,
   server,
 } from "../renderer/src/api/index.js";
 import { configureMockApi } from "../renderer/src/mock/index.js";
@@ -64,6 +68,51 @@ describe("patch task API", () => {
         data: { code: "IDEMPOTENCY_KEY_INVALID" },
       },
     });
+  });
+
+  it("advances a running task on consecutive list polls", async () => {
+    // 连续 API 调用替代 Hook timer，只证明 Mock 响应可观察变化；串行调度与 DOM 更新由 E2E 覆盖。
+    const first = await getJobsList();
+    const second = await getJobsList();
+    const firstProgress = first.find(
+      (job) => job.id === "job-demo-running",
+    )?.progress;
+    const secondProgress = second.find(
+      (job) => job.id === "job-demo-running",
+    )?.progress;
+
+    expect(firstProgress).toBeTypeOf("number");
+    expect(secondProgress).toBe((firstProgress ?? 0) + 1);
+  });
+
+  it("rejects archiving an active task and keeps it visible", async () => {
+    await expect(archiveJob("job-demo-running")).rejects.toMatchObject({
+      response: {
+        status: 409,
+        data: { code: "PATCH_TASK_ACTIVE" },
+      },
+    });
+    await expect(getJobsList()).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "job-demo-running" }),
+      ]),
+    );
+  });
+
+  it("hides an archived terminal task while retaining detail and artifacts", async () => {
+    await expect(archiveJob("job-demo-complete")).resolves.toBeUndefined();
+
+    const visibleJobs = await getJobsList();
+    expect(visibleJobs).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "job-demo-complete" }),
+      ]),
+    );
+    await expect(getJobDetail("job-demo-complete")).resolves.toMatchObject({
+      id: "job-demo-complete",
+      status: "passed",
+    });
+    await expect(getJobArtifacts("job-demo-complete")).resolves.toHaveLength(3);
   });
 
   it("returns three distinct Package artifact roles without object bytes", async () => {
@@ -147,6 +196,39 @@ describe("patch task API", () => {
       expect(result.image.skillId).toBe("skill-nen-guard");
       expect(result.blob.type).toBe("image/png");
       expect(result.blob.size).toBe(4_841_702);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("downloads a fixed comparison role with public same-frame metadata", async () => {
+    const originalFetch = globalThis.fetch;
+    const bytes = new Uint8Array(4_841_702);
+    bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
+    globalThis.fetch = () =>
+      Promise.resolve(
+        new Response(new Blob([bytes], { type: "image/png" }), { status: 200 }),
+      );
+    try {
+      const authorization = await authorizeJobSkillPreviewDownload(
+        "job-demo-complete",
+        "skill-nen-guard",
+        "source-frame",
+      );
+      expect(authorization.role).toBe("source-frame");
+      expect(authorization.frame).toMatchObject({
+        frameIndex: 3,
+        internalPath: "sprite/effect/nen_guard.img",
+      });
+
+      const result = await downloadJobSkillPreview(
+        "job-demo-complete",
+        "skill-nen-guard",
+        "aseprite-result",
+      );
+      expect(result.image.role).toBe("aseprite-result");
+      expect(result.image.frame).toEqual(authorization.frame);
+      expect(result.blob.type).toBe("image/png");
     } finally {
       globalThis.fetch = originalFetch;
     }

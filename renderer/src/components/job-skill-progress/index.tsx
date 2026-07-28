@@ -1,9 +1,9 @@
 /**
- * @fileoverview 展示制作任务中每个技能当前 attempt 的四阶段进度与模型参考图入口。
+ * @fileoverview 展示制作任务中每个技能当前 attempt 的四阶段进度与三图证据审查入口。
  *
  * 任务详情页传入服务端整理的技能 ViewModel 和预览命令；本组件只展示阶段证据、错误码并回传
  * 用户选择，不发 HTTP 请求、不创建 Blob URL，也不推断未知历史状态。referenceImageAvailable
- * 仅表示可向服务端申请当前参考图，不表示该 PNG 已直接用于游戏 runtime 或最终补丁。
+ * 作为当前三图链已进入可审查阶段的保守门禁，不表示模型参考 PNG 已用于 runtime 像素。
  */
 import { Button, Tag } from "antd";
 import {
@@ -28,8 +28,7 @@ import styles from "./index.module.scss";
 /** 逐技能进度组件的受控输入；预览生命周期始终由详情页拥有。 */
 interface JobSkillProgressProps {
   skills: PatchTaskSkillProgressView[];
-  previewingSkillId: string;
-  onPreviewReference: (skill: PatchTaskSkillProgressView) => void;
+  onCompareEvidence: (skill: PatchTaskSkillProgressView) => void;
 }
 
 /**
@@ -40,8 +39,7 @@ interface JobSkillProgressProps {
  */
 export function JobSkillProgress({
   skills,
-  previewingSkillId,
-  onPreviewReference,
+  onCompareEvidence,
 }: JobSkillProgressProps): React.JSX.Element {
   return (
     <section
@@ -102,15 +100,14 @@ export function JobSkillProgress({
               <div className={styles.action}>
                 {skill.referenceImageAvailable ? (
                   <Button
-                    aria-label={`预览${skill.displayName}模型参考图`}
+                    aria-label={`查看${skill.displayName}三图证据对比`}
                     icon={<ImageIcon size={15} />}
-                    loading={previewingSkillId === skill.skillId}
-                    onClick={() => onPreviewReference(skill)}
-                    title={`预览${skill.displayName}模型参考图`}
+                    onClick={() => onCompareEvidence(skill)}
+                    title={`查看${skill.displayName}三图证据对比`}
                     type="text"
                   />
                 ) : (
-                  <span>参考图未就绪</span>
+                  <span>对比证据未就绪</span>
                 )}
               </div>
             </article>

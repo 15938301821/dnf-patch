@@ -1,0 +1,345 @@
+/**
+ * @fileoverview 三图证据审查弹窗的桌面并排、移动分段、稳定图像舞台与元数据布局。
+ * 调用关系：仅由 skill-evidence-comparison 组件导入，不决定请求、证据角色或错误语义。
+ * 维护边界：三列图像区域必须保持同高；720px 以下只展示当前分段，避免 390px 视口横向滚动。
+ */
+
+.modal {
+  max-width: calc(100vw - 32px);
+}
+
+.modal-title {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.modal-title span {
+  overflow: hidden;
+  color: #1d2921;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modal-title small {
+  flex: 0 0 auto;
+  color: #7c8980;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.workspace {
+  display: grid;
+  gap: 14px;
+}
+
+.summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 2px 2px;
+}
+
+.summary > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 3px 10px;
+}
+
+.eyebrow {
+  grid-column: 1 / -1;
+  color: #b8662e;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.summary strong {
+  color: #26352c;
+  font-size: 13px;
+}
+
+.summary small {
+  min-width: 0;
+  overflow: hidden;
+  color: #78847c;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.switcher {
+  display: none;
+}
+
+/* 三个证据面板是同一审查工具的并列样本，固定等宽与同高图像舞台便于轮廓和材质比较。 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.panel {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: auto minmax(260px, 36vh) auto;
+  overflow: hidden;
+  border: 1px solid #dce3dd;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.panel[data-role="source-frame"] {
+  border-top: 3px solid #4f8468;
+}
+
+.panel[data-role="reference-image"] {
+  border-top: 3px solid #b8662e;
+}
+
+.panel[data-role="aseprite-result"] {
+  border-top: 3px solid #357c8f;
+}
+
+.panel-header {
+  display: grid;
+  min-height: 68px;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #e5eae6;
+}
+
+.panel-header > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.panel-header strong {
+  overflow: hidden;
+  color: #27352c;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-header small {
+  min-height: 28px;
+  color: #7c8880;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.order {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid #d8e0d9;
+  border-radius: 4px;
+  color: #6e7a72;
+  font-family: Bahnschrift, sans-serif;
+  font-size: 9px;
+}
+
+/* 棋盘背景表达透明像素；固定轨道吸收图片到达、缺失和错误文案的高度差。 */
+.image-stage {
+  display: grid;
+  min-width: 0;
+  min-height: 260px;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(45deg, #edf1ed 25%, transparent 25%),
+    linear-gradient(-45deg, #edf1ed 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #edf1ed 75%),
+    linear-gradient(-45deg, transparent 75%, #edf1ed 75%), #f8faf7;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+  background-size: 16px 16px;
+}
+
+.image-stage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 42vh;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.image-stage img.reference {
+  image-rendering: auto;
+}
+
+.placeholder {
+  display: grid;
+  max-width: 230px;
+  place-items: center;
+  gap: 7px;
+  padding: 24px;
+  color: #7d8981;
+  text-align: center;
+}
+
+.placeholder strong {
+  color: #4c5a51;
+  font-size: 11px;
+}
+
+.placeholder span {
+  overflow-wrap: anywhere;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.metadata {
+  display: grid;
+  min-height: 126px;
+  margin: 0;
+  padding: 3px 12px 10px;
+  border-top: 1px solid #e5eae6;
+  background: #fafbf9;
+}
+
+.metadata > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #e8ece8;
+}
+
+.metadata > div:last-child {
+  border-bottom: 0;
+}
+
+.metadata dt {
+  color: #849087;
+  font-size: 9px;
+}
+
+.metadata dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #3d4b42;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-metadata {
+  display: grid;
+  min-height: 126px;
+  place-items: center;
+  padding: 16px;
+  border-top: 1px solid #e5eae6;
+  background: #fafbf9;
+  color: #929c95;
+  font-size: 9px;
+  text-align: center;
+}
+
+.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .grid {
+    gap: 7px;
+  }
+
+  .panel-header {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+
+  .panel-header > :last-child {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .modal {
+    max-width: calc(100vw - 16px);
+    margin: 8px auto;
+  }
+
+  .modal-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .summary {
+    padding-top: 2px;
+  }
+
+  .summary > div {
+    grid-template-columns: 1fr;
+  }
+
+  .eyebrow {
+    grid-column: 1;
+  }
+
+  .switcher {
+    display: flex;
+  }
+
+  .grid {
+    display: block;
+  }
+
+  .panel {
+    display: none;
+    grid-template-rows: auto minmax(300px, 46vh) auto;
+  }
+
+  .panel.active {
+    display: grid;
+  }
+
+  .panel-header {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+  }
+
+  .panel-header > :last-child {
+    grid-column: auto;
+    justify-self: auto;
+  }
+
+  .metadata {
+    min-height: 116px;
+  }
+}

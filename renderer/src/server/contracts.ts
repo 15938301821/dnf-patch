@@ -333,6 +333,41 @@ export interface PatchTaskReferenceImageDownload extends PatchTaskReferenceImage
   expiresAtUtc: string;
 }
 
+/** 浏览器只能请求这三个固定技能预览角色，不能提交 Artifact ID、文件名或对象 key。 */
+export type PatchTaskSkillPreviewRole =
+  "source-frame" | "reference-image" | "aseprite-result";
+
+/** 源帧与 Aseprite 结果共享的公开帧身份；像素摘要和本机路径不会下发到浏览器。 */
+export interface PatchTaskSkillPreviewFrame {
+  entryIndex: number;
+  frameIndex: number;
+  internalPath: string;
+  width: number;
+  height: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  x: number;
+  y: number;
+}
+
+/** 当前 attempt 一个固定角色的脱敏 PNG 元数据；frame 仅存在于可审计的同帧角色。 */
+export interface PatchTaskSkillPreview {
+  artifactId: string;
+  skillId: string;
+  role: PatchTaskSkillPreviewRole;
+  artifactName: string;
+  mediaType: "image/png";
+  byteLength: number;
+  sha256: string;
+  frame?: PatchTaskSkillPreviewFrame;
+}
+
+/** 服务端为固定技能预览角色签发的短期读取授权，URL 只供当前下载调用栈使用。 */
+export interface PatchTaskSkillPreviewDownload extends PatchTaskSkillPreview {
+  downloadUrl: string;
+  expiresAtUtc: string;
+}
+
 /** 创建制作任务时引用后端稳定职业与风格 ID 的声明式 DTO。 */
 export interface CreatePatchTaskInput {
   professionId: string;

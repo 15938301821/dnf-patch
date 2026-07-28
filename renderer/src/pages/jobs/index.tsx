@@ -1,27 +1,32 @@
 /**
- * @fileoverview 展示 `/jobs` 制作任务列表，并按需读取、下载 Package V3 三项已验证产物。
+ * @fileoverview 展示并自动轮询 `/jobs` 制作任务列表，支持终态任务软归档，并按需读取、下载
+ * Package V3 三项已验证产物。
  *
- * 受保护路由渲染本页，页面通过任务 API 加载摘要，用户点击后读取 candidate、manifest、validation
- * 三项脱敏元数据；下载时按固定角色临时申请短期 URL，读取为 Blob 后交给浏览器原生下载。页面不接收
- * 对象 key、bucket 或长期凭据，不持久化短期 URL，也不把 Mock 返回描述为真实 Worker 或对象存储已通过。
+ * 受保护路由渲染本页，useJobsList 串行读取摘要并拥有定时器/取消清理；页面归档终态任务后触发
+ * 同一刷新生命周期。用户点击后读取 candidate、manifest、validation 三项脱敏元数据；下载时按固定
+ * 角色临时申请短期 URL，读取为 Blob 后交给浏览器原生下载。页面不接收对象 key、bucket 或长期凭据，
+ * 不持久化短期 URL，也不把软归档描述为取消执行或物理删除证据。
  */
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Button,
   Empty,
   Modal,
+  Popconfirm,
   Progress,
   Skeleton,
   Table,
   Tag,
+  Tooltip,
   message,
 } from "antd";
-import { Download, FileSearch, RefreshCw } from "lucide-react";
+import { Download, FileSearch, RefreshCw, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
+  archiveJob,
   downloadJobArtifact,
   getJobArtifacts,
-  getJobsList,
   type PatchTask,
   type PatchTaskArtifact,
   type PatchTaskStatus,
@@ -30,6 +35,7 @@ import { PageHeading } from "../../components/page-heading/index.js";
 import { apiErrorMessage } from "../../utils/api-error.js";
 import styles from "./index.module.scss";
 import { patchTaskStatusView } from "../../config/job-detail-view.js";
+import { useJobsList } from "../../hooks/use-jobs-list.js";
 
 /**
  * 渲染任务摘要、手动刷新和产物元数据检查界面。
@@ -39,34 +45,38 @@ import { patchTaskStatusView } from "../../config/job-detail-view.js";
 export function JobsPage(): React.JSX.Element {
   const navigate = useNavigate();
   const [messageApi, messageContextHolder] = message.useMessage();
-  const [jobs, setJobs] = useState<PatchTask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { jobs, loading, refreshing, errorMessage, refresh } = useJobsList();
   const [loadingArtifactId, setLoadingArtifactId] = useState("");
+  const [archivingId, setArchivingId] = useState("");
   const [artifactJobId, setArtifactJobId] = useState("");
   const [artifacts, setArtifacts] = useState<PatchTaskArtifact[]>([]);
   const [downloadingRole, setDownloadingRole] = useState<
     PatchTaskArtifact["role"] | ""
   >("");
 
+  useEffect(() => {
+    if (errorMessage) void messageApi.error(errorMessage);
+  }, [errorMessage, messageApi]);
+
   /**
-   * 重新读取当前用户任务摘要并维护页面加载状态。
+   * 把一个服务端已确认终态的任务从默认列表软归档。
    *
-   * @returns 请求与状态清理完成后结算；失败时不伪造任务。
+   * @param job 当前表格行的任务 ViewModel；queued/running 在控件层禁用，服务端仍会再次拒绝竞态状态。
+   * @returns 204 后显示成功消息并重启唯一列表读取生命周期；失败时保留当前行和详情证据。
    */
-  const load = async (): Promise<void> => {
-    setLoading(true);
+  const archive = async (job: PatchTask): Promise<void> => {
+    setArchivingId(job.id);
     try {
-      setJobs(await getJobsList());
+      await archiveJob(job.id);
+      void messageApi.success("任务已从列表移除");
+      if (artifactJobId === job.id) closeArtifacts();
+      refresh();
     } catch (error) {
       void messageApi.error(apiErrorMessage(error));
     } finally {
-      setLoading(false);
+      setArchivingId("");
     }
   };
-
-  useEffect(() => {
-    void load();
-  }, []);
 
   /**
    * 为列表中的一个任务读取三项固定角色元数据，不获取实际文件。
@@ -132,7 +142,11 @@ export function JobsPage(): React.JSX.Element {
       {messageContextHolder}
       <PageHeading
         action={
-          <Button icon={<RefreshCw size={16} />} onClick={() => void load()}>
+          <Button
+            icon={<RefreshCw size={16} />}
+            loading={refreshing}
+            onClick={refresh}
+          >
             刷新
           </Button>
         }
@@ -158,6 +172,15 @@ export function JobsPage(): React.JSX.Element {
       </section>
 
       <section className={styles.table}>
+        {errorMessage && jobs.length === 0 ? (
+          <Alert
+            className={styles.listError ?? ""}
+            description={errorMessage}
+            showIcon
+            title="任务列表暂时不可用"
+            type="error"
+          />
+        ) : null}
         {loading ? (
           <Skeleton active paragraph={{ rows: 8 }} />
         ) : (
@@ -227,6 +250,43 @@ export function JobsPage(): React.JSX.Element {
                   </Button>
                 ),
               },
+              {
+                title: "移除",
+                key: "archive",
+                align: "right",
+                width: 64,
+                /** 活动任务仅展示禁用命令；终态任务必须二次确认，服务端仍负责最终竞态判定。 */
+                render: (_, job) => {
+                  const active = isPatchTaskActive(job);
+                  const button = (
+                    <Button
+                      aria-label={`从列表移除${job.professionName}${job.styleName}任务`}
+                      danger
+                      disabled={active}
+                      icon={<Trash2 size={16} />}
+                      loading={archivingId === job.id}
+                      onClick={(event) => event.stopPropagation()}
+                      title={active ? undefined : "从列表移除"}
+                      type="text"
+                    />
+                  );
+                  if (active) {
+                    return <Tooltip title="任务完成后可移除">{button}</Tooltip>;
+                  }
+                  return (
+                    <Popconfirm
+                      cancelText="取消"
+                      description="执行记录、产物与审计证据仍会保留。"
+                      okButtonProps={{ danger: true }}
+                      okText="移除"
+                      onConfirm={() => archive(job)}
+                      title="从任务列表移除？"
+                    >
+                      {button}
+                    </Popconfirm>
+                  );
+                },
+              },
             ]}
             dataSource={jobs}
             locale={{ emptyText: <Empty description="暂无制作任务" /> }}
@@ -234,8 +294,13 @@ export function JobsPage(): React.JSX.Element {
             onRow={(job) => ({
               "aria-label": `查看${job.professionName}${job.styleName}任务详情`,
               className: styles["clickable-row"] ?? "",
-              onClick: () => void navigate(`/jobs/${job.id}`),
+              onClick: (event) => {
+                // Popconfirm 通过 Portal 渲染，但 React 事件仍可能冒泡到行；交互控件永远不能触发详情导航。
+                if (isInteractiveEventTarget(event.target)) return;
+                void navigate(`/jobs/${job.id}`);
+              },
               onKeyDown: (event) => {
+                if (isInteractiveEventTarget(event.target)) return;
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   void navigate(`/jobs/${job.id}`);
@@ -245,7 +310,7 @@ export function JobsPage(): React.JSX.Element {
               tabIndex: 0,
             })}
             rowKey="id"
-            scroll={{ x: 760 }}
+            scroll={{ x: 840 }}
           />
         )}
       </section>
@@ -320,3 +385,22 @@ const artifactRoleLabel: Record<PatchTaskArtifact["role"], string> = {
   manifest: "构建清单",
   validation: "独立验证",
 };
+
+/** 活动态只能由服务端状态判断；客户端不根据进度百分比猜测是否允许归档。 */
+function isPatchTaskActive(job: PatchTask): boolean {
+  return job.status === "queued" || job.status === "running";
+}
+
+/**
+ * 判断一个冒泡事件是否来自独立交互控件。
+ *
+ * @param target React 事件的原始 DOM target；Portal 中的确认按钮也会保留该 target。
+ * @returns 按钮、链接或表单控件应自行处理用户意图时为 true，表格行不得导航。
+ */
+function isInteractiveEventTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest("button, a, input, select, textarea, [role='button']") !==
+      null
+  );
+}

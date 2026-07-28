@@ -5,9 +5,9 @@
  * 标签页；字段值仍由父表单拥有。组件不发请求、不修改职业 Prompt 事实；选择变化时必须把
  * 活动技能收敛到仍存在的首项，避免渲染指向已删除行的索引。
  */
-import { Alert, Button, Empty, Form, Input, Tag } from "antd";
-import { Check, CircleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Alert, Button, Empty, Form, Input, Segmented, Tag } from "antd";
+import { Check, CircleAlert, Search } from "lucide-react";
+import { useDeferredValue, useEffect, useState } from "react";
 import type {
   ProfessionSkillSummary,
   SaveProfessionStyleInput,
@@ -20,6 +20,9 @@ interface SkillThemePromptEditorProps {
   form: ReturnType<typeof Form.useForm<SaveProfessionStyleInput>>[0];
   skills: readonly ProfessionSkillSummary[];
 }
+
+/** 逐技能导航的本地完成度筛选；不改变 Prompt 内容或完整性判定。 */
+type PromptFilter = "all" | "incomplete" | "complete";
 
 /** 判断单个技能的四个主题增量字段是否都已有非空内容。 */
 function promptComplete(prompt: SkillThemePrompt | undefined): boolean {
@@ -56,13 +59,44 @@ export function SkillThemePromptEditor({
       },
     ) ?? [];
   const [activeSkillId, setActiveSkillId] = useState("");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<PromptFilter>("all");
+  const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase());
+
+  const selectedSkills = selectedSkillIds
+    .map((skillId) => skills.find((skill) => skill.id === skillId))
+    .filter((skill): skill is ProfessionSkillSummary => skill !== undefined);
+  const visibleSkills = selectedSkills.filter((skill) => {
+    const prompt = prompts.find((item) => item.skillId === skill.id);
+    const complete = promptComplete(prompt);
+    const matchesQuery =
+      deferredQuery.length === 0 ||
+      skill.displayName.toLocaleLowerCase().includes(deferredQuery) ||
+      skill.id.toLocaleLowerCase().includes(deferredQuery);
+    const matchesFilter =
+      filter === "all" ||
+      (filter === "complete" && complete) ||
+      (filter === "incomplete" && !complete);
+    return matchesQuery && matchesFilter;
+  });
+  const firstVisibleSkillId = visibleSkills[0]?.id ?? "";
+  const activeSkillVisible = visibleSkills.some(
+    (skill) => skill.id === activeSkillId,
+  );
 
   useEffect(() => {
-    // 技能被父表单移除后立即切换，避免旧索引继续编辑另一行或空行。
-    if (!selectedSkillIds.includes(activeSkillId)) {
-      setActiveSkillId(selectedSkillIds[0] ?? "");
+    // 选择或筛选变化后收敛到首个可见项，不改父表单中的技能和 Prompt 数据。
+    if (firstVisibleSkillId && !activeSkillVisible) {
+      setActiveSkillId(firstVisibleSkillId);
+    } else if (selectedSkills.length === 0 && activeSkillId) {
+      setActiveSkillId("");
     }
-  }, [activeSkillId, selectedSkillIds]);
+  }, [
+    activeSkillId,
+    activeSkillVisible,
+    firstVisibleSkillId,
+    selectedSkills.length,
+  ]);
 
   if (selectedSkillIds.length === 0) {
     return (
@@ -73,9 +107,6 @@ export function SkillThemePromptEditor({
     );
   }
 
-  const selectedSkills = selectedSkillIds
-    .map((skillId) => skills.find((skill) => skill.id === skillId))
-    .filter((skill): skill is ProfessionSkillSummary => skill !== undefined);
   const activeIndex = prompts.findIndex(
     (prompt) => prompt.skillId === activeSkillId,
   );
@@ -83,33 +114,72 @@ export function SkillThemePromptEditor({
     (skill) => skill.id === activeSkillId,
   );
 
+  /** 只接受当前分段控件声明的值，活动技能由可见列表统一收敛。 */
+  const changeFilter = (next: string | number): void => {
+    if (next !== "all" && next !== "incomplete" && next !== "complete") {
+      return;
+    }
+    setFilter(next);
+  };
+
   return (
     <div className={styles.workspace}>
-      <div className={styles.skills} role="tablist" aria-label="已选技能">
-        {selectedSkills.map((skill) => {
-          const prompt = prompts.find((item) => item.skillId === skill.id);
-          const complete = promptComplete(prompt);
-          return (
-            <Button
-              aria-selected={skill.id === activeSkillId}
-              className={
-                skill.id === activeSkillId
-                  ? (styles.active ?? "")
-                  : (styles.skill ?? "")
-              }
-              icon={complete ? <Check size={14} /> : <CircleAlert size={14} />}
-              key={skill.id}
-              onClick={() => setActiveSkillId(skill.id)}
-              role="tab"
-              type="text"
-            >
-              <span>{skill.displayName}</span>
-              <Tag color={complete ? "success" : "warning"}>
-                {complete ? "完整" : "待补充"}
-              </Tag>
-            </Button>
-          );
-        })}
+      <div className={styles.navigation}>
+        <div className={styles.tools}>
+          <Input
+            allowClear
+            aria-label="搜索已选技能"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="搜索已选技能"
+            prefix={<Search aria-hidden="true" size={14} />}
+            size="small"
+            value={query}
+          />
+          <Segmented
+            aria-label="筛选技能 Prompt 完成度"
+            block
+            onChange={changeFilter}
+            options={[
+              { label: "全部", value: "all" },
+              { label: "待补充", value: "incomplete" },
+              { label: "完整", value: "complete" },
+            ]}
+            size="small"
+            value={filter}
+          />
+        </div>
+        <div className={styles.result}>显示 {visibleSkills.length} 项</div>
+        <div className={styles.skills} role="tablist" aria-label="已选技能">
+          {visibleSkills.map((skill) => {
+            const prompt = prompts.find((item) => item.skillId === skill.id);
+            const complete = promptComplete(prompt);
+            return (
+              <Button
+                aria-selected={skill.id === activeSkillId}
+                className={
+                  skill.id === activeSkillId
+                    ? (styles.active ?? "")
+                    : (styles.skill ?? "")
+                }
+                icon={
+                  complete ? <Check size={14} /> : <CircleAlert size={14} />
+                }
+                key={skill.id}
+                onClick={() => setActiveSkillId(skill.id)}
+                role="tab"
+                type="text"
+              >
+                <span>{skill.displayName}</span>
+                <Tag color={complete ? "success" : "warning"}>
+                  {complete ? "完整" : "待补充"}
+                </Tag>
+              </Button>
+            );
+          })}
+          {visibleSkills.length === 0 ? (
+            <div className={styles["filter-empty"]}>没有符合条件的技能</div>
+          ) : null}
+        </div>
       </div>
 
       <div className={styles.editor} role="tabpanel">

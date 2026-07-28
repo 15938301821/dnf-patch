@@ -5,7 +5,9 @@
  * 名称猜测技能或资源映射。目录为空时失败关闭制作范围，未核验技能仍可选择为设计稿但必须
  * 明确标为不可制作。
  */
-import { Checkbox, Empty, Skeleton, Tag } from "antd";
+import { Checkbox, Empty, Input, Segmented, Skeleton, Tag } from "antd";
+import { Search } from "lucide-react";
+import { useDeferredValue, useState } from "react";
 import type { ProfessionSkillSummary } from "../../server/contracts.js";
 import styles from "./index.module.scss";
 
@@ -16,6 +18,9 @@ interface SkillScopePickerProps {
   value?: string[];
   onChange?: (value: string[]) => void;
 }
+
+/** 仅影响当前目录可见项的本地筛选，不会修改表单中的技能 ID。 */
+type SkillScopeFilter = "all" | "selected" | "build-ready" | "draft-only";
 
 /** 把职业 Prompt 复核状态映射为标签文案。 */
 function promptStatusLabel(
@@ -50,6 +55,10 @@ export function SkillScopePicker({
   value = [],
   onChange,
 }: SkillScopePickerProps): React.JSX.Element {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<SkillScopeFilter>("all");
+  const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase());
+
   if (loading) {
     return <Skeleton active paragraph={{ rows: 4 }} title={false} />;
   }
@@ -70,6 +79,18 @@ export function SkillScopePicker({
   const blockedCount = selectedSkills.filter(
     (skill) => skill.executionStatus !== "build-ready",
   ).length;
+  const visibleSkills = skills.filter((skill) => {
+    const matchesQuery =
+      deferredQuery.length === 0 ||
+      skill.displayName.toLocaleLowerCase().includes(deferredQuery) ||
+      skill.id.toLocaleLowerCase().includes(deferredQuery);
+    const matchesFilter =
+      filter === "all" ||
+      (filter === "selected" && value.includes(skill.id)) ||
+      (filter === "build-ready" && skill.executionStatus === "build-ready") ||
+      (filter === "draft-only" && skill.executionStatus === "draft-only");
+    return matchesQuery && matchesFilter;
+  });
 
   /** 根据一次复选事件生成新的稳定 ID 数组并交还父表单。 */
   const toggleSkill = (skillId: string, checked: boolean): void => {
@@ -77,6 +98,18 @@ export function SkillScopePicker({
       ? [...new Set([...value, skillId])]
       : value.filter((item) => item !== skillId);
     onChange?.(next);
+  };
+
+  /** 只接受当前分段控件声明的值，未知值不改变目录视图。 */
+  const changeFilter = (next: string | number): void => {
+    if (
+      next === "all" ||
+      next === "selected" ||
+      next === "build-ready" ||
+      next === "draft-only"
+    ) {
+      setFilter(next);
+    }
   };
 
   return (
@@ -98,8 +131,34 @@ export function SkillScopePicker({
         </Tag>
       </div>
 
+      <div className={styles.tools}>
+        <Input
+          allowClear
+          aria-label="搜索职业技能"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="搜索技能名称或 ID"
+          prefix={<Search aria-hidden="true" size={14} />}
+          value={query}
+        />
+        <Segmented
+          aria-label="筛选职业技能"
+          block
+          onChange={changeFilter}
+          options={[
+            { label: "全部", value: "all" },
+            { label: "已选", value: "selected" },
+            { label: "可制作", value: "build-ready" },
+            { label: "仅设计", value: "draft-only" },
+          ]}
+          size="small"
+          value={filter}
+        />
+      </div>
+
+      <div className={styles.result}>显示 {visibleSkills.length} 项</div>
+
       <div className={styles.list} role="list" aria-label="职业技能目录">
-        {skills.map((skill) => {
+        {visibleSkills.map((skill) => {
           const selected = value.includes(skill.id);
           return (
             <label
@@ -134,6 +193,9 @@ export function SkillScopePicker({
             </label>
           );
         })}
+        {visibleSkills.length === 0 ? (
+          <div className={styles["filter-empty"]}>没有符合条件的技能</div>
+        ) : null}
       </div>
 
       <p className={styles.note}>

@@ -90,11 +90,23 @@ test("submits complete structured content while resource gates stay closed", asy
     .fill("排除暖色、文字、水印和无关角色元素。");
 
   await page.getByRole("tab", { name: "技能编排" }).click();
+  const skillSearch = page.getByRole("textbox", { name: "搜索职业技能" });
+  await skillSearch.fill("里·鬼剑术");
+  await expect(
+    page.getByText("显示 1 项", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByRole("checkbox")).toHaveCount(1);
   const skillCheckbox = page.getByRole("checkbox", {
     name: /^里·鬼剑术/u,
   });
   await skillCheckbox.click();
   await expect(skillCheckbox).toBeChecked();
+  await skillSearch.clear();
+  await expect(page.getByText("显示 16 项", { exact: true })).toBeVisible();
+
+  const promptSearch = page.getByRole("textbox", { name: "搜索已选技能" });
+  await promptSearch.fill("里·鬼剑术");
+  await expect(page.getByRole("tab", { name: /里·鬼剑术/u })).toBeVisible();
   await page
     .getByRole("textbox", { name: "主题增量 Prompt" })
     .fill("追加冰蓝月牙剑气和细窄空间裂纹。");
@@ -107,6 +119,15 @@ test("submits complete structured content while resource gates stay closed", asy
   await page
     .getByRole("textbox", { name: "主题排除" })
     .fill("不修改角色、武器、命中范围或动作节奏。");
+
+  const promptFilter = page.getByRole("radiogroup", {
+    name: "筛选技能 Prompt 完成度",
+  });
+  await promptFilter.getByText("完整", { exact: true }).click();
+  await expect(page.getByRole("tab", { name: /里·鬼剑术/u })).toBeVisible();
+  await promptFilter.getByText("待补充", { exact: true }).click();
+  await expect(page.getByText("没有符合条件的技能")).toBeVisible();
+  await promptFilter.getByText("全部", { exact: true }).click();
 
   await expectNoHorizontalOverflow(page);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -170,10 +191,50 @@ test("opens a running task from its row and observes the next polling cycle", as
   await expectNoHorizontalOverflow(page);
 });
 
-test("previews a verified reference PNG from a completed task", async ({
+test("polls the task list and archives only a terminal task", async ({
   page,
 }) => {
-  // 静态 PNG 替代真实对象存储对象，但请求仍经过固定任务/技能授权、长度和文件签名复核代码。
+  // Axios Mock 替代真实列表与归档 API；本流程验证浏览器定时器、确认交互和行可见性，
+  // 不证明真实 Server 的用户所有权、MySQL 行锁、migration 或证据保留。
+  await login(page);
+  await page.getByRole("menuitem", { name: "制作任务" }).click();
+  await expect(page.getByRole("heading", { name: "制作任务" })).toBeVisible();
+
+  const runningRow = page.getByRole("link", {
+    name: "查看剑魂暗蓝幻影任务详情",
+  });
+  const runningProgress = runningRow.getByRole("progressbar");
+  const firstProgress = await runningProgress.getAttribute("aria-valuenow");
+  await expect(runningProgress).not.toHaveAttribute(
+    "aria-valuenow",
+    firstProgress ?? "",
+    { timeout: 5_000 },
+  );
+  await expect(
+    runningRow.getByRole("button", {
+      name: "从列表移除剑魂暗蓝幻影任务",
+    }),
+  ).toBeDisabled();
+
+  const completedRow = page.getByRole("link", {
+    name: "查看气功师（女）樱花念气任务详情",
+  });
+  await completedRow
+    .getByRole("button", { name: "从列表移除气功师（女）樱花念气任务" })
+    .click();
+  await expect(page.getByText("从任务列表移除？")).toBeVisible();
+  await page.getByRole("button", { name: /^移\s*除$/u }).click();
+
+  await expect(completedRow).toBeHidden();
+  await expect(page.getByText("任务已从列表移除")).toBeVisible();
+  await expect(page).toHaveURL(/#\/jobs$/u);
+  await expectNoHorizontalOverflow(page);
+});
+
+test("compares source, model reference, and Aseprite result evidence", async ({
+  page,
+}) => {
+  // 三个静态 PNG 替代真实对象存储对象，但请求仍经过固定任务/技能/角色授权、长度和签名复核代码。
   await login(page);
   await page.getByRole("menuitem", { name: "制作任务" }).click();
   await page
@@ -185,24 +246,36 @@ test("previews a verified reference PNG from a completed task", async ({
     page.getByRole("heading", { name: "气功师（女） · 樱花念气" }),
   ).toBeVisible();
   await expect(page.getByText("3 / 3", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "预览念气罩模型参考图" }).click();
+  await page.getByRole("button", { name: "查看念气罩三图证据对比" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  const referenceImage = page.getByRole("img", { name: "念气罩模型参考图" });
-  await expect(referenceImage).toBeVisible();
-  await expect
-    .poll(() =>
-      referenceImage.evaluate(
-        (image) =>
-          (image as unknown as { naturalWidth?: number }).naturalWidth ?? 0,
-      ),
-    )
-    .toBeGreaterThan(0);
+  await expect(page.getByText("3 / 3 项证据")).toBeVisible();
+  const comparisonImages = [
+    page.getByRole("img", { name: "念气罩技能源帧" }),
+    page.getByRole("img", { name: "念气罩模型参考图" }),
+    page.getByRole("img", { name: "念气罩模型 + Aseprite 结果" }),
+  ];
+  for (const image of comparisonImages) {
+    await expect(image).toBeVisible();
+    await expect
+      .poll(() =>
+        image.evaluate(
+          (element) =>
+            (element as unknown as { naturalWidth?: number }).naturalWidth ?? 0,
+        ),
+      )
+      .toBeGreaterThan(0);
+  }
+  await expectNoHorizontalOverflow(page);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByText("Aseprite 结果", { exact: true }).click();
+  await expect(
+    page.getByRole("img", { name: "念气罩模型 + Aseprite 结果" }),
+  ).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expectNoHorizontalOverflow(page);
 });
 
 /**

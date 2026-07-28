@@ -58,13 +58,32 @@
   color: #176448;
 }
 
-.list {
-  /* 目录高度受限并在内部滚动，长技能集合不会把后续 Prompt 编辑区推离视口。 */
+.tools {
   display: grid;
-  max-height: 290px;
+  grid-template-columns: minmax(180px, 1fr) minmax(260px, 0.88fr);
+  gap: 8px;
+}
+
+.tools :global(.ant-input-affix-wrapper),
+.tools :global(.ant-segmented) {
+  min-width: 0;
+}
+
+.result {
+  color: #7a867d;
+  font-size: 10px;
+  text-align: right;
+}
+
+.list {
+  /* 目录高度受限并在内部滚动，31 技能等长目录仍能快速扫描且不推走 Prompt 编辑区。 */
+  display: grid;
+  max-height: min(360px, 46vh);
   gap: 5px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-right: 3px;
+  scrollbar-gutter: stable;
 }
 
 .item,
@@ -82,6 +101,12 @@
   cursor: pointer;
 }
 
+.item > :global(.ant-checkbox-wrapper),
+.itemSelected > :global(.ant-checkbox-wrapper) {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .itemSelected {
   border-color: #a9c4b0;
   background: #f0f7f1;
@@ -93,12 +118,18 @@
 }
 
 .name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
   color: #2f3b33;
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .statuses {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 4px;
@@ -127,6 +158,14 @@
   margin: 0;
 }
 
+.filter-empty {
+  display: grid;
+  min-height: 94px;
+  place-items: center;
+  color: #8a948d;
+  font-size: 11px;
+}
+
 .empty {
   display: grid;
   gap: 2px;
@@ -134,6 +173,36 @@
   border: 1px dashed #d3ddd4;
   border-radius: 6px;
   background: #f8faf7;
+}
+
+@container style-skills (max-width: 620px) {
+  /* 表单列变窄时，把状态移到名称下方；不再让三个标签挤压技能名称。 */
+  .summary,
+  .item,
+  .itemSelected {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .item,
+  .itemSelected {
+    gap: 7px;
+  }
+
+  .statuses {
+    justify-content: flex-start;
+    padding-left: 24px;
+  }
+
+  .name {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .tools {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {

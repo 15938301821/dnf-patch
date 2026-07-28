@@ -7,14 +7,15 @@
 .page {
   width: min(1380px, 100%);
   margin: 0 auto;
+  container: style-editor-page / inline-size;
 }
 
-/* 双栏轨道为表单和动态预览保留最小宽度，长 Prompt 只能在各自栏内换行。 */
+/* 编辑器是主工作面，预览是辅助信息面；两栏都只能在自身轨道内收缩。 */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
+  grid-template-columns: minmax(560px, 1.35fr) minmax(340px, 0.85fr);
   align-items: start;
-  gap: 20px;
+  gap: 18px;
 }
 
 .editor {
@@ -52,11 +53,17 @@
 }
 
 .skill-gate {
-  margin-top: 4px;
+  margin-top: 14px;
+}
+
+@container style-editor-page (max-width: 930px) {
+  /* 按工作区实际宽度切换，而不是按浏览器宽度猜测侧栏占用后的剩余空间。 */
+  .workspace {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1040px) {
-  /* 中等视口改为上下排列，解除 sticky 预览与编辑栏争抢横向空间。 */
   .workspace {
     grid-template-columns: 1fr;
   }

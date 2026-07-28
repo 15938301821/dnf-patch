@@ -11,6 +11,11 @@
   padding-top: 10px;
 }
 
+.skills {
+  /* 子组件按这块真实可用宽度响应，避免双栏页面中浏览器很宽但表单实际很窄。 */
+  container: style-skills / inline-size;
+}
+
 .basics,
 .grid {
   /* 双列字段使用可收缩轨道，校验和字符计数只能向下扩展而不改变列宽。 */

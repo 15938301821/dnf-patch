@@ -28,6 +28,7 @@ import {
 import { initialMockModelConfiguration } from "./model-configuration.js";
 import { configureMockTaskArtifactRoutes } from "./job-artifacts.js";
 import { configureMockTaskDetailRoutes } from "./job-details.js";
+import { configureMockTaskListRoutes } from "./job-list.js";
 import {
   areSelectedSkillsValid,
   mockProfessionSkills,
@@ -39,6 +40,8 @@ interface MockState {
   skills: ProfessionSkillSummary[];
   styles: ProfessionStyle[];
   jobs: PatchTask[];
+  /** 仅控制 GET /jobs 可见性；原任务继续供详情与 Artifact Mock 读取，模拟服务端保留证据。 */
+  archivedJobIds: string[];
   modelConfiguration: ModelConfiguration;
   resourceImport: ResourceImportOverview;
 }
@@ -99,6 +102,7 @@ const initialState: MockState = {
       artifactAvailable: true,
     },
   ],
+  archivedJobIds: [],
   modelConfiguration: initialMockModelConfiguration,
   resourceImport: {
     mode: "server-mirror",
@@ -397,8 +401,8 @@ export function configureMockApi(): void {
       return [200, envelope(style)];
     });
 
-  // 第五步：任务路由校验幂等键和资源门禁，但只生成演示元数据，不制作产物。
-  mock.onGet("/jobs").reply(() => [200, envelope(state.jobs)]);
+  // 第五步：任务列表与归档复用共享状态；创建路由继续校验幂等键和资源门禁。
+  configureMockTaskListRoutes(mock, () => state);
   /** 依次校验幂等键、主体关系、内容和资源门禁后生成演示任务。 */
   mock.onPost("/jobs").reply((config) => {
     const idempotencyKey =

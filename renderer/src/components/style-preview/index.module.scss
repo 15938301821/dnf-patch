@@ -22,6 +22,11 @@
   align-items: center;
 }
 
+.evidence article:last-child {
+  /* 三项摘要的末项横跨整行，避免形成没有含义的第四个空白网格。 */
+  grid-column: 1 / -1;
+}
+
 .header {
   height: 52px;
   justify-content: space-between;

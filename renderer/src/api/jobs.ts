@@ -14,16 +14,36 @@ import type {
   PatchTaskDetail,
   PatchTaskReferenceImage,
   PatchTaskReferenceImageDownload,
+  PatchTaskSkillPreview,
+  PatchTaskSkillPreviewDownload,
+  PatchTaskSkillPreviewRole,
 } from "../server/contracts.js";
-import { requestData } from "../server/server.js";
+import { requestData, server } from "../server/server.js";
 
 /**
  * 通过 `GET /jobs` 读取当前用户可见的任务摘要。
  *
+ * @param signal 列表 Hook 当前轮次的取消信号；刷新或卸载时中止旧请求，过期结果不得覆盖新列表。
  * @returns 任务 ViewModel 列表，不包含执行命令、凭据或产物字节。
  */
-export function getJobsList(): Promise<PatchTask[]> {
-  return requestData<PatchTask[]>({ method: "GET", url: "/jobs" });
+export function getJobsList(signal?: AbortSignal): Promise<PatchTask[]> {
+  return requestData<PatchTask[]>({
+    method: "GET",
+    url: "/jobs",
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/**
+ * 通过 `DELETE /jobs/:jobId` 把当前用户拥有的终态任务从默认列表软归档。
+ *
+ * @param jobId 任务列表返回并由服务端继续执行所有权检查的稳定 Run ID。
+ * @returns 收到 204 后结算且无业务正文；成功不表示取消执行，也不表示 Run、Job、Attempt 或 Artifact 被删除。
+ * @throws 服务端对活动任务返回稳定 409，对不存在或跨用户任务返回稳定 404。
+ */
+export async function archiveJob(jobId: string): Promise<void> {
+  // 归档成功是无响应正文的 204，不能使用要求 `{ data }` 包络的 requestData。
+  await server.delete(`/jobs/${jobId}`);
 }
 
 /**
@@ -114,6 +134,28 @@ export function authorizeJobReferenceImageDownload(
 }
 
 /**
+ * 通过任务、技能和固定角色申请一张对比图的短期授权。
+ *
+ * @param jobId 当前用户任务的稳定 ID，由服务端继续复核所有权。
+ * @param skillId 详情 DTO 返回的技能 ID，不是 Artifact ID。
+ * @param role 仅允许源帧、模型参考图或 Aseprite 结果三种固定语义。
+ * @param signal 对比弹窗生命周期的取消信号；关闭后未完成请求不得写入页面状态。
+ * @returns 当前 attempt 的脱敏 PNG 元数据与只供立即下载使用的短期 URL。
+ */
+export function authorizeJobSkillPreviewDownload(
+  jobId: string,
+  skillId: string,
+  role: PatchTaskSkillPreviewRole,
+  signal?: AbortSignal,
+): Promise<PatchTaskSkillPreviewDownload> {
+  return requestData<PatchTaskSkillPreviewDownload>({
+    method: "POST",
+    url: `/jobs/${jobId}/skills/${skillId}/previews/${role}/download-authorization`,
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/**
  * 申请短期授权并把当前技能模型参考图读取为经过类型、长度和 PNG 签名复核的 Blob。
  *
  * @param jobId 当前详情路由的任务 ID。
@@ -133,33 +175,11 @@ export async function downloadJobReferenceImage(
     skillId,
     signal,
   );
-  if (!isPngMediaType(authorization.mediaType)) {
-    throw new Error("REFERENCE_IMAGE_MEDIA_TYPE_MISMATCH");
-  }
-  // 第二步：短期 URL 只在当前调用栈使用；对象读取失败后禁止构造预览 URL。
-  const response = await fetch(authorization.downloadUrl, {
-    cache: "no-store",
-    credentials: "omit",
-    referrerPolicy: "no-referrer",
-    ...(signal ? { signal } : {}),
-  });
-  if (!response.ok) throw new Error("REFERENCE_IMAGE_DOWNLOAD_FAILED");
-  const blob = await response.blob();
-  if (
-    (blob.type && blob.type !== "image/png") ||
-    blob.size !== authorization.byteLength
-  ) {
-    throw new Error("REFERENCE_IMAGE_RESPONSE_MISMATCH");
-  }
-  // 第三步：复核 PNG 固定文件签名，避免仅凭 HTTP Content-Type 展示非图片字节。
-  const signature = new Uint8Array(await blob.slice(0, 8).arrayBuffer());
-  const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
-  if (
-    signature.length !== pngSignature.length ||
-    signature.some((value, index) => value !== pngSignature[index])
-  ) {
-    throw new Error("REFERENCE_IMAGE_SIGNATURE_INVALID");
-  }
+  const blob = await downloadVerifiedPng(
+    authorization,
+    signal,
+    "REFERENCE_IMAGE",
+  );
   return {
     image: {
       artifactId: authorization.artifactId,
@@ -173,9 +193,95 @@ export async function downloadJobReferenceImage(
   };
 }
 
+/**
+ * 申请一个固定角色并返回经媒体类型、长度与 PNG 签名复核的 Blob。
+ *
+ * @param jobId 当前详情任务 ID。
+ * @param skillId 用户选择的详情技能 ID。
+ * @param role 三种固定预览角色之一；不会转发 Artifact ID 或对象定位信息。
+ * @param signal 对比组件本轮加载的取消信号。
+ * @returns 可展示的脱敏元数据与 Blob；短期 URL 和响应对象不会进入 React 状态。
+ */
+export async function downloadJobSkillPreview(
+  jobId: string,
+  skillId: string,
+  role: PatchTaskSkillPreviewRole,
+  signal?: AbortSignal,
+): Promise<{ image: PatchTaskSkillPreview; blob: Blob }> {
+  const authorization = await authorizeJobSkillPreviewDownload(
+    jobId,
+    skillId,
+    role,
+    signal,
+  );
+  if (authorization.role !== role || authorization.skillId !== skillId) {
+    throw new Error("SKILL_PREVIEW_ROLE_MISMATCH");
+  }
+  const blob = await downloadVerifiedPng(
+    authorization,
+    signal,
+    "SKILL_PREVIEW",
+  );
+  const image: PatchTaskSkillPreview = {
+    artifactId: authorization.artifactId,
+    skillId: authorization.skillId,
+    role: authorization.role,
+    artifactName: authorization.artifactName,
+    mediaType: authorization.mediaType,
+    byteLength: authorization.byteLength,
+    sha256: authorization.sha256,
+    ...(authorization.frame ? { frame: authorization.frame } : {}),
+  };
+  return { image, blob };
+}
+
 /** 在编译期 DTO 之外复核实际网络响应，避免信任被代理或 Mock 篡改的媒体类型字符串。 */
 function isPngMediaType(mediaType: string): boolean {
   return mediaType.toLowerCase() === "image/png";
+}
+
+/**
+ * 读取并复核一个短期 PNG 授权；失败后禁止调用方创建 Object URL。
+ * @param authorization 服务端固定角色授权，包含预期媒体类型、长度与临时 URL。
+ * @param signal 所属预览生命周期的取消信号。
+ * @param errorPrefix 稳定本地错误前缀，便于区分旧参考图与三图调用链。
+ */
+async function downloadVerifiedPng(
+  authorization: {
+    mediaType: string;
+    byteLength: number;
+    downloadUrl: string;
+  },
+  signal: AbortSignal | undefined,
+  errorPrefix: "REFERENCE_IMAGE" | "SKILL_PREVIEW",
+): Promise<Blob> {
+  if (!isPngMediaType(authorization.mediaType)) {
+    throw new Error(`${errorPrefix}_MEDIA_TYPE_MISMATCH`);
+  }
+  const response = await fetch(authorization.downloadUrl, {
+    cache: "no-store",
+    credentials: "omit",
+    referrerPolicy: "no-referrer",
+    ...(signal ? { signal } : {}),
+  });
+  if (!response.ok) throw new Error(`${errorPrefix}_DOWNLOAD_FAILED`);
+  const blob = await response.blob();
+  if (
+    (blob.type && blob.type !== "image/png") ||
+    blob.size !== authorization.byteLength
+  ) {
+    throw new Error(`${errorPrefix}_RESPONSE_MISMATCH`);
+  }
+  // PNG 固定八字节签名是展示前最后一道本地门禁，不能只信任响应 Content-Type。
+  const signature = new Uint8Array(await blob.slice(0, 8).arrayBuffer());
+  const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (
+    signature.length !== pngSignature.length ||
+    signature.some((value, index) => value !== pngSignature[index])
+  ) {
+    throw new Error(`${errorPrefix}_SIGNATURE_INVALID`);
+  }
+  return blob;
 }
 
 /**

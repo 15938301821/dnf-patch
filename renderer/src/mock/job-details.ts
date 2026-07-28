@@ -1,10 +1,10 @@
 /**
- * @fileoverview 登记任务详情页与固定技能参考图授权的同契约 Mock 路由。
+ * @fileoverview 登记任务详情页与固定技能三图授权的同契约 Mock 路由。
  *
  * 主 Mock Server 传入共享 Axios 适配器和当前任务列表，本模块调用 job-detail-fixtures 取得静态
- * ViewModel，并返回详情或短期参考图授权。副作用仅限 Mock 响应和运行中读取次数计数，不执行
- * 模型、Worker 或对象存储操作。安全边界：预览只接受任务与技能 ID，技能必须由详情标记可用；
- * 静态 PNG 仅供前端测试，不证明真实 Artifact 证据、图片生成或最终补丁兼容性。
+ * ViewModel，并返回详情或短期预览授权。副作用仅限 Mock 响应和运行中读取次数计数，不执行
+ * 模型、Worker 或对象存储操作。安全边界：预览只接受任务、技能和固定角色；静态 PNG 仅供
+ * 前端测试，不证明真实 Artifact 证据、图片生成、同帧像素差异或最终补丁兼容性。
  */
 import type MockAdapter from "axios-mock-adapter";
 import referenceImageUrl from "../assets/style-preview.png";
@@ -18,6 +18,18 @@ const referenceImage = {
   mediaType: "image/png" as const,
   byteLength: 4_841_702,
   sha256: "E464E9C65008116BA8BE63D78AA67B6673600AD2E838ABBC13B30E046D8A459F",
+};
+
+const comparisonFrame = {
+  entryIndex: 0,
+  frameIndex: 3,
+  internalPath: "sprite/effect/nen_guard.img",
+  width: 320,
+  height: 320,
+  canvasWidth: 512,
+  canvasHeight: 512,
+  x: 96,
+  y: 96,
 };
 
 /**
@@ -76,6 +88,55 @@ export function configureMockTaskDetailRoutes(
           data: {
             ...referenceImage,
             skillId: skill.skillId,
+            downloadUrl: referenceImageUrl,
+            expiresAtUtc: new Date(Date.now() + 300_000).toISOString(),
+          },
+        },
+      ];
+    });
+
+  mock
+    .onPost(
+      /\/jobs\/[^/]+\/skills\/[^/]+\/previews\/(source-frame|reference-image|aseprite-result)\/download-authorization$/u,
+    )
+    .reply((config) => {
+      const segments = config.url?.split("/") ?? [];
+      const job = getJobs().find((item) => item.id === segments[2]);
+      const skill = job
+        ? mockTaskDetail(job).skills.find(
+            (item) =>
+              item.skillId === segments[4] && item.referenceImageAvailable,
+          )
+        : undefined;
+      const role = segments[6];
+      if (
+        !skill ||
+        !["source-frame", "reference-image", "aseprite-result"].includes(
+          role ?? "",
+        )
+      ) {
+        return [
+          404,
+          {
+            code: "PATCH_TASK_SKILL_PREVIEW_NOT_READY",
+            message: "该技能预览尚未生成或当前用户无权查看。",
+          },
+        ];
+      }
+      const roleName = role as
+        "source-frame" | "reference-image" | "aseprite-result";
+      return [
+        200,
+        {
+          data: {
+            ...referenceImage,
+            artifactId: `mock-${roleName}`,
+            artifactName: `mock-${roleName}.png`,
+            skillId: skill.skillId,
+            role: roleName,
+            ...(roleName === "reference-image"
+              ? {}
+              : { frame: comparisonFrame }),
             downloadUrl: referenceImageUrl,
             expiresAtUtc: new Date(Date.now() + 300_000).toISOString(),
           },
