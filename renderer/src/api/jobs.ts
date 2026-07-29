@@ -173,6 +173,11 @@ export async function downloadJobSkillPreview(
     byteLength: authorization.byteLength,
     sha256: authorization.sha256,
     ...(authorization.frame ? { frame: authorization.frame } : {}),
+    ...(authorization.referenceTransferQuality
+      ? {
+          referenceTransferQuality: authorization.referenceTransferQuality,
+        }
+      : {}),
   };
   return { image, blob };
 }

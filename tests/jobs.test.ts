@@ -234,6 +234,11 @@ describe("patch task API", () => {
       );
       expect(result.image.role).toBe("aseprite-result");
       expect(result.image.frame).toEqual(authorization.frame);
+      expect(result.image.referenceTransferQuality).toMatchObject({
+        referenceCoverage: 0.96,
+        referenceSimilarity: 0.94,
+        edgeEnergyRatio: 1.255,
+      });
       expect(result.blob.type).toBe("image/png");
     } finally {
       globalThis.fetch = originalFetch;

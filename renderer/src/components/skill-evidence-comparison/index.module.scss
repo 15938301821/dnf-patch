@@ -80,6 +80,54 @@
   display: none;
 }
 
+/* 质量门禁是三图共享的审计摘要，使用一条紧凑网格，不与任一角色面板形成嵌套卡片。 */
+.quality {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: stretch;
+  overflow: hidden;
+  border-block: 1px solid #d8e1db;
+  background: #f5f8f5;
+}
+
+.quality > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 9px 12px;
+  border-right: 1px solid #d8e1db;
+}
+
+.quality span,
+.quality small {
+  color: #78857d;
+  font-size: 9px;
+}
+
+.quality strong {
+  color: #1f583d;
+  font-family: Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  font-size: 17px;
+}
+
+.quality p {
+  align-self: center;
+  margin: 0;
+  padding: 9px 12px;
+  color: #66746b;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.quality-legacy {
+  padding: 9px 12px;
+  border-block: 1px solid #e1e5e2;
+  background: #f7f8f6;
+  color: #7c8880;
+  font-size: 9px;
+}
+
 /* 三个证据面板是同一审查工具的并列样本，固定等宽与同高图像舞台便于轮廓和材质比较。 */
 .grid {
   display: grid;
@@ -315,6 +363,24 @@
 
   .switcher {
     display: flex;
+  }
+
+  .quality {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .quality > div {
+    padding-inline: 8px;
+  }
+
+  .quality strong {
+    font-size: 14px;
+  }
+
+  .quality p {
+    grid-column: 1 / -1;
+    border-top: 1px solid #d8e1db;
+    text-align: center;
   }
 
   .grid {

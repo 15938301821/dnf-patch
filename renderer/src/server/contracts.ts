@@ -343,6 +343,18 @@ export interface PatchTaskSkillPreviewFrame {
   y: number;
 }
 
+/** Worker 独立重读三类像素后由 Server 透传的 V2 参考 RGB 质量证据。 */
+export interface PatchTaskReferenceTransferQuality {
+  schemaVersion: 1;
+  evaluatedFrameCount: number;
+  evaluatedPixelCount: number;
+  referenceCoverage: number;
+  referenceSimilarity: number;
+  sourceEdgeEnergy: number;
+  runtimeEdgeEnergy: number;
+  edgeEnergyRatio: number;
+}
+
 /** 当前 attempt 一个固定角色的脱敏 PNG 元数据；frame 仅存在于可审计的同帧角色。 */
 export interface PatchTaskSkillPreview {
   artifactId: string;
@@ -353,6 +365,7 @@ export interface PatchTaskSkillPreview {
   byteLength: number;
   sha256: string;
   frame?: PatchTaskSkillPreviewFrame;
+  referenceTransferQuality?: PatchTaskReferenceTransferQuality;
 }
 
 /** 服务端为固定技能预览角色签发的短期读取授权，URL 只供当前下载调用栈使用。 */

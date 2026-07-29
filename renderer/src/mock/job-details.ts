@@ -32,6 +32,18 @@ const comparisonFrame = {
   y: 96,
 };
 
+/** Mock 只复现 V2 ViewModel 形状；数值不证明真实 Worker 图片质量。 */
+const referenceTransferQuality = {
+  schemaVersion: 1 as const,
+  evaluatedFrameCount: 40,
+  evaluatedPixelCount: 28_640,
+  referenceCoverage: 0.96,
+  referenceSimilarity: 0.94,
+  sourceEdgeEnergy: 18.4,
+  runtimeEdgeEnergy: 23.1,
+  edgeEnergyRatio: 1.255,
+};
+
 /**
  * 在共享 Axios Mock 上登记 owner-scoped 详情和固定技能参考图授权端点。
  *
@@ -102,6 +114,9 @@ export function configureMockTaskDetailRoutes(
             ...(roleName === "reference-image"
               ? {}
               : { frame: comparisonFrame }),
+            ...(roleName === "reference-image"
+              ? {}
+              : { referenceTransferQuality }),
             downloadUrl: referenceImageUrl,
             expiresAtUtc: new Date(Date.now() + 300_000).toISOString(),
           },

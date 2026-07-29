@@ -4,8 +4,9 @@
  * 任务详情页只控制打开技能，本组件通过类型化 jobs API 并发读取三个固定角色；每个角色独立
  * 呈现加载、缺失、失败或可审查状态。副作用包括三项短期授权、PNG 下载和 Blob URL 创建；
  * 关闭、切换技能、重试或卸载时必须中止整轮请求并释放全部 URL，过期结果不得覆盖当前技能。
- * 浏览器只提交任务、技能和固定角色，不提交 Artifact ID、对象 key 或本机路径。模型参考图仅
- * 提供有界视觉引导，不直接替换源帧像素；对比结果不证明客户端兼容、部署或全技能覆盖。
+ * 浏览器只提交任务、技能和固定角色，不提交 Artifact ID、对象 key 或本机路径。V2 模型母图
+ * 提供 runtime RGB，Engineer 只定位空间映射，Aseprite 恢复官方几何和 Alpha；质量数字来自
+ * 独立 Worker 校验。对比结果不证明客户端兼容、部署或全技能覆盖。
  */
 import axios from "axios";
 import { Alert, Button, Modal, Segmented, Tag, Tooltip } from "antd";
@@ -41,22 +42,22 @@ const previewRoleView: Record<
     order: "01",
     title: "技能源帧",
     shortTitle: "源帧",
-    badge: "像素基线",
+    badge: "官方约束",
     description: "已核验资源中的代表帧",
   },
   "reference-image": {
     order: "02",
     title: "模型参考图",
     shortTitle: "模型参考",
-    badge: "视觉方向",
-    description: "参与有界视觉引导，不直接替换源帧像素",
+    badge: "RGB 母图",
+    description: "图片模型生成高分辨率视觉特效，作为 runtime RGB 主来源",
   },
   "aseprite-result": {
     order: "03",
     title: "模型 + Aseprite 结果",
     shortTitle: "Aseprite 结果",
-    badge: "工具输出",
-    description: "固定模型计划与 Aseprite 流程产出的同帧结果",
+    badge: "约束恢复",
+    description: "Engineer 匹配位置，Aseprite 恢复官方尺寸、位置与 Alpha",
   },
 };
 
@@ -146,6 +147,15 @@ export function SkillEvidenceComparison({
     source?.image.frame && result?.image.frame
       ? sameFrame(source.image.frame, result.image.frame)
       : undefined;
+  const sourceQuality = source?.image.referenceTransferQuality;
+  const resultQuality = result?.image.referenceTransferQuality;
+  const qualityMismatch =
+    sourceQuality !== undefined &&
+    resultQuality !== undefined &&
+    !sameQuality(sourceQuality, resultQuality);
+  const quality = qualityMismatch
+    ? undefined
+    : (resultQuality ?? sourceQuality);
 
   return (
     <Modal
@@ -193,6 +203,17 @@ export function SkillEvidenceComparison({
             />
           ) : null}
 
+          {qualityMismatch ? (
+            <Alert
+              description="源帧与结果图携带的独立质量摘要不同，本次指标不能作为审查证据。"
+              showIcon
+              title="质量证据不一致"
+              type="error"
+            />
+          ) : (
+            <QualityGate quality={quality} />
+          )}
+
           <Segmented<PatchTaskSkillPreviewRole>
             aria-label="选择证据视图"
             block
@@ -219,6 +240,44 @@ export function SkillEvidenceComparison({
         </div>
       ) : null}
     </Modal>
+  );
+}
+
+/** 展示 Server 复核后的三项固定门禁；历史 V1 无摘要时不推断通过状态。 */
+function QualityGate({
+  quality,
+}: {
+  quality: PatchTaskSkillPreview["referenceTransferQuality"];
+}): React.JSX.Element {
+  if (!quality) {
+    return (
+      <div className={styles["quality-legacy"]}>
+        旧版证据未计算参考 RGB 质量门禁
+      </div>
+    );
+  }
+  return (
+    <section aria-label="参考图传输质量门禁" className={styles.quality}>
+      <div>
+        <span>参考覆盖率</span>
+        <strong>{percent(quality.referenceCoverage)}</strong>
+        <small>门槛 ≥ 80%</small>
+      </div>
+      <div>
+        <span>RGB 相似度</span>
+        <strong>{percent(quality.referenceSimilarity)}</strong>
+        <small>门槛 ≥ 90%</small>
+      </div>
+      <div>
+        <span>清晰度倍率</span>
+        <strong>{quality.edgeEnergyRatio.toFixed(2)}×</strong>
+        <small>门槛 ≥ 1.01×</small>
+      </div>
+      <p>
+        {quality.evaluatedFrameCount.toLocaleString("zh-CN")} 帧 ·{" "}
+        {quality.evaluatedPixelCount.toLocaleString("zh-CN")} 有效像素
+      </p>
+    </section>
   );
 }
 
@@ -340,7 +399,7 @@ function PreviewMetadata({
       ) : (
         <div>
           <dt>语义</dt>
-          <dd>风格参考，不绑定 runtime 帧</dd>
+          <dd>图片模型 RGB 母图，不绑定单一 runtime 帧</dd>
         </div>
       )}
       <div>
@@ -393,7 +452,31 @@ function sameFrame(
   );
 }
 
+/** 逐字段比较源帧和结果图的 finalized 质量摘要，避免只展示单侧漂移值。 */
+function sameQuality(
+  left: NonNullable<PatchTaskSkillPreview["referenceTransferQuality"]>,
+  right: NonNullable<PatchTaskSkillPreview["referenceTransferQuality"]>,
+): boolean {
+  return (
+    left.evaluatedFrameCount === right.evaluatedFrameCount &&
+    left.evaluatedPixelCount === right.evaluatedPixelCount &&
+    left.referenceCoverage === right.referenceCoverage &&
+    left.referenceSimilarity === right.referenceSimilarity &&
+    left.sourceEdgeEnergy === right.sourceEdgeEnergy &&
+    left.runtimeEdgeEnergy === right.runtimeEdgeEnergy &&
+    left.edgeEnergyRatio === right.edgeEnergyRatio
+  );
+}
+
 /** 生成适合紧凑面板的摘要；完整 SHA 仍由 title 提供。 */
 function shortSha(sha256: string): string {
   return `${sha256.slice(0, 8)}…${sha256.slice(-8)}`;
+}
+
+/** 把 0..1 的证据比率格式化为一位百分数，不改变服务端阈值判断。 */
+function percent(value: number): string {
+  return new Intl.NumberFormat("zh-CN", {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(value);
 }

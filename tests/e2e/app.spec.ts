@@ -338,8 +338,17 @@ test("compares source, model reference, and Aseprite result evidence", async ({
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByText("3 / 3 项证据")).toBeVisible();
   await expect(
-    page.getByText("参与有界视觉引导，不直接替换源帧像素"),
+    page.getByText("图片模型生成高分辨率视觉特效，作为 runtime RGB 主来源"),
   ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "参考图传输质量门禁" }),
+  ).toContainText("96%");
+  await expect(
+    page.getByRole("region", { name: "参考图传输质量门禁" }),
+  ).toContainText("94%");
+  await expect(
+    page.getByRole("region", { name: "参考图传输质量门禁" }),
+  ).toContainText("1.25×");
   const comparisonImages = [
     page.getByRole("img", { name: "念气罩技能源帧" }),
     page.getByRole("img", { name: "念气罩模型参考图" }),
