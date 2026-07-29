@@ -1,5 +1,5 @@
 /**
- * @fileoverview 在真实浏览器中验证登录、响应式职业流程和结构化风格门禁。
+ * @fileoverview 在真实浏览器中验证登录、响应式职业流程、风格删除和结构化风格门禁。
  *
  * Playwright 连接本地生产预览，API 由 E2E Mock Adapter 替代；测试覆盖 DOM、路由和 390px
  * 溢出风险，但不证明真实 Server、数据库、Worker、模型、对象存储或下载链路。选择器以可访问
@@ -13,6 +13,41 @@ test("logs in and renders the profession workspace responsively", async ({
   await login(page);
   await expect(page.getByRole("heading", { name: "职业与风格" })).toBeVisible();
   await expect(page.getByText("剑魂", { exact: true }).first()).toBeVisible();
+
+  await expectNoHorizontalOverflow(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoHorizontalOverflow(page);
+});
+
+test("selects one of six reasoning efforts while the image role stays inapplicable", async ({
+  page,
+}) => {
+  await login(page);
+  await page.getByRole("menuitem", { name: "模型设置" }).click();
+  await expect(page.getByRole("heading", { name: "模型设置" })).toBeVisible();
+
+  const orchestrator = page.locator('[data-role="orchestrator"]');
+  const reasoningSelect = orchestrator.getByRole("combobox", {
+    name: "推理强度",
+  });
+  await reasoningSelect.click();
+  await expect(page.getByRole("option")).toHaveText([
+    "低 · low",
+    "中 · medium",
+    "高 · high",
+    "超高 · xhigh",
+    "最大 · max",
+    "极致 · ultra",
+  ]);
+  await expect(page.getByRole("option", { name: /默认/u })).toHaveCount(0);
+  await page.getByRole("option", { name: "极致 · ultra" }).click();
+  await expect(orchestrator.getByTitle("极致 · ultra")).toBeVisible();
+
+  const referenceGenerator = page.locator('[data-role="referenceGenerator"]');
+  await expect(
+    referenceGenerator.getByRole("combobox", { name: "推理强度" }),
+  ).toBeDisabled();
+  await expect(referenceGenerator.getByText("图片接口不适用")).toBeVisible();
 
   await expectNoHorizontalOverflow(page);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -47,6 +82,59 @@ test("creates an empty-skill draft and returns to its profession", async ({
 
   await expectNoHorizontalOverflow(page);
   await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoHorizontalOverflow(page);
+});
+
+test("deletes a newly created empty profession and selects its neighbor", async ({
+  page,
+}) => {
+  // Mock 只证明确认交互与列表选择更新；真实所有权、行锁和外键保护由 Server 负责。
+  await login(page);
+  await page.getByRole("button", { name: "新建职业" }).click();
+  await page.getByRole("textbox", { name: "职业名称" }).fill("待删除职业");
+  await page.getByRole("textbox", { name: "唯一标识" }).fill("delete-me");
+  await page.getByRole("button", { name: /^确\s*定$/u }).click();
+
+  const professionRow = page.getByRole("listitem").filter({
+    has: page.getByRole("button", { name: "选择职业待删除职业" }),
+  });
+  await expect(professionRow).toBeVisible();
+  await professionRow
+    .getByRole("button", { name: "删除职业待删除职业" })
+    .click();
+  await expect(page.getByText("删除职业“待删除职业”？")).toBeVisible();
+  await page.getByRole("button", { name: /^删\s*除$/u }).click();
+
+  await expect(professionRow).toBeHidden();
+  await expect(page.getByText("职业已删除")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "剑魂" })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoHorizontalOverflow(page);
+});
+
+test("deletes a private style draft after explicit confirmation", async ({
+  page,
+}) => {
+  // Mock 只证明浏览器确认、DELETE 契约与列表同步；真实所有权、事务和限制性外键由 Server 验证。
+  await login(page);
+  await page.getByRole("listitem").filter({ hasText: "狂战士" }).click();
+  await page.getByRole("button", { name: "新建风格" }).click();
+  await page.getByRole("textbox", { name: "风格名称" }).fill("待删除草稿");
+  await page.getByRole("button", { name: "创建草稿" }).click();
+
+  const styleCard = page.getByRole("article").filter({ hasText: "待删除草稿" });
+  await styleCard
+    .getByRole("button", { name: "删除职业风格待删除草稿" })
+    .click();
+  await expect(page.getByText("删除“待删除草稿”？")).toBeVisible();
+  await page.getByRole("button", { name: /^删\s*除$/u }).click();
+
+  await expect(styleCard).toBeHidden();
+  await expect(page.getByText("职业风格已删除")).toBeVisible();
+  await expect(
+    page.getByRole("listitem").filter({ hasText: "狂战士0 个风格" }),
+  ).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -249,6 +337,9 @@ test("compares source, model reference, and Aseprite result evidence", async ({
   await page.getByRole("button", { name: "查看念气罩三图证据对比" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByText("3 / 3 项证据")).toBeVisible();
+  await expect(
+    page.getByText("参与有界视觉引导，不直接替换源帧像素"),
+  ).toBeVisible();
   const comparisonImages = [
     page.getByRole("img", { name: "念气罩技能源帧" }),
     page.getByRole("img", { name: "念气罩模型参考图" }),

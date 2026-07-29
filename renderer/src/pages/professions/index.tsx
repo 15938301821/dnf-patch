@@ -1,6 +1,6 @@
 /**
- * @fileoverview 编排 `/professions` 的职业主列表、所选职业风格和新建职业弹窗。
- * 路由查询参数可指定初始职业；页面先加载职业，再随选择请求风格，并通过类型化 API 创建职业。
+ * @fileoverview 编排 `/professions` 的职业主列表、所选职业风格、草稿删除和新建职业弹窗。
+ * 路由查询参数可指定初始职业；页面先加载职业，再随选择请求风格，并通过类型化 API 创建职业或删除风格。
  * 副作用是受认证请求、导航与消息；请求卸载后必须忽略过期结果，客户端不生成技能或资源事实。
  */
 import { useEffect, useState } from "react";
@@ -10,14 +10,18 @@ import {
   Form,
   Input,
   Modal,
+  Popconfirm,
   Skeleton,
+  Tooltip,
   Typography,
   message,
 } from "antd";
-import { ArrowRight, Layers3, Plus } from "lucide-react";
+import { ArrowRight, Layers3, Plus, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   createProfession,
+  deleteProfession,
+  deleteProfessionStyle,
   getProfessionStyles,
   getProfessionsList,
   type CreateProfessionInput,
@@ -45,6 +49,8 @@ export function ProfessionsPage(): React.JSX.Element {
   const [stylesLoading, setStylesLoading] = useState(false);
   const [professionModalOpen, setProfessionModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingProfessionId, setDeletingProfessionId] = useState("");
+  const [deletingStyleId, setDeletingStyleId] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -134,6 +140,67 @@ export function ProfessionsPage(): React.JSX.Element {
     }
   };
 
+  /**
+   * 删除服务端确认可撤销的空职业，并把选择移动到相邻职业。
+   * @param professionId 用户在职业行确认弹窗中选择的稳定职业 ID。
+   * @returns 请求结算后完成；失败时保留职业、选择与右侧风格列表。
+   */
+  const deleteSelectedProfession = async (
+    professionId: string,
+  ): Promise<void> => {
+    setDeletingProfessionId(professionId);
+    try {
+      await deleteProfession(professionId);
+      const deletedIndex = professions.findIndex(
+        (profession) => profession.id === professionId,
+      );
+      const remaining = professions.filter(
+        (profession) => profession.id !== professionId,
+      );
+      const next = remaining[Math.min(deletedIndex, remaining.length - 1)];
+      setProfessions(remaining);
+      if (selectedId === professionId) {
+        setSelectedId(next?.id ?? "");
+        setStylesList([]);
+      }
+      void messageApi.success("职业已删除");
+    } catch (error: unknown) {
+      void messageApi.error(apiErrorMessage(error));
+    } finally {
+      setDeletingProfessionId("");
+    }
+  };
+
+  /**
+   * 删除服务端确认可撤销的风格，并同步当前职业卡片与派生计数。
+   * @param styleId 用户在确认弹窗中选择的稳定风格 ID。
+   * @returns 请求结算后完成；失败时保留原列表，避免客户端提前隐藏受保护内容。
+   */
+  const deleteStyle = async (styleId: string): Promise<void> => {
+    setDeletingStyleId(styleId);
+    try {
+      await deleteProfessionStyle(selectedId, styleId);
+      setStylesList((current) =>
+        current.filter((style) => style.id !== styleId),
+      );
+      setProfessions((current) =>
+        current.map((profession) =>
+          profession.id === selectedId
+            ? {
+                ...profession,
+                styleCount: Math.max(0, profession.styleCount - 1),
+              }
+            : profession,
+        ),
+      );
+      void messageApi.success("职业风格已删除");
+    } catch (error: unknown) {
+      void messageApi.error(apiErrorMessage(error));
+    } finally {
+      setDeletingStyleId("");
+    }
+  };
+
   const selectedProfession = professions.find((item) => item.id === selectedId);
 
   return (
@@ -164,28 +231,67 @@ export function ProfessionsPage(): React.JSX.Element {
           ) : professions.length === 0 ? (
             <Empty description="暂无职业" />
           ) : (
-            <div role="list">
+            <div className={styles["profession-list"]} role="list">
               {professions.map((profession) => (
-                <button
+                <div
                   className={
                     profession.id === selectedId
                       ? styles["profession-active"]
                       : styles.profession
                   }
                   key={profession.id}
-                  onClick={() => setSelectedId(profession.id)}
                   role="listitem"
-                  type="button"
                 >
-                  <span className={styles["profession-mark"]}>
-                    {profession.name.slice(0, 1)}
-                  </span>
-                  <span className={styles["profession-copy"]}>
-                    <strong>{profession.name}</strong>
-                    <small>{profession.styleCount} 个风格</small>
-                  </span>
-                  <PublishStatus status={profession.publishStatus} />
-                </button>
+                  <button
+                    aria-label={`选择职业${profession.name}`}
+                    className={styles["profession-select"]}
+                    onClick={() => setSelectedId(profession.id)}
+                    type="button"
+                  >
+                    <span className={styles["profession-mark"]}>
+                      {profession.name.slice(0, 1)}
+                    </span>
+                    <span className={styles["profession-copy"]}>
+                      <strong>{profession.name}</strong>
+                      <small>{profession.styleCount} 个风格</small>
+                    </span>
+                    <PublishStatus status={profession.publishStatus} />
+                  </button>
+                  {profession.publishStatus === "private" ||
+                  profession.publishStatus === "rejected" ? (
+                    <Popconfirm
+                      cancelText="取消"
+                      description="仅空职业可删除；技能目录或风格存在时服务端会拒绝。"
+                      okButtonProps={{ danger: true }}
+                      okText="删除"
+                      onConfirm={() =>
+                        void deleteSelectedProfession(profession.id)
+                      }
+                      title={`删除职业“${profession.name}”？`}
+                    >
+                      <Button
+                        aria-label={`删除职业${profession.name}`}
+                        className={styles["profession-delete"] ?? ""}
+                        danger
+                        icon={<Trash2 size={15} />}
+                        loading={deletingProfessionId === profession.id}
+                        title="删除职业"
+                        type="text"
+                      />
+                    </Popconfirm>
+                  ) : (
+                    <Tooltip title="审核中或已发布的职业不可删除">
+                      <Button
+                        aria-label={`删除职业${profession.name}`}
+                        className={styles["profession-delete"] ?? ""}
+                        danger
+                        disabled
+                        icon={<Trash2 size={15} />}
+                        type="text"
+                      />
+                    </Tooltip>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -229,18 +335,50 @@ export function ProfessionsPage(): React.JSX.Element {
                   </div>
                   <h3>{style.name}</h3>
                   <p>{style.description || "暂无风格描述"}</p>
-                  <Button
-                    icon={<ArrowRight size={16} />}
-                    iconPlacement="end"
-                    onClick={() =>
-                      void navigate(
-                        `/professions/${selectedId}/styles/${style.id}`,
-                      )
-                    }
-                    type="link"
-                  >
-                    编辑与预览
-                  </Button>
+                  <div className={styles["style-actions"]}>
+                    <Button
+                      icon={<ArrowRight size={16} />}
+                      iconPlacement="end"
+                      onClick={() =>
+                        void navigate(
+                          `/professions/${selectedId}/styles/${style.id}`,
+                        )
+                      }
+                      type="link"
+                    >
+                      编辑与预览
+                    </Button>
+                    {style.publishStatus === "private" ||
+                    style.publishStatus === "rejected" ? (
+                      <Popconfirm
+                        cancelText="取消"
+                        description="删除后无法恢复；已有生产记录时服务端仍会拒绝。"
+                        okButtonProps={{ danger: true }}
+                        okText="删除"
+                        onConfirm={() => void deleteStyle(style.id)}
+                        title={`删除“${style.name}”？`}
+                      >
+                        <Button
+                          aria-label={`删除职业风格${style.name}`}
+                          danger
+                          icon={<Trash2 size={16} />}
+                          loading={deletingStyleId === style.id}
+                          title="删除职业风格"
+                          type="text"
+                        />
+                      </Popconfirm>
+                    ) : (
+                      <Tooltip title="审核中或已发布的风格不可删除">
+                        <Button
+                          aria-label={`删除职业风格${style.name}`}
+                          danger
+                          disabled
+                          icon={<Trash2 size={16} />}
+                          type="text"
+                        />
+                      </Tooltip>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>

@@ -62,41 +62,6 @@ export function configureMockTaskDetailRoutes(
 
   mock
     .onPost(
-      /\/jobs\/[^/]+\/skills\/[^/]+\/reference-image\/download-authorization$/u,
-    )
-    .reply((config) => {
-      const segments = config.url?.split("/") ?? [];
-      const job = getJobs().find((item) => item.id === segments[2]);
-      const skill = job
-        ? mockTaskDetail(job).skills.find(
-            (item) =>
-              item.skillId === segments[4] && item.referenceImageAvailable,
-          )
-        : undefined;
-      if (!skill) {
-        return [
-          404,
-          {
-            code: "PATCH_TASK_REFERENCE_IMAGE_NOT_READY",
-            message: "该技能的模型参考图尚未生成或当前用户无权查看。",
-          },
-        ];
-      }
-      return [
-        200,
-        {
-          data: {
-            ...referenceImage,
-            skillId: skill.skillId,
-            downloadUrl: referenceImageUrl,
-            expiresAtUtc: new Date(Date.now() + 300_000).toISOString(),
-          },
-        },
-      ];
-    });
-
-  mock
-    .onPost(
       /\/jobs\/[^/]+\/skills\/[^/]+\/previews\/(source-frame|reference-image|aseprite-result)\/download-authorization$/u,
     )
     .reply((config) => {

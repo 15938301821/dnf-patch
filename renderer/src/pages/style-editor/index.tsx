@@ -8,6 +8,7 @@ import {
   Alert,
   Button,
   Form,
+  Modal,
   Popconfirm,
   Skeleton,
   Space,
@@ -17,8 +18,10 @@ import { ArrowLeft, Play, Save, Send } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   createPatchTask,
+  getModelConfiguration,
   getProfessionSkills,
   getProfessionStyles,
+  missingModelRoleLabels,
   saveProfessionStyle,
   submitStyleForReview,
   type ProfessionStyle,
@@ -67,6 +70,7 @@ function skillGateDescription(gate: SkillExecutionGate): string {
 export function StyleEditorPage(): React.JSX.Element {
   const [form] = Form.useForm<SaveProfessionStyleInput>();
   const [messageApi, messageContext] = message.useMessage();
+  const [modalApi, modalContext] = Modal.useModal();
   const navigate = useNavigate();
   const { professionId = "", styleId = "" } = useParams();
   const [style, setStyle] = useState<ProfessionStyle>();
@@ -159,13 +163,28 @@ export function StyleEditorPage(): React.JSX.Element {
     }
   };
 
-  /** 先保存再创建任务；任一步失败时禁止导航到任务页。 */
+  /**
+   * 先检查当前用户固定模型角色，再保存并创建任务。
+   * 缺少任一 Key 时展示可行动反馈；检查、保存或创建失败后均禁止继续后续步骤和导航。
+   */
   const createJob = async (): Promise<void> => {
-    if (!(await save())) {
-      return;
-    }
     setCreatingJob(true);
     try {
+      const configuration = await getModelConfiguration();
+      const missingRoles = missingModelRoleLabels(configuration);
+      if (missingRoles.length > 0) {
+        modalApi.confirm({
+          cancelText: "稍后配置",
+          content: `以下模型角色尚未配置 API Key：${missingRoles.join("、")}。配置完成后即可创建制作任务。`,
+          okText: "前往模型设置",
+          onOk: () => navigate("/settings"),
+          title: "需要先完成模型配置",
+        });
+        return;
+      }
+      if (!(await save())) {
+        return;
+      }
       await createPatchTask({ professionId, styleId });
       void messageApi.success("制作任务已创建");
       void navigate("/jobs");
@@ -197,6 +216,7 @@ export function StyleEditorPage(): React.JSX.Element {
   return (
     <div className={styles.page}>
       {messageContext}
+      {modalContext}
       <PageHeading
         action={
           <Space wrap>

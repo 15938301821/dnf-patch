@@ -55,20 +55,15 @@
 
 .profession,
 .profession-active {
-  /* 固定头像和状态轨道，中间名称轨道可收缩，防止长职业名撑宽容器。 */
   display: grid;
   width: 100%;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 32px;
   align-items: center;
-  gap: 10px;
   margin-bottom: 5px;
-  padding: 10px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
   color: #263129;
-  cursor: pointer;
-  text-align: left;
 }
 
 .profession:hover,
@@ -79,6 +74,27 @@
 
 .profession-active {
   box-shadow: inset 3px 0 #176448;
+}
+
+.profession-select {
+  /* 固定头像和状态轨道，中间名称轨道可收缩，右侧删除命令不嵌套在选择按钮中。 */
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px 10px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.profession-delete {
+  width: 32px;
+  height: 32px;
+  padding: 0;
 }
 
 .profession-mark {
@@ -192,6 +208,19 @@
 }
 
 .style-item button {
+  padding-inline: 0;
+}
+
+.style-actions {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.style-actions > button:last-child {
+  width: 32px;
   padding-inline: 0;
 }
 

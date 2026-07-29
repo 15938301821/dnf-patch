@@ -7,7 +7,7 @@
  * 角色临时申请短期 URL，读取为 Blob 后交给浏览器原生下载。页面不接收对象 key、bucket 或长期凭据，
  * 不持久化短期 URL，也不把软归档描述为取消执行或物理删除证据。
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -53,10 +53,20 @@ export function JobsPage(): React.JSX.Element {
   const [downloadingRole, setDownloadingRole] = useState<
     PatchTaskArtifact["role"] | ""
   >("");
+  const artifactRequestRef = useRef<AbortController | null>(null);
+  const downloadRequestRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (errorMessage) void messageApi.error(errorMessage);
   }, [errorMessage, messageApi]);
+
+  useEffect(
+    () => () => {
+      artifactRequestRef.current?.abort();
+      downloadRequestRef.current?.abort();
+    },
+    [],
+  );
 
   /**
    * 把一个服务端已确认终态的任务从默认列表软归档。
@@ -85,15 +95,23 @@ export function JobsPage(): React.JSX.Element {
    * @returns 元数据写入或错误提示完成后结算。
    */
   const inspectArtifact = async (job: PatchTask): Promise<void> => {
+    artifactRequestRef.current?.abort();
+    const controller = new AbortController();
+    artifactRequestRef.current = controller;
     setLoadingArtifactId(job.id);
     try {
-      const result = await getJobArtifacts(job.id);
+      const result = await getJobArtifacts(job.id, controller.signal);
       setArtifactJobId(job.id);
       setArtifacts(result);
     } catch (error) {
-      void messageApi.error(apiErrorMessage(error));
+      if (!controller.signal.aborted) {
+        void messageApi.error(apiErrorMessage(error));
+      }
     } finally {
-      setLoadingArtifactId("");
+      if (artifactRequestRef.current === controller) {
+        artifactRequestRef.current = null;
+        setLoadingArtifactId("");
+      }
     }
   };
 
@@ -107,11 +125,15 @@ export function JobsPage(): React.JSX.Element {
     artifact: PatchTaskArtifact,
   ): Promise<void> => {
     if (!artifactJobId) return;
+    downloadRequestRef.current?.abort();
+    const controller = new AbortController();
+    downloadRequestRef.current = controller;
     setDownloadingRole(artifact.role);
     try {
       const { artifact: downloadedArtifact, blob } = await downloadJobArtifact(
         artifactJobId,
         artifact.role,
+        controller.signal,
       );
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -125,14 +147,25 @@ export function JobsPage(): React.JSX.Element {
         URL.revokeObjectURL(objectUrl);
       }, 0);
     } catch (error) {
-      void messageApi.error(apiErrorMessage(error));
+      if (!controller.signal.aborted) {
+        void messageApi.error(apiErrorMessage(error));
+      }
     } finally {
-      setDownloadingRole("");
+      if (downloadRequestRef.current === controller) {
+        downloadRequestRef.current = null;
+        setDownloadingRole("");
+      }
     }
   };
 
-  /** 清理当前弹窗数据；短期授权 URL 从未写入 React 状态，无需额外销毁。 */
+  /** 关闭弹窗并中止其元数据/下载请求；短期授权 URL 从未写入 React 状态。 */
   const closeArtifacts = (): void => {
+    artifactRequestRef.current?.abort();
+    artifactRequestRef.current = null;
+    downloadRequestRef.current?.abort();
+    downloadRequestRef.current = null;
+    setLoadingArtifactId("");
+    setDownloadingRole("");
     setArtifactJobId("");
     setArtifacts([]);
   };

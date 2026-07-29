@@ -11,6 +11,12 @@ import type {
 } from "../server/contracts.js";
 import { requestData } from "../server/server.js";
 
+const modelRoleLabels = [
+  ["orchestrator", "总任务调度"],
+  ["referenceGenerator", "参考图生成"],
+  ["spriteProcessor", "精灵图处理"],
+] as const satisfies ReadonlyArray<readonly [keyof ModelConfiguration, string]>;
+
 /**
  * 通过 `GET /users/me/model-configuration` 读取当前用户脱敏配置。
  *
@@ -55,11 +61,73 @@ export function omitBlankApiKeys(
   };
 }
 
-/** 对单个固定角色执行空 Key 省略，并保留 endpoint 与模型 ID。 */
+/**
+ * 把脱敏读取 ViewModel 转为不含 API Key 的可编辑表单值。
+ *
+ * @param configuration 后端返回的三个固定角色配置；兼容参考图旧记录缺少推理强度。
+ * @returns 可直接写入设置表单的值；参考图角色始终使用服务端允许的 `default`。
+ */
+export function modelFormValues(
+  configuration: ModelConfiguration,
+): SaveModelConfigurationInput {
+  return {
+    orchestrator: editableTextRole(configuration.orchestrator),
+    spriteProcessor: editableTextRole(configuration.spriteProcessor),
+    referenceGenerator: {
+      ...editableRole(configuration.referenceGenerator),
+      // 图片角色不接受可选推理参数；固定回填唯一合法值，避免旧响应缺字段时只读控件空白。
+      reasoningEffort: "default",
+    },
+  };
+}
+
+/** 文本历史记录中的 default 归一为产品默认档 medium，保证页面显示值与后续调用一致。 */
+function editableTextRole(
+  configuration: ModelConfiguration["orchestrator"],
+): SaveModelConfigurationInput["orchestrator"] {
+  return {
+    ...editableRole(configuration),
+    reasoningEffort:
+      configuration.reasoningEffort === "default"
+        ? "medium"
+        : configuration.reasoningEffort,
+  };
+}
+
+/**
+ * 列出当前用户尚未配置 API Key 的固定模型角色。
+ *
+ * @param configuration 服务端返回的脱敏配置，只读取 `keyConfigured`，不接触 Key 明文。
+ * @returns 面向用户的缺失角色名称；空数组表示可继续执行客户端任务创建流程。
+ */
+export function missingModelRoleLabels(
+  configuration: ModelConfiguration,
+): string[] {
+  return modelRoleLabels
+    .filter(([role]) => !configuration[role].keyConfigured)
+    .map(([, label]) => label);
+}
+
+/** 保留单个角色的 endpoint 与模型 ID，刻意不构造 Key 字段。 */
+function editableRole(
+  configuration: ModelConfiguration[keyof ModelConfiguration],
+): SaveModelConfigurationInput[keyof SaveModelConfigurationInput] {
+  return {
+    endpoint: configuration.endpoint,
+    model: configuration.model,
+    reasoningEffort: configuration.reasoningEffort,
+  };
+}
+
+/** 对单个固定角色执行空 Key 省略，并保留 endpoint、模型 ID 与推理强度。 */
 function omitBlankApiKey(
   input: SaveModelConfigurationInput["orchestrator"],
 ): SaveModelConfigurationInput["orchestrator"] {
   return typeof input.apiKey === "string" && input.apiKey.trim().length > 0
     ? { ...input, apiKey: input.apiKey }
-    : { endpoint: input.endpoint, model: input.model };
+    : {
+        endpoint: input.endpoint,
+        model: input.model,
+        reasoningEffort: input.reasoningEffort,
+      };
 }

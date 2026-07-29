@@ -25,10 +25,18 @@ export interface LoginInput {
   password: string;
 }
 
-/** 单个固定模型角色的脱敏读取 ViewModel。 */
+/** 文本模型允许用户选择的六档推理强度。 */
+export type SelectableModelReasoningEffort =
+  "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
+
+/** 单个固定模型角色的推理强度；default 仅兼容图片角色和历史服务端记录。 */
+export type ModelReasoningEffort = "default" | SelectableModelReasoningEffort;
+
 export interface ModelRoleConfiguration {
   endpoint: string;
   model: string;
+  /** 文本角色使用六档显式值；default 仅用于不消费该参数的图片角色。 */
+  reasoningEffort: ModelReasoningEffort;
   /** 仅表示服务端已有密钥，不表示客户端可读取或恢复密钥明文。 */
   keyConfigured: boolean;
 }
@@ -44,6 +52,7 @@ export interface ModelConfiguration {
 export interface SaveModelRoleConfigurationInput {
   endpoint: string;
   model: string;
+  reasoningEffort: ModelReasoningEffort;
   apiKey?: string;
 }
 
@@ -313,22 +322,6 @@ export interface PatchTaskArtifact {
 
 /** 服务端为当前用户任务的固定角色签发的短期下载授权，URL 不得持久化。 */
 export interface PatchTaskArtifactDownload extends PatchTaskArtifact {
-  downloadUrl: string;
-  expiresAtUtc: string;
-}
-
-/** 当前技能固定 reference-image-v1 PNG 的脱敏元数据，不表示已用于最终补丁。 */
-export interface PatchTaskReferenceImage {
-  artifactId: string;
-  skillId: string;
-  artifactName: string;
-  mediaType: "image/png";
-  byteLength: number;
-  sha256: string;
-}
-
-/** 服务端为固定技能参考图签发的短期下载授权，URL 不得进入组件状态或持久化。 */
-export interface PatchTaskReferenceImageDownload extends PatchTaskReferenceImage {
   downloadUrl: string;
   expiresAtUtc: string;
 }

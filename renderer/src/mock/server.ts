@@ -33,6 +33,8 @@ import {
   areSelectedSkillsValid,
   mockProfessionSkills,
 } from "./profession-skills.js";
+import { configureMockProfessionDeleteRoute } from "./profession-delete.js";
+import { configureMockProfessionStyleDeleteRoute } from "./profession-style-delete.js";
 import { initialMockProfessionStyles } from "./profession-styles.js";
 
 interface MockState {
@@ -51,7 +53,6 @@ const user: SessionUser = {
   username: "demo",
   displayName: "演示用户",
 };
-
 const initialState: MockState = {
   professions: [
     {
@@ -270,7 +271,7 @@ export function configureMockApi(): void {
     state.professions.unshift(profession);
     return [201, envelope(profession)];
   });
-
+  configureMockProfessionDeleteRoute(mock, () => state);
   mock.onGet(/\/professions\/[^/]+\/skills$/u).reply((config) => {
     const professionId = config.url?.split("/")[2] ?? "";
     return [
@@ -378,6 +379,7 @@ export function configureMockApi(): void {
     Object.assign(style, input, { updatedAt: now() });
     return [200, envelope(style)];
   });
+  configureMockProfessionStyleDeleteRoute(mock, () => state);
   /** 仅完整风格可转为待审核状态，缺失内容保持失败关闭。 */
   mock
     .onPost(/\/professions\/[^/]+\/styles\/[^/]+\/review$/u)
@@ -489,6 +491,7 @@ function mockSavedRole(
   return {
     endpoint: input[role].endpoint,
     model: input[role].model,
+    reasoningEffort: input[role].reasoningEffort,
     keyConfigured:
       state.modelConfiguration[role].keyConfigured ||
       Boolean(input[role].apiKey),

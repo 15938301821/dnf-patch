@@ -5,7 +5,7 @@
  * 呈现加载、缺失、失败或可审查状态。副作用包括三项短期授权、PNG 下载和 Blob URL 创建；
  * 关闭、切换技能、重试或卸载时必须中止整轮请求并释放全部 URL，过期结果不得覆盖当前技能。
  * 浏览器只提交任务、技能和固定角色，不提交 Artifact ID、对象 key 或本机路径。模型参考图仅
- * 表示视觉方向，不参与运行时像素；对比结果不证明客户端兼容、部署或全技能覆盖。
+ * 提供有界视觉引导，不直接替换源帧像素；对比结果不证明客户端兼容、部署或全技能覆盖。
  */
 import axios from "axios";
 import { Alert, Button, Modal, Segmented, Tag, Tooltip } from "antd";
@@ -49,7 +49,7 @@ const previewRoleView: Record<
     title: "模型参考图",
     shortTitle: "模型参考",
     badge: "视觉方向",
-    description: "模型输出的风格参考，不参与运行时像素",
+    description: "参与有界视觉引导，不直接替换源帧像素",
   },
   "aseprite-result": {
     order: "03",

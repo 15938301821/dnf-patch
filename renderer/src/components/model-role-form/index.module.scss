@@ -81,12 +81,13 @@
 }
 
 .fields {
-  /* endpoint、模型和 Key 按输入长度分配轨道，校验消息只向下扩展。 */
+  /* endpoint、模型、推理强度和 Key 按输入长度分配轨道，校验消息只向下扩展。 */
   display: grid;
-  grid-template-columns: minmax(220px, 1.35fr) minmax(150px, 0.7fr) minmax(
-      160px,
-      0.65fr
-    );
+  grid-template-columns:
+    minmax(210px, 1.25fr)
+    minmax(130px, 0.58fr)
+    minmax(190px, 0.82fr)
+    minmax(150px, 0.65fr);
   gap: 14px;
 }
 

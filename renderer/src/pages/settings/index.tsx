@@ -10,6 +10,7 @@ import {
   createResourceImportJob,
   getModelConfiguration,
   getResourceImportOverview,
+  modelFormValues,
   saveModelConfiguration,
   type ModelConfiguration,
   type ResourceImportOverview,
@@ -201,9 +202,10 @@ export function SettingsPage(): React.JSX.Element {
               />
               <ModelRoleForm
                 configuration={configuration?.referenceGenerator}
-                description="组合职业风格、源精灵图与生成模板，输出供目标帧处理使用的参考图。"
+                description="组合职业风格、单技能 Prompt 与源帧证据身份，生成不可直接运行的视觉参考图。"
                 icon={<ImagePlus aria-hidden="true" size={19} />}
                 role="referenceGenerator"
+                reasoningSupported={false}
                 sequence="02 / REFERENCE"
                 tags={["风格约束", "源帧语义", "参考图生成"]}
                 title="参考图生成"
@@ -325,25 +327,4 @@ export function SettingsPage(): React.JSX.Element {
       </div>
     </div>
   );
-}
-
-/** 把脱敏读取 ViewModel 转为不含 API Key 的可编辑表单值。 */
-function modelFormValues(
-  configuration: ModelConfiguration,
-): SaveModelConfigurationInput {
-  return {
-    orchestrator: editableRole(configuration.orchestrator),
-    spriteProcessor: editableRole(configuration.spriteProcessor),
-    referenceGenerator: editableRole(configuration.referenceGenerator),
-  };
-}
-
-/** 保留单个角色的 endpoint 与模型 ID，刻意不构造 Key 字段。 */
-function editableRole(
-  configuration: ModelConfiguration[keyof ModelConfiguration],
-): SaveModelConfigurationInput[keyof SaveModelConfigurationInput] {
-  return {
-    endpoint: configuration.endpoint,
-    model: configuration.model,
-  };
 }

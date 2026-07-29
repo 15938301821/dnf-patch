@@ -11,16 +11,19 @@ export const initialMockModelConfiguration: ModelConfiguration = {
   orchestrator: {
     endpoint: "https://api.example.com/v1",
     model: "gpt-5.6-sol",
+    reasoningEffort: "medium",
     keyConfigured: false,
   },
   spriteProcessor: {
     endpoint: "https://api.example.com/v1",
     model: "gpt-5.5",
+    reasoningEffort: "medium",
     keyConfigured: false,
   },
   referenceGenerator: {
     endpoint: "https://api.example.com/v1",
     model: "gpt-image-2",
+    reasoningEffort: "default",
     keyConfigured: false,
   },
 };

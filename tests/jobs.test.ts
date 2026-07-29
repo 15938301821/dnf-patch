@@ -8,11 +8,9 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   archiveJob,
   authorizeJobArtifactDownload,
-  authorizeJobReferenceImageDownload,
   authorizeJobSkillPreviewDownload,
   createPatchTask,
   downloadJobArtifact,
-  downloadJobReferenceImage,
   downloadJobSkillPreview,
   getJobArtifacts,
   getJobDetail,
@@ -129,6 +127,24 @@ describe("patch task API", () => {
     expect(new Set(artifacts.map((artifact) => artifact.sha256)).size).toBe(3);
   });
 
+  it("forwards the artifact lifecycle signal to metadata requests", async () => {
+    // 页面切换任务或卸载时必须能中止旧请求，迟到元数据不得覆盖当前弹窗。
+    const controller = new AbortController();
+    let observedSignal: unknown;
+    const interceptorId = server.interceptors.request.use((config) => {
+      if (config.url === "/jobs/job-demo-complete/artifacts") {
+        observedSignal = config.signal;
+      }
+      return config;
+    });
+    try {
+      await getJobArtifacts("job-demo-complete", controller.signal);
+    } finally {
+      server.interceptors.request.eject(interceptorId);
+    }
+    expect(observedSignal).toBe(controller.signal);
+  });
+
   it("requests a short-lived download authorization by fixed role", async () => {
     const authorization = await authorizeJobArtifactDownload(
       "job-demo-complete",
@@ -150,6 +166,29 @@ describe("patch task API", () => {
     await expect(result.blob.text()).resolves.toBe("M".repeat(384));
   });
 
+  it("forwards the artifact lifecycle signal to the byte download", async () => {
+    // fetch 替身只观察取消所有权；授权仍经过 Axios Mock，不证明真实对象存储连接释放。
+    const originalFetch = globalThis.fetch;
+    const controller = new AbortController();
+    let observedSignal: AbortSignal | null | undefined;
+    globalThis.fetch = (_input, init) => {
+      observedSignal = init?.signal;
+      return Promise.resolve(
+        new Response(new Blob(["M".repeat(384)]), { status: 200 }),
+      );
+    };
+    try {
+      await downloadJobArtifact(
+        "job-demo-complete",
+        "validation",
+        controller.signal,
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(observedSignal).toBe(controller.signal);
+  });
+
   it("returns running and completed detail views without filling missing usage", async () => {
     const [running, completed] = await Promise.all([
       getJobDetail("job-demo-running"),
@@ -166,39 +205,6 @@ describe("patch task API", () => {
     expect(completed.status).toBe("passed");
     expect(completed.passedSkills).toBe(completed.totalSkills);
     expect(completed.modelThroughput.measuredCalls).toBe(8);
-  });
-
-  it("authorizes a reference image by task and fixed skill instead of Artifact ID", async () => {
-    const authorization = await authorizeJobReferenceImageDownload(
-      "job-demo-complete",
-      "skill-nen-guard",
-    );
-
-    expect(authorization.skillId).toBe("skill-nen-guard");
-    expect(authorization.mediaType).toBe("image/png");
-    expect(authorization.downloadUrl).not.toContain(authorization.artifactId);
-  });
-
-  it("verifies PNG signature and length before returning a reference Blob", async () => {
-    // fetch 替身只替代静态资源读取；授权仍经过 Axios Mock，测试不证明真实对象存储或网络可用。
-    const originalFetch = globalThis.fetch;
-    const bytes = new Uint8Array(4_841_702);
-    bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
-    globalThis.fetch = () =>
-      Promise.resolve(
-        new Response(new Blob([bytes], { type: "image/png" }), { status: 200 }),
-      );
-    try {
-      const result = await downloadJobReferenceImage(
-        "job-demo-complete",
-        "skill-nen-guard",
-      );
-      expect(result.image.skillId).toBe("skill-nen-guard");
-      expect(result.blob.type).toBe("image/png");
-      expect(result.blob.size).toBe(4_841_702);
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
   });
 
   it("downloads a fixed comparison role with public same-frame metadata", async () => {
@@ -234,16 +240,17 @@ describe("patch task API", () => {
     }
   });
 
-  it("rejects reference image access for a skill without current passed evidence", async () => {
+  it("rejects preview access for a skill without current passed evidence", async () => {
     await expect(
-      authorizeJobReferenceImageDownload(
+      authorizeJobSkillPreviewDownload(
         "job-demo-running",
         "skill-handling-sword",
+        "reference-image",
       ),
     ).rejects.toMatchObject({
       response: {
         status: 404,
-        data: { code: "PATCH_TASK_REFERENCE_IMAGE_NOT_READY" },
+        data: { code: "PATCH_TASK_SKILL_PREVIEW_NOT_READY" },
       },
     });
   });

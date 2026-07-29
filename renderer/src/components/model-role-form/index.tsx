@@ -4,7 +4,7 @@
  * 设置页的 Ant Design Form 拥有字段和提交生命周期，本组件只声明嵌套字段及校验；读取配置
  * 始终脱敏，已配置时留空表示保留。组件不持久化、不回显 Key，也不直接调用模型 Provider。
  */
-import { Form, Input, Tag } from "antd";
+import { Form, Input, Select, Tag } from "antd";
 import type {
   ModelRoleConfiguration,
   SaveModelConfigurationInput,
@@ -19,6 +19,7 @@ interface ModelRoleFormProps {
   configuration: ModelRoleConfiguration | undefined;
   description: string;
   icon: React.ReactNode;
+  reasoningSupported?: boolean;
   role: ModelRole;
   sequence: string;
   tags: readonly string[];
@@ -35,6 +36,7 @@ export function ModelRoleForm({
   configuration,
   description,
   icon,
+  reasoningSupported = true,
   role,
   sequence,
   tags,
@@ -74,6 +76,34 @@ export function ModelRoleForm({
           rules={[{ required: true, message: "请输入模型 ID" }]}
         >
           <Input maxLength={120} />
+        </Form.Item>
+        <Form.Item
+          extra={
+            reasoningSupported
+              ? "仅影响支持 Responses 推理参数的文本模型"
+              : "图片生成接口使用 Provider 默认行为"
+          }
+          label="推理强度"
+          name={[role, "reasoningEffort"]}
+          rules={[{ required: true, message: "请选择推理强度" }]}
+        >
+          <Select
+            disabled={!reasoningSupported}
+            options={
+              reasoningSupported
+                ? [
+                    { label: "低 · low", value: "low" },
+                    { label: "中 · medium", value: "medium" },
+                    { label: "高 · high", value: "high" },
+                    { label: "超高 · xhigh", value: "xhigh" },
+                    { label: "最大 · max", value: "max" },
+                    { label: "极致 · ultra", value: "ultra" },
+                  ]
+                : [{ label: "图片接口不适用", value: "default" }]
+            }
+            popupMatchSelectWidth
+            virtual={false}
+          />
         </Form.Item>
         <Form.Item
           extra={

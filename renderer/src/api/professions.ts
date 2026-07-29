@@ -3,7 +3,7 @@
  *
  * 职业/风格页面通过共享受认证 Axios 客户端调用；输入是后端稳定 ID 与结构化写入 DTO，
  * 输出为服务端事实或界面 ViewModel。模块不发现技能、不推断资源映射，旧风格仅在读取列表
- * 时规范化；保存、送审错误由页面处理，最终授权与完整性仍由后端决定。
+ * 时规范化；保存、删除、送审错误由页面处理，最终授权与完整性仍由后端决定。
  */
 import type {
   CreateProfessionInput,
@@ -13,7 +13,7 @@ import type {
   ProfessionSummary,
   SaveProfessionStyleInput,
 } from "../server/contracts.js";
-import { requestData } from "../server/server.js";
+import { requestData, server } from "../server/server.js";
 import { normalizeProfessionStyle } from "../utils/profession-style.js";
 
 /** @returns `GET /professions` 返回的当前用户职业摘要列表。 */
@@ -38,6 +38,17 @@ export function createProfession(
     url: "/professions",
     data: input,
   });
+}
+
+/**
+ * 通过 `DELETE /professions/:professionId` 删除当前用户拥有的空职业。
+ *
+ * @param professionId 职业列表返回的稳定 ID，服务端继续复核所有权、状态、技能和风格引用。
+ * @returns 收到 204 后结算且无正文；失败时列表必须保持原职业和当前选择。
+ * @throws 对受保护职业返回 409，对不存在或跨用户职业返回 404。
+ */
+export async function deleteProfession(professionId: string): Promise<void> {
+  await server.delete(`/professions/${professionId}`);
 }
 
 /**
@@ -106,6 +117,22 @@ export function saveProfessionStyle(
     url: `/professions/${professionId}/styles/${styleId}`,
     data: input,
   });
+}
+
+/**
+ * 通过 `DELETE /professions/:professionId/styles/:styleId` 删除可撤销的风格草稿。
+ *
+ * @param professionId 职业列表返回的稳定 ID，服务端继续复核当前用户所有权。
+ * @param styleId 风格列表返回的稳定 ID，只有无生产记录的私有或被驳回草稿可删除。
+ * @returns 收到 204 后结算且无业务正文；失败时页面必须保留原卡片和职业计数。
+ * @throws 服务端对受保护风格返回稳定 409，对不存在或跨用户风格返回稳定 404。
+ */
+export async function deleteProfessionStyle(
+  professionId: string,
+  styleId: string,
+): Promise<void> {
+  // 删除成功是无响应正文的 204，不能使用要求 `{ data }` 包络的 requestData。
+  await server.delete(`/professions/${professionId}/styles/${styleId}`);
 }
 
 /**

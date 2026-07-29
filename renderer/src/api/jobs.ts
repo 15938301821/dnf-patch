@@ -12,8 +12,6 @@ import type {
   PatchTaskArtifactDownload,
   PatchTaskArtifactRole,
   PatchTaskDetail,
-  PatchTaskReferenceImage,
-  PatchTaskReferenceImageDownload,
   PatchTaskSkillPreview,
   PatchTaskSkillPreviewDownload,
   PatchTaskSkillPreviewRole,
@@ -89,10 +87,14 @@ export function createPatchTask(
  * @param jobId 任务列表返回的稳定 ID。
  * @returns candidate、manifest、validation 固定角色的名称、类型、大小与摘要；不返回实际字节。
  */
-export function getJobArtifacts(jobId: string): Promise<PatchTaskArtifact[]> {
+export function getJobArtifacts(
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<PatchTaskArtifact[]> {
   return requestData<PatchTaskArtifact[]>({
     method: "GET",
     url: `/jobs/${jobId}/artifacts`,
+    ...(signal ? { signal } : {}),
   });
 }
 
@@ -106,29 +108,11 @@ export function getJobArtifacts(jobId: string): Promise<PatchTaskArtifact[]> {
 export function authorizeJobArtifactDownload(
   jobId: string,
   role: PatchTaskArtifactRole,
+  signal?: AbortSignal,
 ): Promise<PatchTaskArtifactDownload> {
   return requestData<PatchTaskArtifactDownload>({
     method: "POST",
     url: `/jobs/${jobId}/artifacts/${role}/download-authorization`,
-  });
-}
-
-/**
- * 通过任务和技能固定语义申请 reference-image-v1 PNG 的短期授权。
- *
- * @param jobId 当前用户任务的稳定 ID，由服务端复核所有权。
- * @param skillId 详情 DTO 返回的技能稳定 ID；客户端不能提交 Artifact ID 或对象 key。
- * @param signal 预览流程拥有的取消信号，关闭预览或离开详情页时中止未完成请求。
- * @returns 当前 attempt 参考图元数据与短期 URL；URL 仅供同一调用栈立即读取。
- */
-export function authorizeJobReferenceImageDownload(
-  jobId: string,
-  skillId: string,
-  signal?: AbortSignal,
-): Promise<PatchTaskReferenceImageDownload> {
-  return requestData<PatchTaskReferenceImageDownload>({
-    method: "POST",
-    url: `/jobs/${jobId}/skills/${skillId}/reference-image/download-authorization`,
     ...(signal ? { signal } : {}),
   });
 }
@@ -156,44 +140,6 @@ export function authorizeJobSkillPreviewDownload(
 }
 
 /**
- * 申请短期授权并把当前技能模型参考图读取为经过类型、长度和 PNG 签名复核的 Blob。
- *
- * @param jobId 当前详情路由的任务 ID。
- * @param skillId 用户从该详情 DTO 选择的技能 ID，不是 Artifact ID。
- * @param signal 由页面预览生命周期创建的取消信号；中止后不会返回可展示 Blob。
- * @returns 脱敏图片元数据与 Blob；短期 URL、到期时间和响应对象不会返回页面或进入持久状态。
- * @throws 远端失败、媒体类型不符、长度不符或 PNG 八字节签名无效时拒绝，页面不得展示该对象。
- */
-export async function downloadJobReferenceImage(
-  jobId: string,
-  skillId: string,
-  signal?: AbortSignal,
-): Promise<{ image: PatchTaskReferenceImage; blob: Blob }> {
-  // 第一步：只按任务和技能申请授权，浏览器从不选择对象存储中的任意 Artifact。
-  const authorization = await authorizeJobReferenceImageDownload(
-    jobId,
-    skillId,
-    signal,
-  );
-  const blob = await downloadVerifiedPng(
-    authorization,
-    signal,
-    "REFERENCE_IMAGE",
-  );
-  return {
-    image: {
-      artifactId: authorization.artifactId,
-      skillId: authorization.skillId,
-      artifactName: authorization.artifactName,
-      mediaType: authorization.mediaType,
-      byteLength: authorization.byteLength,
-      sha256: authorization.sha256,
-    },
-    blob,
-  };
-}
-
-/**
  * 申请一个固定角色并返回经媒体类型、长度与 PNG 签名复核的 Blob。
  *
  * @param jobId 当前详情任务 ID。
@@ -217,11 +163,7 @@ export async function downloadJobSkillPreview(
   if (authorization.role !== role || authorization.skillId !== skillId) {
     throw new Error("SKILL_PREVIEW_ROLE_MISMATCH");
   }
-  const blob = await downloadVerifiedPng(
-    authorization,
-    signal,
-    "SKILL_PREVIEW",
-  );
+  const blob = await downloadVerifiedPng(authorization, signal);
   const image: PatchTaskSkillPreview = {
     artifactId: authorization.artifactId,
     skillId: authorization.skillId,
@@ -244,7 +186,6 @@ function isPngMediaType(mediaType: string): boolean {
  * 读取并复核一个短期 PNG 授权；失败后禁止调用方创建 Object URL。
  * @param authorization 服务端固定角色授权，包含预期媒体类型、长度与临时 URL。
  * @param signal 所属预览生命周期的取消信号。
- * @param errorPrefix 稳定本地错误前缀，便于区分旧参考图与三图调用链。
  */
 async function downloadVerifiedPng(
   authorization: {
@@ -253,10 +194,9 @@ async function downloadVerifiedPng(
     downloadUrl: string;
   },
   signal: AbortSignal | undefined,
-  errorPrefix: "REFERENCE_IMAGE" | "SKILL_PREVIEW",
 ): Promise<Blob> {
   if (!isPngMediaType(authorization.mediaType)) {
-    throw new Error(`${errorPrefix}_MEDIA_TYPE_MISMATCH`);
+    throw new Error("SKILL_PREVIEW_MEDIA_TYPE_MISMATCH");
   }
   const response = await fetch(authorization.downloadUrl, {
     cache: "no-store",
@@ -264,13 +204,13 @@ async function downloadVerifiedPng(
     referrerPolicy: "no-referrer",
     ...(signal ? { signal } : {}),
   });
-  if (!response.ok) throw new Error(`${errorPrefix}_DOWNLOAD_FAILED`);
+  if (!response.ok) throw new Error("SKILL_PREVIEW_DOWNLOAD_FAILED");
   const blob = await response.blob();
   if (
     (blob.type && blob.type !== "image/png") ||
     blob.size !== authorization.byteLength
   ) {
-    throw new Error(`${errorPrefix}_RESPONSE_MISMATCH`);
+    throw new Error("SKILL_PREVIEW_RESPONSE_MISMATCH");
   }
   // PNG 固定八字节签名是展示前最后一道本地门禁，不能只信任响应 Content-Type。
   const signature = new Uint8Array(await blob.slice(0, 8).arrayBuffer());
@@ -279,7 +219,7 @@ async function downloadVerifiedPng(
     signature.length !== pngSignature.length ||
     signature.some((value, index) => value !== pngSignature[index])
   ) {
-    throw new Error(`${errorPrefix}_SIGNATURE_INVALID`);
+    throw new Error("SKILL_PREVIEW_SIGNATURE_INVALID");
   }
   return blob;
 }
@@ -294,12 +234,14 @@ async function downloadVerifiedPng(
 export async function downloadJobArtifact(
   jobId: string,
   role: PatchTaskArtifactRole,
+  signal?: AbortSignal,
 ): Promise<{ artifact: PatchTaskArtifact; blob: Blob }> {
-  const authorization = await authorizeJobArtifactDownload(jobId, role);
+  const authorization = await authorizeJobArtifactDownload(jobId, role, signal);
   const response = await fetch(authorization.downloadUrl, {
     cache: "no-store",
     credentials: "omit",
     referrerPolicy: "no-referrer",
+    ...(signal ? { signal } : {}),
   });
   if (!response.ok) throw new Error("ARTIFACT_DOWNLOAD_FAILED");
   const blob = await response.blob();

@@ -1,5 +1,5 @@
 /**
- * @fileoverview 验证 Mock 职业风格 API 的私有草稿、结构门禁和后续动作阻断。
+ * @fileoverview 验证 Mock 职业风格 API 的私有草稿、删除规则、结构门禁和后续动作阻断。
  *
  * Axios Mock Adapter 替代真实 Server、审核、Worker 与资源目录，并在每例前清空状态；测试只
  * 证明前端替身与客户端 DTO 语义一致，不证明真实数据库事务、授权或任务执行。
@@ -8,6 +8,8 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   createProfessionStyle,
   createPatchTask,
+  deleteProfessionStyle,
+  getProfessionStyles,
   submitStyleForReview,
   server,
   type CreateProfessionStyleInput,
@@ -48,6 +50,28 @@ describe("profession style API", () => {
       createProfessionStyle("profession-berserker", input),
     ).rejects.toMatchObject({
       response: { status: 400, data: { code: "STYLE_CONTENT_INVALID" } },
+    });
+  });
+
+  it("deletes an unproduced private draft", async () => {
+    const created = await createProfessionStyle(
+      "profession-berserker",
+      draft("可删除草稿"),
+    );
+
+    await expect(
+      deleteProfessionStyle("profession-berserker", created.id),
+    ).resolves.toBeUndefined();
+    await expect(
+      getProfessionStyles("profession-berserker"),
+    ).resolves.not.toContainEqual(expect.objectContaining({ id: created.id }));
+  });
+
+  it("rejects deletion when a style has production evidence", async () => {
+    await expect(
+      deleteProfessionStyle("profession-sword-soul", "style-vergil"),
+    ).rejects.toMatchObject({
+      response: { status: 409, data: { code: "STYLE_DELETE_NOT_ALLOWED" } },
     });
   });
 
