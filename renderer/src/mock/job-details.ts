@@ -8,7 +8,10 @@
  */
 import type MockAdapter from "axios-mock-adapter";
 import referenceImageUrl from "../assets/style-preview.png";
-import type { PatchTask } from "../server/contracts.js";
+import type {
+  PatchTask,
+  PatchTaskReferenceTransferQuality,
+} from "../server/contracts.js";
 import { mockTaskDetail } from "./job-detail-fixtures.js";
 
 /** 与静态 PNG 资源一致的脱敏元数据；URL 在每次授权响应中临时附加。 */
@@ -32,17 +35,20 @@ const comparisonFrame = {
   y: 96,
 };
 
-/** Mock 只复现 V2 ViewModel 形状；数值不证明真实 Worker 图片质量。 */
+/** Mock 复现当前 V4 finalized 质量 DTO；示例数值不证明真实 Worker 图片质量。 */
 const referenceTransferQuality = {
-  schemaVersion: 1 as const,
+  schemaVersion: 4,
   evaluatedFrameCount: 40,
   evaluatedPixelCount: 28_640,
-  referenceCoverage: 0.96,
-  referenceSimilarity: 0.94,
-  sourceEdgeEnergy: 18.4,
-  runtimeEdgeEnergy: 23.1,
-  edgeEnergyRatio: 1.255,
-};
+  isolatedNoiseRatio: 0.005,
+  continuousBandRatio: 0.78,
+  brightCoreRatio: 0.08,
+  edgeContrast: 72,
+  strongEdgeRatio: 0.12,
+  periodicStripeRatio: 0,
+  maximumWhiteLineRatio: 0.34,
+  maximumDxt1BoundaryJumpRatio: 0.01,
+} satisfies PatchTaskReferenceTransferQuality;
 
 /**
  * 在共享 Axios Mock 上登记 owner-scoped 详情和固定技能参考图授权端点。

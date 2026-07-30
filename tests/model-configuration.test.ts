@@ -18,21 +18,21 @@ import {
 describe("model configuration request boundary", () => {
   it("omits cleared API keys while preserving non-blank values", () => {
     const input: SaveModelConfigurationInput = {
-      orchestrator: role("planner", "", "ultra"),
-      spriteProcessor: role("sprite", "   ", "xhigh"),
+      orchestrator: role("planner", "", "max"),
+      spriteProcessor: role("sprite", "   ", "medium"),
       referenceGenerator: role("image", "temporary-value"),
     };
 
     expect(omitBlankApiKeys(input)).toEqual({
-      orchestrator: role("planner", undefined, "ultra"),
-      spriteProcessor: role("sprite", undefined, "xhigh"),
+      orchestrator: role("planner", undefined, "max"),
+      spriteProcessor: role("sprite", undefined, "medium"),
       referenceGenerator: role("image", "temporary-value"),
     });
   });
 
   it("defaults the read-only reference reasoning effort for legacy responses", () => {
     const configuration: ModelConfiguration = {
-      orchestrator: configuredRole("planner", "default"),
+      orchestrator: configuredRole("planner", "high"),
       spriteProcessor: configuredRole("sprite", "medium"),
       referenceGenerator: {
         ...configuredRole("image", "default"),
@@ -41,7 +41,7 @@ describe("model configuration request boundary", () => {
     };
 
     expect(modelFormValues(configuration)).toMatchObject({
-      orchestrator: { reasoningEffort: "medium" },
+      orchestrator: { reasoningEffort: "high" },
       spriteProcessor: { reasoningEffort: "medium" },
       referenceGenerator: { reasoningEffort: "default" },
     });

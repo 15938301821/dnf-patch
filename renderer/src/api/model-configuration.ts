@@ -71,26 +71,13 @@ export function modelFormValues(
   configuration: ModelConfiguration,
 ): SaveModelConfigurationInput {
   return {
-    orchestrator: editableTextRole(configuration.orchestrator),
-    spriteProcessor: editableTextRole(configuration.spriteProcessor),
+    orchestrator: editableRole(configuration.orchestrator),
+    spriteProcessor: editableRole(configuration.spriteProcessor),
     referenceGenerator: {
       ...editableRole(configuration.referenceGenerator),
       // 图片角色不接受可选推理参数；固定回填唯一合法值，避免旧响应缺字段时只读控件空白。
       reasoningEffort: "default",
     },
-  };
-}
-
-/** 文本历史记录中的 default 归一为产品默认档 medium，保证页面显示值与后续调用一致。 */
-function editableTextRole(
-  configuration: ModelConfiguration["orchestrator"],
-): SaveModelConfigurationInput["orchestrator"] {
-  return {
-    ...editableRole(configuration),
-    reasoningEffort:
-      configuration.reasoningEffort === "default"
-        ? "medium"
-        : configuration.reasoningEffort,
   };
 }
 

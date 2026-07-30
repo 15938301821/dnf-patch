@@ -343,17 +343,51 @@ export interface PatchTaskSkillPreviewFrame {
   y: number;
 }
 
-/** Worker 独立重读三类像素后由 Server 透传的 V2 参考 RGB 质量证据。 */
-export interface PatchTaskReferenceTransferQuality {
-  schemaVersion: 1;
-  evaluatedFrameCount: number;
-  evaluatedPixelCount: number;
-  referenceCoverage: number;
-  referenceSimilarity: number;
-  sourceEdgeEnergy: number;
-  runtimeEdgeEnergy: number;
-  edgeEnergyRatio: number;
-}
+/** Worker 独立复核后由 Server 透传的版本化质量证据；客户端必须先判别 schemaVersion。 */
+export type PatchTaskReferenceTransferQuality =
+  | {
+      schemaVersion: 1;
+      evaluatedFrameCount: number;
+      evaluatedPixelCount: number;
+      referenceCoverage: number;
+      referenceSimilarity: number;
+      sourceEdgeEnergy: number;
+      runtimeEdgeEnergy: number;
+      edgeEnergyRatio: number;
+    }
+  | {
+      schemaVersion: 2;
+      evaluatedFrameCount: number;
+      evaluatedPixelCount: number;
+      isolatedNoiseRatio: number;
+      continuousBandRatio: number;
+      brightCoreRatio: number;
+      edgeContrast: number;
+    }
+  | {
+      schemaVersion: 3;
+      evaluatedFrameCount: number;
+      evaluatedPixelCount: number;
+      isolatedNoiseRatio: number;
+      continuousBandRatio: number;
+      brightCoreRatio: number;
+      edgeContrast: number;
+      strongEdgeRatio: number;
+      periodicStripeRatio: number;
+    }
+  | {
+      schemaVersion: 4;
+      evaluatedFrameCount: number;
+      evaluatedPixelCount: number;
+      isolatedNoiseRatio: number;
+      continuousBandRatio: number;
+      brightCoreRatio: number;
+      edgeContrast: number;
+      strongEdgeRatio: number;
+      periodicStripeRatio: number;
+      maximumWhiteLineRatio: number;
+      maximumDxt1BoundaryJumpRatio: number;
+    };
 
 /** 当前 attempt 一个固定角色的脱敏 PNG 元数据；frame 仅存在于可审计的同帧角色。 */
 export interface PatchTaskSkillPreview {

@@ -322,7 +322,9 @@ test("polls the task list and archives only a terminal task", async ({
 test("compares source, model reference, and Aseprite result evidence", async ({
   page,
 }) => {
-  // 三个静态 PNG 替代真实对象存储对象，但请求仍经过固定任务/技能/角色授权、长度和签名复核代码。
+  // 三个静态 PNG 替代真实对象存储对象；pageerror 覆盖历史 V2 字段误读导致整页白屏的风险。
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
   await login(page);
   await page.getByRole("menuitem", { name: "制作任务" }).click();
   await page
@@ -337,18 +339,25 @@ test("compares source, model reference, and Aseprite result evidence", async ({
   await page.getByRole("button", { name: "查看念气罩三图证据对比" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByText("3 / 3 项证据")).toBeVisible();
-  await expect(
-    page.getByText("图片模型生成高分辨率视觉特效，作为 runtime RGB 主来源"),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("region", { name: "参考图传输质量门禁" }),
-  ).toContainText("96%");
-  await expect(
-    page.getByRole("region", { name: "参考图传输质量门禁" }),
-  ).toContainText("94%");
-  await expect(
-    page.getByRole("region", { name: "参考图传输质量门禁" }),
-  ).toContainText("1.25×");
+  await expect(page.getByText("风格与构图参考", { exact: true })).toBeVisible();
+  await expect(page.getByText("受控重建", { exact: true })).toBeVisible();
+  const qualityGate = page.getByRole("region", {
+    name: "当前稳定帧质量门禁",
+  });
+  await expect(qualityGate).toContainText("孤立噪点");
+  await expect(qualityGate).toContainText("连续能量带");
+  await expect(qualityGate).toContainText("亮核占比");
+  await expect(qualityGate).toContainText("锐边对比");
+  await expect(qualityGate).toContainText("强边缘占比");
+  await expect(qualityGate).toContainText("周期栅栏");
+  await expect(qualityGate).toContainText("近白长线占比");
+  await expect(qualityGate).toContainText("DXT1 边界跳变");
+  await expect(qualityGate).toContainText("0.5%");
+  await expect(qualityGate).toContainText("78%");
+  await expect(qualityGate).toContainText("72.00");
+  await expect(qualityGate).toContainText("12%");
+  await expect(qualityGate).toContainText("34%");
+  await expect(qualityGate).toContainText("1%");
   const comparisonImages = [
     page.getByRole("img", { name: "念气罩技能源帧" }),
     page.getByRole("img", { name: "念气罩模型参考图" }),
@@ -365,6 +374,24 @@ test("compares source, model reference, and Aseprite result evidence", async ({
       )
       .toBeGreaterThan(0);
   }
+  await page
+    .getByRole("button", { name: "念气罩模型参考图", exact: true })
+    .click();
+  const imagePreview = page.getByRole("dialog").last();
+  await expect(imagePreview.getByText("2 / 3", { exact: true })).toBeVisible();
+  const nextImage = imagePreview.getByRole("button", {
+    name: "right",
+    exact: true,
+  });
+  await expect(nextImage).toHaveCSS("z-index", "2");
+  await nextImage.click();
+  await expect(imagePreview.getByText("3 / 3", { exact: true })).toBeVisible();
+  await imagePreview
+    .getByRole("button", { name: "close", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "zoomIn", exact: true }),
+  ).toBeHidden();
   await expectNoHorizontalOverflow(page);
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -376,6 +403,7 @@ test("compares source, model reference, and Aseprite result evidence", async ({
 
   await page.getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  expect(pageErrors).toEqual([]);
 });
 
 /**

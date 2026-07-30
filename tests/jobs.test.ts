@@ -235,9 +235,13 @@ describe("patch task API", () => {
       expect(result.image.role).toBe("aseprite-result");
       expect(result.image.frame).toEqual(authorization.frame);
       expect(result.image.referenceTransferQuality).toMatchObject({
-        referenceCoverage: 0.96,
-        referenceSimilarity: 0.94,
-        edgeEnergyRatio: 1.255,
+        schemaVersion: 3,
+        isolatedNoiseRatio: 0.005,
+        continuousBandRatio: 0.78,
+        brightCoreRatio: 0.08,
+        edgeContrast: 72,
+        strongEdgeRatio: 0.12,
+        periodicStripeRatio: 0,
       });
       expect(result.blob.type).toBe("image/png");
     } finally {

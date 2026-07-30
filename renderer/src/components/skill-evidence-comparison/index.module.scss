@@ -90,6 +90,21 @@
   background: #f5f8f5;
 }
 
+.quality[data-schema-version="2"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+}
+
+/* V3 六指标在桌面分成稳定六列，样本摘要独占次行，避免门槛和计数互相挤压。 */
+.quality[data-schema-version="3"] {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.quality[data-schema-version="3"] p {
+  grid-column: 1 / -1;
+  border-top: 1px solid #d8e1db;
+  text-align: center;
+}
+
 .quality > div {
   display: grid;
   min-width: 0;
@@ -219,6 +234,31 @@
     8px -8px,
     -8px 0;
   background-size: 16px 16px;
+}
+
+/* Ant Image 的包装层必须占满固定舞台，否则加载完成后会按原图尺寸挤压三列布局。 */
+.preview-image {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+}
+
+/* Ant 6 的 Portal 默认让全屏 mask 与操作按钮同层；局部抬高正文和控件，避免遮罩截获点击。 */
+.preview-root {
+  :global(.ant-image-preview-mask) {
+    z-index: 0;
+  }
+
+  :global(.ant-image-preview-body) {
+    z-index: 1;
+  }
+
+  :global(.ant-image-preview-close),
+  :global(.ant-image-preview-switch),
+  :global(.ant-image-preview-footer) {
+    z-index: 2;
+  }
 }
 
 .image-stage img {
@@ -369,6 +409,11 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .quality[data-schema-version="2"],
+  .quality[data-schema-version="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .quality > div {
     padding-inline: 8px;
   }
@@ -381,6 +426,7 @@
     grid-column: 1 / -1;
     border-top: 1px solid #d8e1db;
     text-align: center;
+    white-space: normal;
   }
 
   .grid {
