@@ -35,9 +35,9 @@ const comparisonFrame = {
   y: 96,
 };
 
-/** Mock 复现当前 V4 finalized 质量 DTO；示例数值不证明真实 Worker 图片质量。 */
+/** Mock 复现当前 V5 finalized 质量 DTO；示例数值不证明真实 Worker 图片质量。 */
 const referenceTransferQuality = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   evaluatedFrameCount: 40,
   evaluatedPixelCount: 28_640,
   isolatedNoiseRatio: 0.005,
@@ -48,6 +48,7 @@ const referenceTransferQuality = {
   periodicStripeRatio: 0,
   maximumWhiteLineRatio: 0.34,
   maximumDxt1BoundaryJumpRatio: 0.01,
+  sourceTopologyCorrelation: 0.9,
 } satisfies PatchTaskReferenceTransferQuality;
 
 /**

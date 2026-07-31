@@ -3,9 +3,8 @@
  *
  * 流程位置：skill-evidence-comparison 先用本模块核对源帧与结果图的摘要，再由 QualityGate
  * 展示同一份证据。输入只来自类型化 jobs API；输出是无副作用 ViewModel 或布尔比较结果。
- * Server DTO 的 schema 1 是历史参考 RGB，schema 2/3 是历史 V5 四/六指标，schema 4 是当前
- * V5 八指标。安全边界：必须先判别 schemaVersion，不能读取其他版本字段，也不能在浏览器
- * 重算 Worker 的通过结论。
+ * schema 1 是历史参考 RGB；schema 2/3/4 是历史稳定帧质量；schema 5 是当前九项质量。
+ * 安全边界：必须先判别 schemaVersion，不能跨版本读取字段，也不能在浏览器重算通过结论。
  */
 import type { PatchTaskSkillPreview } from "../../api/index.js";
 
@@ -33,7 +32,7 @@ export interface QualityEvidenceModel {
  * 按 DTO 版本构造 finalized 质量摘要，不跨版本读取字段或自行判断是否通过。
  *
  * @param quality Server 随源帧或结果图返回、且已通过双侧一致性检查的质量 DTO。
- * @returns 只包含当前 schema 可用指标、服务端门槛说明和样本计数的展示模型。
+ * @returns 当前 schema 的指标、服务端门槛说明和样本计数。
  */
 export function createQualityEvidenceModel(
   quality: ReferenceTransferQuality,
@@ -75,46 +74,32 @@ export function createQualityEvidenceModel(
       return {
         schemaVersion: 3,
         ariaLabel: "历史稳定帧质量门禁",
-        items: [
-          ...stableFrameItems(quality),
-          {
-            label: "强边缘占比",
-            value: percent(quality.strongEdgeRatio),
-            threshold: "门槛 ≤ 25%",
-          },
-          {
-            label: "周期栅栏",
-            value: percent(quality.periodicStripeRatio),
-            threshold: "门槛 ≤ 8%",
-          },
-        ],
+        items: [...stableFrameItems(quality), ...edgePatternItems(quality)],
         summary: `历史稳定帧门禁 · ${sampleSummary}`,
       };
     case 4:
       return {
         schemaVersion: 4,
+        ariaLabel: "历史稳定帧质量门禁",
+        items: [
+          ...stableFrameItems(quality),
+          ...edgePatternItems(quality),
+          ...compressionRiskItems(quality),
+        ],
+        summary: `历史稳定帧门禁 · ${sampleSummary}`,
+      };
+    case 5:
+      return {
+        schemaVersion: 5,
         ariaLabel: "当前稳定帧质量门禁",
         items: [
           ...stableFrameItems(quality),
+          ...edgePatternItems(quality),
+          ...compressionRiskItems(quality),
           {
-            label: "强边缘占比",
-            value: percent(quality.strongEdgeRatio),
-            threshold: "门槛 ≤ 25%",
-          },
-          {
-            label: "周期栅栏",
-            value: percent(quality.periodicStripeRatio),
-            threshold: "门槛 ≤ 8%",
-          },
-          {
-            label: "近白长线占比",
-            value: percent(quality.maximumWhiteLineRatio),
-            threshold: "单帧最坏值 ≤ 45%",
-          },
-          {
-            label: "DXT1 边界跳变",
-            value: percent(quality.maximumDxt1BoundaryJumpRatio),
-            threshold: "单帧最坏值 ≤ 5%",
+            label: "官方能量拓扑相关性",
+            value: percent(quality.sourceTopologyCorrelation),
+            threshold: "单帧最坏值 ≥ 65%",
           },
         ],
         summary: `当前稳定帧门禁 · ${sampleSummary}`,
@@ -125,8 +110,6 @@ export function createQualityEvidenceModel(
 /**
  * 严格比较源帧和结果图的 finalized 质量摘要，避免展示单侧漂移值。
  *
- * @param left 源帧或结果图一侧的版本化摘要。
- * @param right 另一侧摘要；schema 不同会在读取版本专属字段前直接返回 false。
  * @returns 公共样本计数及当前版本全部质量字段均相同时为 true。
  */
 export function sameQuality(
@@ -157,24 +140,42 @@ export function sameQuality(
       return (
         right.schemaVersion === 3 &&
         sameStableFrameQuality(left, right) &&
-        left.strongEdgeRatio === right.strongEdgeRatio &&
-        left.periodicStripeRatio === right.periodicStripeRatio
+        sameEdgePatternQuality(left, right)
       );
     case 4:
       return (
         right.schemaVersion === 4 &&
         sameStableFrameQuality(left, right) &&
-        left.strongEdgeRatio === right.strongEdgeRatio &&
-        left.periodicStripeRatio === right.periodicStripeRatio &&
-        left.maximumWhiteLineRatio === right.maximumWhiteLineRatio &&
-        left.maximumDxt1BoundaryJumpRatio === right.maximumDxt1BoundaryJumpRatio
+        sameEdgePatternQuality(left, right) &&
+        sameCompressionRiskQuality(left, right)
+      );
+    case 5:
+      return (
+        right.schemaVersion === 5 &&
+        sameStableFrameQuality(left, right) &&
+        sameEdgePatternQuality(left, right) &&
+        sameCompressionRiskQuality(left, right) &&
+        left.sourceTopologyCorrelation === right.sourceTopologyCorrelation
       );
   }
 }
 
-/** schema 2/3/4 共享四项稳定帧指标，但不读取后续版本才有的扩展字段。 */
+type StableFrameQuality = Extract<
+  ReferenceTransferQuality,
+  { schemaVersion: 2 | 3 | 4 | 5 }
+>;
+type EdgePatternQuality = Extract<
+  ReferenceTransferQuality,
+  { schemaVersion: 3 | 4 | 5 }
+>;
+type CompressionRiskQuality = Extract<
+  ReferenceTransferQuality,
+  { schemaVersion: 4 | 5 }
+>;
+
+/** schema 2-5 共享四项稳定帧指标，但不读取后续版本才有的扩展字段。 */
 function stableFrameItems(
-  quality: Extract<ReferenceTransferQuality, { schemaVersion: 2 | 3 | 4 }>,
+  quality: StableFrameQuality,
 ): readonly QualityEvidenceItem[] {
   return [
     {
@@ -200,16 +201,74 @@ function stableFrameItems(
   ];
 }
 
-/** 比较 schema 2/3/4 共有的四项稳定帧指标。 */
+/** schema 3-5 共享强边缘与周期条纹风险指标。 */
+function edgePatternItems(
+  quality: EdgePatternQuality,
+): readonly QualityEvidenceItem[] {
+  return [
+    {
+      label: "强边缘占比",
+      value: percent(quality.strongEdgeRatio),
+      threshold: "门槛 ≤ 25%",
+    },
+    {
+      label: "周期栅栏",
+      value: percent(quality.periodicStripeRatio),
+      threshold: "门槛 ≤ 8%",
+    },
+  ];
+}
+
+/** schema 4-5 共享近白线和 DXT1 块边界风险指标。 */
+function compressionRiskItems(
+  quality: CompressionRiskQuality,
+): readonly QualityEvidenceItem[] {
+  return [
+    {
+      label: "近白长线占比",
+      value: percent(quality.maximumWhiteLineRatio),
+      threshold: "单帧最坏值 ≤ 45%",
+    },
+    {
+      label: "DXT1 边界跳变",
+      value: percent(quality.maximumDxt1BoundaryJumpRatio),
+      threshold: "单帧最坏值 ≤ 5%",
+    },
+  ];
+}
+
+/** 比较 schema 2-5 共有的四项稳定帧指标。 */
 function sameStableFrameQuality(
-  left: Extract<ReferenceTransferQuality, { schemaVersion: 2 | 3 | 4 }>,
-  right: Extract<ReferenceTransferQuality, { schemaVersion: 2 | 3 | 4 }>,
+  left: StableFrameQuality,
+  right: StableFrameQuality,
 ): boolean {
   return (
     left.isolatedNoiseRatio === right.isolatedNoiseRatio &&
     left.continuousBandRatio === right.continuousBandRatio &&
     left.brightCoreRatio === right.brightCoreRatio &&
     left.edgeContrast === right.edgeContrast
+  );
+}
+
+/** 比较 schema 3-5 共有的条纹与强边缘指标。 */
+function sameEdgePatternQuality(
+  left: EdgePatternQuality,
+  right: EdgePatternQuality,
+): boolean {
+  return (
+    left.strongEdgeRatio === right.strongEdgeRatio &&
+    left.periodicStripeRatio === right.periodicStripeRatio
+  );
+}
+
+/** 比较 schema 4-5 共有的压缩风险指标。 */
+function sameCompressionRiskQuality(
+  left: CompressionRiskQuality,
+  right: CompressionRiskQuality,
+): boolean {
+  return (
+    left.maximumWhiteLineRatio === right.maximumWhiteLineRatio &&
+    left.maximumDxt1BoundaryJumpRatio === right.maximumDxt1BoundaryJumpRatio
   );
 }
 

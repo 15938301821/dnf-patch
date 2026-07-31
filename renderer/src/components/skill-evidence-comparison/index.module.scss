@@ -99,7 +99,18 @@
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-.quality[data-schema-version="3"] p {
+/* V4 八项按四列回看；V5 九项按三列审查，摘要均独占末行以保持动态内容尺寸稳定。 */
+.quality[data-schema-version="4"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.quality[data-schema-version="5"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quality[data-schema-version="3"] p,
+.quality[data-schema-version="4"] p,
+.quality[data-schema-version="5"] p {
   grid-column: 1 / -1;
   border-top: 1px solid #d8e1db;
   text-align: center;
@@ -410,7 +421,9 @@
   }
 
   .quality[data-schema-version="2"],
-  .quality[data-schema-version="3"] {
+  .quality[data-schema-version="3"],
+  .quality[data-schema-version="4"],
+  .quality[data-schema-version="5"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

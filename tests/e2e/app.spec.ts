@@ -352,12 +352,14 @@ test("compares source, model reference, and Aseprite result evidence", async ({
   await expect(qualityGate).toContainText("周期栅栏");
   await expect(qualityGate).toContainText("近白长线占比");
   await expect(qualityGate).toContainText("DXT1 边界跳变");
+  await expect(qualityGate).toContainText("官方能量拓扑相关性");
   await expect(qualityGate).toContainText("0.5%");
   await expect(qualityGate).toContainText("78%");
   await expect(qualityGate).toContainText("72.00");
   await expect(qualityGate).toContainText("12%");
   await expect(qualityGate).toContainText("34%");
   await expect(qualityGate).toContainText("1%");
+  await expect(qualityGate).toContainText("90%");
   const comparisonImages = [
     page.getByRole("img", { name: "念气罩技能源帧" }),
     page.getByRole("img", { name: "念气罩模型参考图" }),

@@ -12,9 +12,10 @@ npm run dev
 ```
 
 `npm run dev` 启动 Electron 桌面端，`npm run dev:web` 只启动浏览器端。两者加载同一套
-Renderer，开发服务固定监听 `http://127.0.0.1:5173`。普通开发默认连接正式后端；只有
-显式设置 `VITE_API_MODE=mock` 时才加载 Mock API。E2E 独立读取 `.env.e2e`，不会改变
-普通开发模式。
+Renderer，直接运行时监听 `http://127.0.0.1:5173`；共同父目录的 `start-all.ps1` 会在
+`5173..5273` 中选择首个空闲端口，并把精确 origin 同步给后端 CORS。普通开发默认连接正式
+后端；只有显式设置 `VITE_API_MODE=mock` 时才加载 Mock API。E2E 独立读取 `.env.e2e`，不会
+改变普通开发模式。
 
 ## 远程 API
 

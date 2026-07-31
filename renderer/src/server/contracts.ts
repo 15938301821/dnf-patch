@@ -387,6 +387,20 @@ export type PatchTaskReferenceTransferQuality =
       periodicStripeRatio: number;
       maximumWhiteLineRatio: number;
       maximumDxt1BoundaryJumpRatio: number;
+    }
+  | {
+      schemaVersion: 5;
+      evaluatedFrameCount: number;
+      evaluatedPixelCount: number;
+      isolatedNoiseRatio: number;
+      continuousBandRatio: number;
+      brightCoreRatio: number;
+      edgeContrast: number;
+      strongEdgeRatio: number;
+      periodicStripeRatio: number;
+      maximumWhiteLineRatio: number;
+      maximumDxt1BoundaryJumpRatio: number;
+      sourceTopologyCorrelation: number;
     };
 
 /** 当前 attempt 一个固定角色的脱敏 PNG 元数据；frame 仅存在于可审计的同帧角色。 */
