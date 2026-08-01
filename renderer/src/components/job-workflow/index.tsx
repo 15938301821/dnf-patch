@@ -35,6 +35,9 @@ export function JobWorkflow({
   refreshing,
 }: JobWorkflowProps): React.JSX.Element {
   const status = patchTaskStatusView[detail.status];
+  const packageStage = detail.workflow.find(
+    (stage) => stage.key === "package-validation",
+  );
   return (
     <section aria-labelledby="workflow-heading" className={styles.section}>
       <header className={styles.header}>
@@ -92,7 +95,12 @@ export function JobWorkflow({
         </div>
         <div>
           <dt>封包状态</dt>
-          <dd>{packageStatusLabel[detail.packageStatus]}</dd>
+          <dd>
+            {detail.packageStatus === "blocked" &&
+            packageStage?.status === "pending"
+              ? "未执行（上游阻断）"
+              : packageStatusLabel[detail.packageStatus]}
+          </dd>
         </div>
         <div>
           <dt>最近更新</dt>

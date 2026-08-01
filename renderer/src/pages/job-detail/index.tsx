@@ -18,6 +18,7 @@ import { SkillEvidenceComparison } from "../../components/skill-evidence-compari
 import {
   formatJobDateTime,
   patchTaskStatusView,
+  workflowStageLabel,
 } from "../../config/job-detail-view.js";
 import { useJobDetail } from "../../hooks/use-job-detail.js";
 import styles from "./index.module.scss";
@@ -107,7 +108,7 @@ export function JobDetailPage(): React.JSX.Element {
 
       <div className={styles["title-status"]}>
         <Tag color={status.color}>{status.label}</Tag>
-        <span>当前阶段：{detail.currentStage}</span>
+        <span>当前阶段：{workflowStageLabel[detail.currentStage]}</span>
       </div>
 
       {errorMessage ? (

@@ -120,6 +120,11 @@ export function SkillEvidenceComparison({
   const quality = qualityMismatch
     ? undefined
     : (resultQuality ?? sourceQuality);
+  // 轮播顺序必须跟随固定角色，而不是三项异步下载的完成顺序。
+  const previewItems = previewRoles.flatMap((role) => {
+    const preview = readyPreview(previews[role]);
+    return preview ? [preview.objectUrl] : [];
+  });
 
   return (
     <Modal
@@ -191,6 +196,7 @@ export function SkillEvidenceComparison({
           />
 
           <Image.PreviewGroup
+            items={previewItems}
             preview={{ rootClassName: styles["preview-root"] ?? "" }}
           >
             <div className={styles.grid}>

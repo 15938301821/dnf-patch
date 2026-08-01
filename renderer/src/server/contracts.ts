@@ -219,11 +219,14 @@ export interface PatchTaskWorkflowStage {
   status: PatchTaskStepStatus;
 }
 
-/** 单技能生产链的四个固定阶段，前两项为模型阶段、后两项为受控工具阶段。 */
+/** 单技能版本化生产链；旧版模型/工具阶段与 V6 逐帧阶段均由服务端证据决定。 */
 export type PatchTaskSkillStageKey =
   | "engineer-plan"
   | "reference-image"
   | "aseprite-adaptation"
+  | "target-manifest"
+  | "source-frame-freeze"
+  | "target-frame-generation"
   | "runtime-validation";
 
 /** 单技能固定阶段的服务端证据状态。 */
@@ -232,7 +235,14 @@ export interface PatchTaskSkillStage {
   status: PatchTaskStepStatus;
 }
 
-/** 详情页一个技能的当前 attempt 进度；参考图标记不包含 Artifact ID 或授权 URL。 */
+/** V6 当前 attempt 的逐技能帧准备摘要；只含计数，不含 Artifact ID 或授权 URL。 */
+export interface PatchTaskSkillFramePreparation {
+  targetFrameCount: number;
+  generationFrameCount: number;
+  sourceFrameCount: number;
+}
+
+/** 详情页一个技能的当前 attempt 进度；预览标记与帧摘要均不包含对象定位信息。 */
 export interface PatchTaskSkillProgress {
   skillId: string;
   displayName: string;
@@ -240,6 +250,7 @@ export interface PatchTaskSkillProgress {
   stages: PatchTaskSkillStage[];
   errorCode?: string;
   referenceImageAvailable: boolean;
+  framePreparation?: PatchTaskSkillFramePreparation;
 }
 
 /** 浏览器可展示的固定模型角色；unknown 用于保守承接异常历史值。 */

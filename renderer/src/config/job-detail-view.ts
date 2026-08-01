@@ -47,11 +47,14 @@ export const workflowStageLabel: Record<PatchTaskWorkflowStageKey, string> = {
   complete: "制作完成",
 };
 
-/** 单技能固定生产链文案；参考图不等于可直接运行的技能帧。 */
+/** 单技能版本化生产链文案；V6 源帧冻结不等于目标帧已经生成或通过运行时验证。 */
 export const skillStageLabel: Record<PatchTaskSkillStageKey, string> = {
   "engineer-plan": "工程方案",
   "reference-image": "模型参考图",
   "aseprite-adaptation": "像素适配",
+  "target-manifest": "目标清单",
+  "source-frame-freeze": "源帧冻结",
+  "target-frame-generation": "目标帧生成",
   "runtime-validation": "独立验证",
 };
 

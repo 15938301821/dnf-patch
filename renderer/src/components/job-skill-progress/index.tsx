@@ -1,9 +1,10 @@
 /**
- * @fileoverview 展示制作任务中每个技能当前 attempt 的四阶段进度与三图证据审查入口。
+ * @fileoverview 展示制作任务中每个技能当前 attempt 的版本化阶段、V6 帧计数与三图证据入口。
  *
  * 任务详情页传入服务端整理的技能 ViewModel 和预览命令；本组件只展示阶段证据、错误码并回传
  * 用户选择，不发 HTTP 请求、不创建 Blob URL，也不推断未知历史状态。referenceImageAvailable
- * 作为当前三图链已进入可审查阶段的保守门禁，不表示模型参考 PNG 已用于 runtime 像素。
+ * 作为当前三图链已进入可审查阶段的保守门禁，不表示模型参考 PNG 已用于 runtime 像素；V6
+ * 帧计数只说明清单与官方源 PNG 的登记进度，不表示目标图、候选 NPK 或部署已经完成。
  */
 import { Button, Tag } from "antd";
 import {
@@ -98,7 +99,17 @@ export function JobSkillProgress({
               </ol>
 
               <div className={styles.action}>
-                {skill.referenceImageAvailable ? (
+                {skill.framePreparation ? (
+                  <span className={styles["frame-summary"]}>
+                    <strong>
+                      源帧 {skill.framePreparation.sourceFrameCount} /{" "}
+                      {skill.framePreparation.generationFrameCount}
+                    </strong>
+                    <small>
+                      清单 {skill.framePreparation.targetFrameCount} 帧
+                    </small>
+                  </span>
+                ) : skill.referenceImageAvailable ? (
                   <Button
                     aria-label={`查看${skill.displayName}三图证据对比`}
                     icon={<ImageIcon size={15} />}
